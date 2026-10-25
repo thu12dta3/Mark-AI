@@ -551,11 +551,15 @@ class MarkSwiGLUFFN(nn.Module):
 
 class DeepSeekMoELayer(nn.Module):
     """
-    Arquitetura DeepSeekMoE (DeepSeek-V3):
+    Arquitetura DeepSeekMoE (DeepSeek-V3) com Anti-Collapse Auto-Bias e Router Z-Loss:
     - 1 Shared Expert sempre ativo (captura sintaxe universal e padrões de segurança)
-    - N Fine-Grained Routed Experts especializados nos domínios do MARK (Rust/Tokio, Python/MCP,
-      Kotlin/WearOS, Electronics, Chemistry, AFV/Defense, SmartHome)
-    - Aux-Loss-Free Load Balancing: ajusta um vetor `expert_bias` dinamicamente sem poluir o gradiente!
+    - N Fine-Grained Routed Experts especializados nos domínios do MARK (Rust/C++/Assembly,
+      Python/JS/TS/Ruby/PHP/Kotlin/Java/Go/C#, Arquitetura, Visão, Eletrônica)
+    - Aux-Loss-Free Load Balancing + Rebalanceamento Anti-Colapso a cada 100 passos:
+      acumula estatísticas de seleção por token e corrige automaticamente qualquer especialista
+      que concentre chamadas demais ou fique subutilizado, garantindo distribuição uniforme entre
+      todas as linguagens (Assembly/C++ vs Ruby/PHP).
+    - Router Z-Loss leve: estabiliza os logits do roteador evitando saturação numérica em BF16/FP16.
     """
     def __init__(self, config: MarkConfig):
         super().__init__()
@@ -563,6 +567,7 @@ class DeepSeekMoELayer(nn.Module):
         self.n_routed_experts = config.n_routed_experts
         self.top_k = config.num_experts_per_tok
         self.bias_update_rate = config.router_bias_update_rate
+        self.rebalance_interval = 100
 
         # Especialista compartilhado sempre ativo
         self.shared_experts = MarkSwiGLUFFN(
@@ -576,8 +581,11 @@ class DeepSeekMoELayer(nn.Module):
         ])
 
         self.router = nn.Linear(config.dim, config.n_routed_experts, bias=False)
-        # Buffer Aux-Loss-Free (DeepSeek-V3): atualizado sem gradiente para balanceamento perfeito
+        # Buffers Aux-Loss-Free + Acumulador de 100 passos contra colapso de roteamento
         self.register_buffer("expert_bias", torch.zeros(config.n_routed_experts))
+        self.register_buffer("window_expert_counts", torch.zeros(config.n_routed_experts))
+        self.register_buffer("router_step_counter", torch.zeros(1, dtype=torch.long))
+        self.last_router_z_loss: Optional[torch.Tensor] = None
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         bsz, seqlen, dim = x.shape
@@ -586,8 +594,15 @@ class DeepSeekMoELayer(nn.Module):
         # 1. Saída determinística do Shared Expert
         shared_out = self.shared_experts(x_flat)
 
-        # 2. Roteamento Sigmoid + Aux-Loss-Free Bias (DeepSeek-V3)
+        # 2. Roteamento Sigmoid + Aux-Loss-Free Bias + Router Z-Loss
         router_logits = self.router(x_flat)
+        if self.training:
+            # Router Z-Loss: penaliza logits extremos (logsumexp^2) para evitar colapso de roteamento
+            z_loss = torch.logsumexp(router_logits.float(), dim=-1).pow(2).mean()
+            self.last_router_z_loss = 1e-4 * z_loss
+        else:
+            self.last_router_z_loss = None
+
         scores = torch.sigmoid(router_logits.float())
         scores_for_choice = scores + self.expert_bias.unsqueeze(0)
 
@@ -595,14 +610,28 @@ class DeepSeekMoELayer(nn.Module):
         topk_weights = torch.gather(scores, dim=-1, index=topk_idx)
         topk_weights = (topk_weights / topk_weights.sum(dim=-1, keepdim=True).clamp(min=1e-6)).to(x.dtype)
 
-        # Atualiza o bias Aux-Loss-Free durante o treinamento (sem perda auxiliar!)
+        # Atualização Aux-Loss-Free passo a passo + Auto-Ajuste Anti-Colapso a cada 100 passos
         if self.training:
             with torch.no_grad():
                 counts = torch.bincount(topk_idx.flatten(), minlength=self.n_routed_experts).float()
                 avg_count = counts.mean()
-                # Especialistas sobrecarregados têm seu bias reduzido; subutilizados têm bias aumentado
                 load_violation = avg_count - counts
                 self.expert_bias.add_(self.bias_update_rate * torch.sign(load_violation))
+
+                self.window_expert_counts.add_(counts)
+                self.router_step_counter.add_(1)
+
+                if int(self.router_step_counter.item()) % self.rebalance_interval == 0:
+                    total_calls = self.window_expert_counts.sum().clamp(min=1.0)
+                    freq = self.window_expert_counts / total_calls
+                    target_freq = 1.0 / float(self.n_routed_experts)
+                    # Se 2 ou 3 especialistas concentrarem a carga (> 2.5x o ideal) ou ficarem mortos (< 0.3x),
+                    # aplica correção proporcional mais forte e centraliza o bias em média zero
+                    imbalance = target_freq - freq
+                    self.expert_bias.add_(5.0 * self.bias_update_rate * (imbalance / target_freq).clamp(-3.0, 3.0))
+                    self.expert_bias.sub_(self.expert_bias.mean())
+                    self.expert_bias.clamp_(-0.35, 0.35)
+                    self.window_expert_counts.zero_()
 
         # 3. Despacho esparso para os Top-K especialistas
         routed_out = torch.zeros_like(x_flat)
@@ -730,15 +759,18 @@ class MarkTransformerBlock(nn.Module):
         else:
             self.ffn = MarkSwiGLUFFN(config.dim, config.intermediate_size)
 
-        # Recursive Latent Refinement (estilo MobileLLM / Universal Transformer com Adaptador Low-Rank):
-        # Dobra a profundidade efetiva de transformação não-linear por camada adicionando < 0.2% de parâmetros!
+        # Recursive Latent Refinement ($r=64$) com Estabilidade Garantida:
+        # 1. RMSNorm pré-loop (`refine_norm`) + RMSNorm residual pós-FFN (`refine_post_norm`)
+        # 2. Inicialização ZERO nos pesos de saída do LoRA (`nn.init.zeros_(self.refine_up.weight)`)
+        #    e `refine_scale` iniciado em 0.0 -> garante identidade exata no passo 0 (zero explosão de gradiente!)
         self.recursive_loops = max(1, getattr(config, "recursive_depth_loops", 1))
         if self.recursive_loops > 1:
             rank = 64
             self.refine_norm = RMSNorm(config.dim, eps=config.rms_norm_eps)
             self.refine_down = nn.Linear(config.dim, rank, bias=False)
             self.refine_up = nn.Linear(rank, config.dim, bias=False)
-            self.refine_scale = nn.Parameter(torch.tensor(0.25))
+            self.refine_post_norm = RMSNorm(config.dim, eps=config.rms_norm_eps)
+            self.refine_scale = nn.Parameter(torch.zeros(1))
         else:
             self.refine_norm = None
 
@@ -754,10 +786,10 @@ class MarkTransformerBlock(nn.Module):
         h = x + self.attn(self.attn_norm(x), cos, sin, mask=mask, kv_cache=kv_cache, start_pos=start_pos)
         out = h + self.ffn(self.ffn_norm(h))
         if self.refine_norm is not None:
-            # Segundo passe de refinamento latente reutilizando os pesos do FFN/MoE + correção low-rank!
             r_in = self.refine_norm(out)
             delta = self.refine_up(F.silu(self.refine_down(r_in)))
-            out = out + self.refine_scale * (self.ffn(r_in + delta))
+            refined = self.refine_post_norm(self.ffn(r_in + delta))
+            out = out + torch.tanh(self.refine_scale) * refined
         return out
 
 
@@ -818,6 +850,20 @@ class MarkModel(nn.Module):
         for name, p in module.named_parameters():
             if name.endswith("wo.weight") or name.endswith("w_down.weight"):
                 nn.init.normal_(p, mean=0.0, std=std / math.sqrt(2 * self.config.n_layers))
+            elif name.endswith("refine_up.weight") or name.endswith("refine_scale"):
+                # Garante inicialização zero estrita no adaptador recursivo LoRA para evitar explosão de gradiente!
+                nn.init.zeros_(p)
+
+    def get_router_z_loss(self) -> torch.Tensor:
+        """Soma a Router Z-Loss de todas as camadas DeepSeekMoE ativas no passo de treinamento."""
+        z_losses = [
+            layer.ffn.last_router_z_loss
+            for layer in self.layers
+            if isinstance(layer.ffn, DeepSeekMoELayer) and layer.ffn.last_router_z_loss is not None
+        ]
+        if not z_losses:
+            return torch.tensor(0.0, device=self.tok_embeddings.weight.device)
+        return torch.stack(z_losses).sum()
 
     def enable_gradient_checkpointing(self):
         self.gradient_checkpointing = True

@@ -133,18 +133,46 @@ class MarkReasoningAndSelfRAGLoss(nn.Module):
             "think_initiation_prob": think_start_prob.mean().item(),
         }
 
-        # Loss da cabeça Multi-Token Prediction (DeepSeek-V3 MTP: prediz t+2)
+        # Loss da cabeça Multi-Token Prediction (DeepSeek-V3 MTP alinhada ao Self-RAG e <think>):
+        # 1. Pondera os alvos t+2 com `build_token_weights` para que a cabeça especulativa aprenda
+        #    prioritariamente a prever tokens de controle lógico (<think>, </think>, [RETRIEVE], [EVALUATE]).
+        # 2. Penaliza a cabeça MTP se tentar pular a fase de raciocínio estruturado antes de acionar ferramentas/RAG!
         if mtp_logits is not None and labels.shape[1] > 2:
             mtp_shift_logits = mtp_logits[..., :-1, :].contiguous()
             mtp_shift_labels = labels[..., 2:].contiguous()
             min_len = min(mtp_shift_logits.shape[1], mtp_shift_labels.shape[1])
-            mtp_loss = F.cross_entropy(
-                mtp_shift_logits[:, :min_len, :].reshape(-1, vocab_size),
-                mtp_shift_labels[:, :min_len].reshape(-1),
+
+            mtp_lgs = mtp_shift_logits[:, :min_len, :]
+            mtp_lbls = mtp_shift_labels[:, :min_len]
+
+            mtp_per_tok = F.cross_entropy(
+                mtp_lgs.reshape(-1, vocab_size),
+                mtp_lbls.reshape(-1),
                 ignore_index=self.ignore_index,
+                reduction="none",
+            ).view(bsz, min_len)
+
+            mtp_weights = self.build_token_weights(mtp_lbls)
+            mtp_ce_loss = (mtp_per_tok * mtp_weights).sum() / mtp_weights.sum().clamp(min=1.0)
+
+            # Penalidade de alinhamento MTP + Self-RAG:
+            # Nos primeiros tokens válidos da resposta (aquecimento do raciocínio), força a cabeça MTP
+            # a sustentar a distribuição dentro da zona <think> e a não saltar prematuramente para </think>
+            # ou resposta direta quando uma chamada [RETRIEVE] / arquitetura complexa é exigida.
+            mtp_first_logits = mtp_lgs[batch_indices, first_resp_idx.clamp(max=min_len - 1)]
+            mtp_first_probs = F.softmax(mtp_first_logits.float(), dim=-1)
+            premature_close_prob = mtp_first_probs[:, self.config.think_end_id]
+            mtp_control_boost = (
+                mtp_first_probs[:, self.config.think_start_id]
+                + mtp_first_probs[:, self.config.retrieve_id]
+                + mtp_first_probs[:, self.config.evaluate_id]
             )
+            mtp_skip_penalty = F.relu(premature_close_prob - mtp_control_boost + 0.35).mean()
+
+            mtp_loss = mtp_ce_loss + 0.40 * mtp_skip_penalty
             total_loss = total_loss + self.lambda_mtp * mtp_loss
             metrics["loss_mtp"] = mtp_loss.item()
+            metrics["loss_mtp_skip_penalty"] = mtp_skip_penalty.item()
 
         # Alinhamento GRPO + ORPO entre resposta com raciocínio (`chosen`) e resposta rasa (`rejected`)
         if rejected_logits is not None and rejected_labels is not None:

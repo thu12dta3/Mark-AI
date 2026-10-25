@@ -297,6 +297,9 @@ def train_mark_a100(
                     rejected_labels=rej_labels,
                     mtp_logits=mtp_logits,
                 )
+                router_z_loss = model.get_router_z_loss()
+                loss = loss + router_z_loss
+                metrics["loss_router_z"] = float(router_z_loss.item())
                 scaled_loss = loss / grad_accum_steps
 
             scaled_loss.backward()
