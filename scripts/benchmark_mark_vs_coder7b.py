@@ -113,6 +113,8 @@ def load_mark_engineer_model() -> Tuple[Any, Any, float]:
     # Carrega pesos treinados mais recentes
     ckpt_dir = Path("/content/Mark-AI/checkpoints")
     candidates = [
+        ckpt_dir / "mark_engineer_lit_inference.pt",
+        ckpt_dir / "mark_engineer_lit_final.pt",
         ckpt_dir / "mark_engineer_2_inference.pt",
         ckpt_dir / "mark_engineer_2_final.pt",
         ckpt_dir / "mark_engineer_inference.pt",
