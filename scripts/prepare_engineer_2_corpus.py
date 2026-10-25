@@ -361,6 +361,109 @@ def generate_top_20_multilingual_pairs() -> List[Dict[str, str]]:
     return samples
 
 
+def generate_anti_hallucination_and_mark_hardening_pairs() -> List[Dict[str, str]]:
+    """Gera pares estritos contra alucinação e de ancoragem dos métodos literais do MARK."""
+    return [
+        {
+            "prompt": "Qual foi a vulnerabilidade de dia zero corrigida na biblioteca OpenSSL em 15 de outubro de 2026? Se você não tiver acesso a fatos em tempo real de 2026, admita com honestidade.",
+            "chosen": (
+                "<think>\n"
+                "O usuário pergunta sobre um fato específico de segurança em outubro de 2026.\n"
+                "Princípio de Honestidade Epistêmica: Meu modelo não possui dados factuais em tempo real sobre este evento.\n"
+                "Regra de Ouro: Nunca inventar identificadores CVE nem detalhes técnicos de falhas inexistentes.\n"
+                "Acionar o token [UNKNOWN] e a sintaxe de busca web do ecossistema MARK.\n"
+                "</think>\n"
+                "[UNKNOWN]: Não possuo confirmação factual prévia sobre este evento em minha base interna de parâmetros e não invento informações.\n"
+                "[WEB_SEARCH] openssl zero day advisory october 2026 [/WEB_SEARCH]\n"
+            ),
+            "rejected": "Foi corrigida a vulnerabilidade CVE-2026-99999 que permitia execução remota de código via overflow no buffer de handshake TLS.",
+        },
+        {
+            "prompt": "Como o MARK previne ataques de Time-of-Check to Time-of-Use (TOCTOU) e Symlink Hijacking em operações de gravação de código no engineer_agent.py?",
+            "chosen": (
+                "<think>\n"
+                "Analisando os mecanismos de segurança de `src/mark/engineer_agent.py` e `src/mark/sandbox.py`.\n"
+                "1. Confinamento com `resolve_authorized_workspace_root`: valida se o caminho real reside estritamente sob o workspace autorizado.\n"
+                "2. Verificação defensiva de symlink: `path.is_symlink()` é verificado para bloquear manipulações maliciosas.\n"
+                "3. Gravação atômica: escrita em arquivo temporário com `os.fsync` e substituição atômica via `os.replace`.\n"
+                "4. Lista `PROTECTED_CORE_SECURITY_PATHS` protege arquivos críticos do núcleo.\n"
+                "</think>\n"
+                "O protocolo **Hardening P0** do MARK protege as operações de gravação de código contra **TOCTOU** e **Symlink Hijacking** através de 4 defesas atômicas:\n\n"
+                "1. **Validação de Raiz com `resolve_authorized_workspace_root`:**\n"
+                "   Todo caminho solicitado passa por resolução canônica estrita (`Path.resolve()`). Se o caminho ultrapassar os limites do workspace, a operação é abortada antes de qualquer acesso ao disco.\n\n"
+                "2. **Bloqueio Incondicional de Links Simbólicos (`is_symlink`):**\n"
+                "   A engine inspeciona `path.is_symlink()`. Caso seja um link para áreas externas, lança `SandboxSecurityError` para prevenir desvios de privilégio.\n\n"
+                "3. **Gravação Atômica e Flush de Disco (`os.fsync` e `os.replace`):**\n"
+                "   O novo código é escrito em um arquivo temporário no mesmo diretório, garantido em disco via `os.fsync(fd.fileno())` e movido atomicamente para o destino final com `os.replace()`, eliminando qualquer janela temporal de corrida (TOCTOU).\n\n"
+                "4. **Imutabilidade do Núcleo (`PROTECTED_CORE_SECURITY_PATHS`):**\n"
+                "   Arquivos vitais como `sandbox.py`, `engineer_agent.py` e `device_auth.py` não podem ser sobrescritos por automações ordinárias."
+            ),
+            "rejected": "O sistema salva o arquivo direto na pasta e usa um try except para pegar erros.",
+        },
+        {
+            "prompt": "Implemente em Rust uma fila assíncrona concorrente com bounded channel, semântica MPSC, backpressure estrito e graceful shutdown usando Tokio sem unwrap() e sem panic().",
+            "chosen": (
+                "<think>\n"
+                "Objetivo: Desenvolver canal MPSC assíncrono com backpressure e desligamento gracioso em Rust.\n"
+                "Regra estrita: ZERO unwrap() e ZERO panic!() em qualquer lugar do código.\n"
+                "1. Utilizar `tokio::sync::mpsc` delimitado.\n"
+                "2. Encapsular em `AsyncWorkQueue<T>`.\n"
+                "3. Controlar cancelamento com `tokio_util::sync::CancellationToken`.\n"
+                "4. Mapear erros com enum fortemente tipado `QueueError` via `thiserror`.\n"
+                "</think>\n"
+                "```rust\n"
+                "use std::sync::Arc;\n"
+                "use thiserror::Error;\n"
+                "use tokio::sync::{mpsc, Mutex};\n"
+                "use tokio_util::sync::CancellationToken;\n"
+                "\n"
+                "#[derive(Debug, Error)]\n"
+                "pub enum QueueError {\n"
+                "    #[error(\"Fila encerrada, impossível enviar novas tarefas\")]\n"
+                "    Closed,\n"
+                "    #[error(\"Tempo limite excedido ao aguardar vaga no buffer\")]\n"
+                "    Timeout,\n"
+                "}\n"
+                "\n"
+                "pub struct AsyncWorkQueue<T> {\n"
+                "    sender: mpsc::Sender<T>,\n"
+                "    receiver: Arc<Mutex<mpsc::Receiver<T>>>,\n"
+                "    cancel_token: CancellationToken,\n"
+                "}\n"
+                "\n"
+                "impl<T: Send + 'static> AsyncWorkQueue<T> {\n"
+                "    pub fn new(capacity: usize) -> Self {\n"
+                "        let (tx, rx) = mpsc::channel(capacity);\n"
+                "        Self {\n"
+                "            sender: tx,\n"
+                "            receiver: Arc::new(Mutex::new(rx)),\n"
+                "            cancel_token: CancellationToken::new(),\n"
+                "        }\n"
+                "    }\n"
+                "\n"
+                "    pub async fn push(&self, item: T) -> Result<(), QueueError> {\n"
+                "        if self.cancel_token.is_cancelled() {\n"
+                "            return Err(QueueError::Closed);\n"
+                "        }\n"
+                "        self.sender.send(item).await.map_err(|_| QueueError::Closed)\n"
+                "    }\n"
+                "\n"
+                "    pub async fn pop(&self) -> Option<T> {\n"
+                "        let mut rx = self.receiver.lock().await;\n"
+                "        rx.recv().await\n"
+                "    }\n"
+                "\n"
+                "    pub fn shutdown(&self) {\n"
+                "        self.cancel_token.cancel();\n"
+                "    }\n"
+                "}\n"
+                "```"
+            ),
+            "rejected": "let v = q.pop().unwrap();",
+        },
+    ]
+
+
 def build_engineer_2_corpus() -> Path:
     base_file = SATA_SSD_DATA_DIR / "mark_engineer_train.jsonl"
     all_samples: List[Dict[str, str]] = []
@@ -384,6 +487,10 @@ def build_engineer_2_corpus() -> Path:
     top20_pairs = generate_top_20_multilingual_pairs()
     for _ in range(40):
         all_samples.extend(top20_pairs)
+
+    anti_hallucination_pairs = generate_anti_hallucination_and_mark_hardening_pairs()
+    for _ in range(50):
+        all_samples.extend(anti_hallucination_pairs)
 
     target_ssd_file = SATA_SSD_DATA_DIR / "mark_engineer_train.jsonl"
     print(f"[Corpus 2.0] Gravando {len(all_samples)} amostras de treino atualizadas em {target_ssd_file}...")
