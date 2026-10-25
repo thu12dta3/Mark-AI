@@ -121,7 +121,10 @@ def load_mark_engineer_model() -> Tuple[Any, Any, float]:
     for c in candidates:
         if c.exists():
             print(f"[Mark Checkpoint] Carregando pesos de: {c}")
-            ckpt_data = torch.load(c, map_location=device)
+            try:
+                ckpt_data = torch.load(c, map_location=device, weights_only=False)
+            except TypeError:
+                ckpt_data = torch.load(c, map_location=device)
             state_dict = ckpt_data.get("model_state_dict", ckpt_data)
             model.load_state_dict(state_dict, strict=False)
             loaded_path = c
