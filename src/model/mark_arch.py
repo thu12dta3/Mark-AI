@@ -1,5 +1,5 @@
 """
-Mark 0.1 - DeepSeek-V3/R1 + Qwen3-VL Inspired Core Neural Architecture (PyTorch Native)
+Mark Primal - DeepSeek-V3/R1 + Qwen3-VL Inspired Core Neural Architecture (PyTorch Native)
 =======================================================================================
 Inovações de Engenharia Implementadas:
 1. Multi-Head Latent Attention (MLA - DeepSeek-V2/V3):
@@ -189,6 +189,83 @@ class MarkConfig:
             vision_enabled=False,
             voice_prosody_enabled=False,
             max_seq_len=4096,
+        )
+
+    @classmethod
+    def create_engineer_300m(cls, vocab_size: int = 4311) -> "MarkConfig":
+        """
+        Mark Engineer 300M (Copia Preservada de Producao):
+        Topologia ultraleve de 302.019.848 parametros treinada e convergida na A100.
+        - Dimensao Oculta: 1024
+        - Profundidade: 8 blocos fisicos (com Recursive LoRA r=64)
+        - Atencao: MLA com 16 cabecas, KV LoRA Rank 256, Q LoRA Rank 512
+        - DeepSeekMoE: 16 Especialistas Roteados + 1 Compartilhado (moe_inter=1536)
+        - Parametros Totais: 302.02M
+        - Parametros Ativos por Token: ~110M (Padrao) a ~165M (Potencia Maxima)
+        - VRAM 4-bit (IQ4_NL): ~350 MB a 500 MB (163 MB em disco)
+        """
+        return cls(
+            vocab_size=vocab_size,
+            dim=1024,
+            n_layers=8,
+            n_heads=16,
+            n_kv_heads=4,
+            use_mla=True,
+            kv_lora_rank=256,
+            q_lora_rank=512,
+            qk_rope_head_dim=32,
+            v_head_dim=64,
+            intermediate_size=3072,
+            n_dense_layers=2,
+            moe_layer_freq=1,
+            n_routed_experts=16,
+            n_shared_experts=1,
+            num_experts_per_tok=2,
+            moe_intermediate_size=1536,
+            recursive_depth_loops=2,
+            mtp_depth=1,
+            mtp_loss_weight=0.3,
+            vision_enabled=False,
+            voice_prosody_enabled=False,
+            max_seq_len=4096,
+        )
+
+    @classmethod
+    def create_primal(cls, vocab_size: int = 49152) -> "MarkConfig":
+        """
+        Mark Primal (Anteriormente Mark 0.1):
+        Arquitetura Fundacional Base com ~2.95B parametros densos/MoE.
+        - Dimensao Oculta: 2304
+        - Profundidade: 28 blocos Transformer
+        - Atencao: MLA com 24 cabecas, KV LoRA Rank 512, Q LoRA Rank 768
+        - DeepSeekMoE: 16 Especialistas Roteados + 1 Compartilhado
+        - Parametros Totais: ~2.98 Bilhoes
+        - Suporte a Multimodal Vision (SigLIP/Patch 14) + Voz/Prosodia
+        """
+        return cls(
+            vocab_size=vocab_size,
+            dim=2304,
+            n_layers=28,
+            n_heads=24,
+            use_mla=True,
+            q_lora_rank=768,
+            kv_lora_rank=512,
+            qk_nope_head_dim=64,
+            qk_rope_head_dim=32,
+            v_head_dim=96,
+            n_dense_layers=4,
+            moe_layer_freq=2,
+            recursive_depth_loops=2,
+            intermediate_size=6144,
+            n_shared_experts=1,
+            n_routed_experts=16,
+            num_experts_per_tok=2,
+            moe_intermediate_size=1536,
+            mtp_depth=1,
+            mtp_loss_weight=0.3,
+            vision_enabled=True,
+            voice_prosody_enabled=True,
+            max_seq_len=8192,
         )
 
 

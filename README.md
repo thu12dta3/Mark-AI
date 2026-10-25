@@ -1,4 +1,4 @@
-# Mark 0.1 -- Foundational Neural Architecture
+# Mark Primal -- Foundational Neural Architecture
 
 <div align="center">
 
@@ -14,9 +14,19 @@
 
 ---
 
+## Model Hierarchy
+
+| Variant | Total Parameters | Active Params / Token | Target & Purpose |
+| :--- | :---: | :---: | :--- |
+| **Mark Primal** *(formerly Mark 0.1)* | ~2.98B | ~2.35B | Foundation Multimodal & Polyglot Base (~2.95B dense/MoE). |
+| **Mark Engineer 1.5B** | **1.4995B (~1.50B)** | **~315M - 440M** | High-capacity systems engineering, AppSec P0, and literature reasoning. |
+| **Mark Engineer 300M** | **302.02M** | **~110M - 165M** | Preserved ultra-lightweight edge production checkpoint (163 MB IQ4_NL). |
+
+---
+
 ## Executive Overview
 
-Mark 0.1 is a high-density causal language and vision-language model architected from the ground up to serve as the autonomous intelligence layer of the MARK-PUBLIC distributed ecosystem:
+Mark Primal is a high-density causal language and vision-language model architected from the ground up to serve as the autonomous intelligence layer of the MARK-PUBLIC distributed ecosystem:
 - Systems Architecture & Polyglot Engineering: Native mastery across Rust, Python, C, C++, Assembly (x86_64/ARM64), Go, Kotlin, Java, C#, TypeScript/JavaScript, CSS, Ruby, PHP, SQL, and Shell, including Fill-in-the-Middle (FIM) code synthesis.
 - Global Multilingual Fluency: High-precision comprehension and synthesis across English, Portuguese, Spanish, French, German, Italian, Russian, Japanese, Korean, Arabic, Hindi, and Simplified Chinese (explicitly excluding Traditional Chinese).
 - Multimodal High-Resolution Vision: Native AnyRes vision encoder with 2x2 PixelShuffle spatial compression, achieving 4x lower visual KV cache footprint than standard VLMs while preserving fine-grained OCR, schematics, and UI inspection.
