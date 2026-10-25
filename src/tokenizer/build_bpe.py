@@ -108,15 +108,29 @@ def build_mark_bpe_tokenizer(
     - Tokens de Arquitetura & Self-RAG (<think>, </think>, [RETRIEVE], [EVALUATE], [ACCEPT], [REJECT])
     """
     repo_root = Path(__file__).resolve().parent.parent.parent
+    mark_root = Path("/home/thu12/MARK")
     mark_public_root = Path("/home/thu12/MARK-PUBLIC")
+    roblox_lx_root = Path("/home/thu12/Documents/Codex/2026-10-11/files-pasted-by-the-user-roblox/work/Roblox-LX")
 
     if corpus_dirs is None:
         corpus_dirs = [str(repo_root / "data" / "raw"), str(repo_root / "src")]
+        if mark_root.exists():
+            corpus_dirs.extend([
+                str(mark_root / "src"),
+                str(mark_root / "tests"),
+            ])
         if mark_public_root.exists():
             corpus_dirs.extend([
                 str(mark_public_root / "src"),
                 str(mark_public_root / "src-rust"),
+                str(mark_public_root / "mobile-android"),
                 str(mark_public_root / "docs"),
+            ])
+        if roblox_lx_root.exists():
+            corpus_dirs.extend([
+                str(roblox_lx_root / "runtime"),
+                str(roblox_lx_root / "src"),
+                str(roblox_lx_root / "work"),
             ])
     else:
         corpus_dirs = [str((repo_root / d).resolve() if not os.path.isabs(d) else d) for d in corpus_dirs]
