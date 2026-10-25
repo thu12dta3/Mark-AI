@@ -117,14 +117,23 @@ def load_mark_engineer_model() -> Tuple[Any, Any, float]:
         ckpt_dir / "mark_engineer_final.pt",
     ] + sorted(list(ckpt_dir.glob("mark_0_1_step_*.pt")), reverse=True)
 
+    try:
+        torch.serialization.add_safe_globals([MarkConfig])
+    except Exception:
+        pass
+
     loaded_path = None
     for c in candidates:
         if c.exists():
             print(f"[Mark Checkpoint] Carregando pesos de: {c}")
             try:
                 ckpt_data = torch.load(c, map_location=device, weights_only=False)
-            except TypeError:
-                ckpt_data = torch.load(c, map_location=device)
+            except Exception:
+                try:
+                    ckpt_data = torch.load(c, map_location=device)
+                except Exception as exc:
+                    print(f"[Aviso] Falha ao ler {c}: {exc}")
+                    continue
             state_dict = ckpt_data.get("model_state_dict", ckpt_data)
             model.load_state_dict(state_dict, strict=False)
             loaded_path = c
