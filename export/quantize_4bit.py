@@ -256,6 +256,7 @@ def load_mark_for_8gb_vram(
     for p in model.parameters():
         p.requires_grad_(False)
 
+    model = model.to(dtype=compute_dtype)
     model = quantize_mark_model_nf4(model, compute_dtype=compute_dtype, weight_quant_type=weight_quant_type)
     model = model.to(device)
 
