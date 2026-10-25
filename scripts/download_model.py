@@ -2,16 +2,14 @@
 """
 Mark Engineer 300M (302M) - Download & Setup Script
 ===================================================
-Script oficial para obtencao e preparacao do modelo Mark Engineer 300M
+Script oficial para obtencao dos pesos treinados do Mark Engineer 300M
 (302.02M parametros totais, ~110M a 165M ativos por token).
 
-Formatos Suportados:
-- iq4_nl : Quantizacao 4-bit nao-linear nativa (~163 MB em disco, ~350 MB VRAM)
-- bf16   : Ponto flutuante de 16-bit nativo (~604 MB em disco, ~1.1 GB VRAM)
+Download Direto (1 Arquivo Solo - Estilo Hugging Face):
+    curl -L -O https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-302m/mark_engineer_302m_iq4_nl.pt
 
-Uso Rapido:
+Ou via Python:
     python download_302m.py
-    python download_302m.py --format bf16
     python download_302m.py --dest ./checkpoints
 
 Regra Estrita: Zero emojis em qualquer texto, log ou print.
@@ -23,9 +21,9 @@ import argparse
 import hashlib
 import json
 import shutil
+import urllib.request
 from pathlib import Path
 
-# Adiciona o diretorio raiz ao PYTHONPATH
 REPO_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(REPO_ROOT))
 
@@ -34,7 +32,7 @@ from export.quantize_4bit import quantize_mark_model_nf4
 
 
 DEFAULT_METADATA = {
-    "model_name": "Mark Engineer 300M",
+    "model_name": "Mark Engineer 300M (302M)",
     "version": "1.0.0",
     "architecture": "DeepSeek-V3 MLA + DeepSeekMoE + MTP",
     "total_parameters": 302019848,
@@ -47,16 +45,12 @@ DEFAULT_METADATA = {
     "shared_experts": 1,
     "formats": {
         "iq4_nl": {
-            "filename": "mark_engineer_300m_iq4_nl.pt",
-            "size_mb": 163.4,
+            "filename": "mark_engineer_302m_iq4_nl.pt",
+            "url": "https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-302m/mark_engineer_302m_iq4_nl.pt",
+            "size_mb": 162.99,
             "vram_mb": 350.0,
-            "description": "Quantizacao 4-bit nao-linear nativa para GPUs de 8GB ou execucao em CPU."
-        },
-        "bf16": {
-            "filename": "mark_engineer_300m_bf16.pt",
-            "size_mb": 604.2,
-            "vram_mb": 1100.0,
-            "description": "Pesos em precisao total BFloat16 para estacoes de trabalho ou fine-tuning."
+            "sha256": "daf05dd0dab4fc90f620d959cb6e5731c49b3f3c4ddce0ff28765e0751075fd9",
+            "description": "Pesos convergidos em quantizacao 4-bit nao-linear nativa (163 MB)."
         }
     }
 }
@@ -84,60 +78,26 @@ def resolve_local_storage(filename: str) -> Path | None:
     return None
 
 
-def download_or_generate_checkpoint(dest_dir: Path, fmt: str) -> Path:
-    dest_dir.mkdir(parents=True, exist_ok=True)
-    target_info = DEFAULT_METADATA["formats"][fmt]
-    target_filename = target_info["filename"]
-    target_path = dest_dir / target_filename
+def download_with_progress(url: str, dest_path: Path):
+    def reporthook(block_num, block_size, total_size):
+        downloaded = block_num * block_size
+        if total_size > 0:
+            percent = min(100.0, downloaded * 100.0 / total_size)
+            mb_down = downloaded / (1024 * 1024)
+            mb_total = total_size / (1024 * 1024)
+            sys.stdout.write(f"\r[Download] {mb_down:.1f} MB / {mb_total:.1f} MB ({percent:.1f}%)")
+        else:
+            mb_down = downloaded / (1024 * 1024)
+            sys.stdout.write(f"\r[Download] {mb_down:.1f} MB baixados...")
+        sys.stdout.flush()
 
-    if target_path.exists() and target_path.stat().st_size > 1024 * 1024:
-        size_mb = target_path.stat().st_size / (1024 * 1024)
-        print(f"[Mark AI] Checkpoint 302M ({fmt.upper()}) ja disponivel localmente: {target_path} ({size_mb:.2f} MB)")
-        return target_path
-
-    # 1. Verifica no SSD SATA secundario
-    local_source = resolve_local_storage(target_filename)
-    if local_source is not None:
-        print(f"[Mark AI] Encontrado no armazenamento local: {local_source}")
-        print(f"[Mark AI] Copiando para {target_path}...")
-        shutil.copy2(local_source, target_path)
-        print(f"[Mark AI] Concluido com sucesso ({target_path.stat().st_size / (1024*1024):.2f} MB).")
-        return target_path
-
-    # 2. Inicializacao Calibrada Estrutural (Zero download externo necessario caso offline)
-    print(f"\n[Mark AI] Inicializando gerador de pesos calibrados para Mark Engineer 300M ({fmt.upper()})...")
-    config = MarkConfig.create_engineer_300m()
-    import torch
-    print(f"  [Topologia] D_model: {config.dim} | Camadas: {config.n_layers} | Cabecas MLA: {config.n_heads}")
-    print(f"  [MoE] 16 Especialistas Roteados + 1 Compartilhado | Parametros: {config.count_parameters():,}")
-    
-    model = MarkModel(config)
-    
-    if fmt == "iq4_nl":
-        print("  [Quantizacao] Convertendo tensores lineares para tabela nao-linear IQ4_NL de 4-bit...")
-        quantize_mark_model_nf4(model, weight_quant_type="IQ4_NL")
-        state_dict = model.state_dict()
-    else:
-        print("  [Formato] Empacotando tensores em precisao BFloat16...")
-        state_dict = {k: v.to(torch.bfloat16) for k, v in model.state_dict().items()}
-
-    print(f"  [Gravacao] Salvando checkpoint em {target_path}...")
-    torch.save(state_dict, target_path)
-
-    size_mb = target_path.stat().st_size / (1024 * 1024)
-    print(f"[Mark AI] Checkpoint 302M gerado com exito: {target_path} ({size_mb:.2f} MB)")
-    
-    return target_path
+    print(f"[Download Remoto] Baixando pesos treinados de: {url}")
+    urllib.request.urlretrieve(url, dest_path, reporthook=reporthook)
+    print("\n[Download] Concluido com sucesso.")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Download e configuracao do modelo Mark Engineer 300M (302M).")
-    parser.add_argument(
-        "--format",
-        choices=["iq4_nl", "bf16", "all"],
-        default="iq4_nl",
-        help="Formato do checkpoint: 'iq4_nl' (163 MB, 4-bit) ou 'bf16' (604 MB) ou 'all' (ambos)."
-    )
+    parser = argparse.ArgumentParser(description="Download do modelo treinado Mark Engineer 300M (302M).")
     parser.add_argument(
         "--dest",
         type=str,
@@ -147,36 +107,57 @@ def main():
     args = parser.parse_args()
 
     dest_dir = Path(args.dest)
-    print("=== [Mark Engineer 300M (302.02M Parametros) - Configurador de Modelo] ===")
-    print(f"[Diretorio de Destino] {dest_dir.resolve()}")
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    
+    target_info = DEFAULT_METADATA["formats"]["iq4_nl"]
+    target_filename = target_info["filename"]
+    target_path = dest_dir / target_filename
+    expected_sha = target_info["sha256"]
+    url = target_info["url"]
 
-    formats_to_get = ["iq4_nl", "bf16"] if args.format == "all" else [args.format]
-    downloaded = {}
+    print("=== [Mark Engineer 300M (302M): Download de Pesos Treinados] ===")
+    print(f"[Destino] {target_path.resolve()}")
 
-    for fmt in formats_to_get:
-        ckpt_file = download_or_generate_checkpoint(dest_dir, fmt)
-        sha = compute_sha256(ckpt_file)
-        size_mb = ckpt_file.stat().st_size / (1024 * 1024)
-        downloaded[fmt] = {
-            "path": str(ckpt_file.resolve()),
-            "size_mb": round(size_mb, 2),
-            "sha256": sha
-        }
-        print(f"  [Integridade SHA256] {fmt.upper()}: {sha}")
+    if target_path.exists() and target_path.stat().st_size > 1024 * 1024:
+        current_sha = compute_sha256(target_path)
+        if current_sha == expected_sha:
+            size_mb = target_path.stat().st_size / (1024 * 1024)
+            print(f"[Mark AI] Checkpoint 302M ja presente e integro: {target_path} ({size_mb:.2f} MB)")
+            print(f"[Integridade SHA256] {current_sha} (OK)")
+            return
 
-    # Salva manifesto de metadados
+    # 1. Verifica no SSD SATA secundario
+    local_source = resolve_local_storage(target_filename)
+    if local_source is not None and local_source.resolve() != target_path.resolve():
+        print(f"[Mark AI] Encontrado no armazenamento local: {local_source}")
+        shutil.copy2(local_source, target_path)
+        print(f"[Mark AI] Copiado para {target_path} ({target_path.stat().st_size / (1024*1024):.2f} MB).")
+    else:
+        # 2. Download direto via HTTPS do release oficial
+        try:
+            download_with_progress(url, target_path)
+        except Exception as e:
+            print(f"[Erro no Download] {e}")
+            sys.exit(1)
+
+    # Verificacao de integridade
+    current_sha = compute_sha256(target_path)
+    size_mb = target_path.stat().st_size / (1024 * 1024)
+    print(f"\n[Verificacao Final] Arquivo: {target_filename} ({size_mb:.2f} MB)")
+    print(f"[SHA256] {current_sha}")
+    if current_sha == expected_sha:
+        print("[Status de Integridade] SHA256 VALIDADO COM SUCESSO (100% compativel com o treino de producao).")
+    else:
+        print("[Aviso de Integridade] Hash divergente do release oficial.")
+
+    # Grava metadados
     meta_path = dest_dir / "mark_engineer_300m_metadata.json"
-    manifest = {**DEFAULT_METADATA, "downloaded_files": downloaded}
     with open(meta_path, "w", encoding="utf-8") as f:
-        json.dump(manifest, f, indent=2)
-    print(f"[Manifesto] Metadados gravados em: {meta_path}")
+        json.dump(DEFAULT_METADATA, f, indent=2)
 
-    print("\n=== [Modelo Pronto para Execucao] ===")
-    print("Para executar inferencia com o modelo 302M:")
-    print("  python inference.py --model 302m --prompt \"Otimize este algoritmo em Rust.\"")
-    print("Ou em Python:")
-    print("  from src.mark import load_model")
-    print("  model, config = load_model('302m')")
+    print("\n=== [Modelo Pronto para Inferencia] ===")
+    print("Execute inferencia imediata com:")
+    print("  python inference.py --model 302m --prompt \"Escreva um lock-free ring buffer concorrente em C++20.\"")
 
 
 if __name__ == "__main__":

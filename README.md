@@ -27,16 +27,19 @@
 
 ## Quickstart: Mark Engineer 300M (302M)
 
-The 302M model is ready for 1-click download and immediate local execution on consumer GPUs (<= 8GB VRAM) or CPU:
+The 302M trained model is ready for 1-click download as a single file (163 MB IQ4_NL), just like downloading from Hugging Face:
 
-### 1. Download Model Checkpoint
+### 1. Download Model Checkpoint (Single File / Direto)
 
 ```bash
-# Baixar versao quantizada 4-bit IQ4_NL (163 MB - Recomendado para GPU 8GB / CPU)
-python download_302m.py
+# Opcao A: Download direto via curl (1 arquivo de 163 MB)
+curl -L -O https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-302m/mark_engineer_302m_iq4_nl.pt
 
-# Ou baixar em precisao total BFloat16 (604 MB)
-python download_302m.py --format bf16
+# Opcao B: Download direto via wget
+wget https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-302m/mark_engineer_302m_iq4_nl.pt
+
+# Opcao C: Download com verificacao SHA256 automatica via Python
+python download_302m.py
 ```
 
 ### 2. Run Local Inference
