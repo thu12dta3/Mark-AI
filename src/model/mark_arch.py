@@ -518,17 +518,41 @@ class DeepSeekMLAAttention(nn.Module):
         k_full = torch.cat([k_nope, k_pe_expanded], dim=-1).transpose(1, 2)
         v_full = v.transpose(1, 2)
 
-        # 6. FlashAttention-2 via SDPA
+        # 6. FlashAttention-2 via SDPA otimizado
         is_causal = (mask is None) and (kv_cache is None or seqlen > 1)
-        output = F.scaled_dot_product_attention(
-            q_full,
-            k_full,
-            v_full,
-            attn_mask=mask,
-            dropout_p=self.dropout if self.training else 0.0,
-            is_causal=is_causal,
-            scale=self.softmax_scale,
-        )
+        if q_full.is_cuda and q_full.dtype in (torch.float16, torch.bfloat16):
+            try:
+                from torch.nn.attention import SDPBackend, sdpa_kernel
+                with sdpa_kernel([SDPBackend.FLASH_ATTENTION, SDPBackend.EFFICIENT_ATTENTION, SDPBackend.MATH]):
+                    output = F.scaled_dot_product_attention(
+                        q_full,
+                        k_full,
+                        v_full,
+                        attn_mask=mask,
+                        dropout_p=self.dropout if self.training else 0.0,
+                        is_causal=is_causal,
+                        scale=self.softmax_scale,
+                    )
+            except Exception:
+                output = F.scaled_dot_product_attention(
+                    q_full,
+                    k_full,
+                    v_full,
+                    attn_mask=mask,
+                    dropout_p=self.dropout if self.training else 0.0,
+                    is_causal=is_causal,
+                    scale=self.softmax_scale,
+                )
+        else:
+            output = F.scaled_dot_product_attention(
+                q_full,
+                k_full,
+                v_full,
+                attn_mask=mask,
+                dropout_p=self.dropout if self.training else 0.0,
+                is_causal=is_causal,
+                scale=self.softmax_scale,
+            )
 
         output = output.transpose(1, 2).contiguous().view(bsz, seqlen, -1)
         return self.wo(output)

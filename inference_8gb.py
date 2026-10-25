@@ -24,7 +24,9 @@ if __name__ == "__main__":
     from tokenizers import Tokenizer
     from src.model.mark_arch import MarkConfig
 
-    ckpts = sorted(glob.glob("checkpoints/mark_0_1_step_*.pt"))
+    local_ssd_ckpts = sorted(glob.glob("/mnt/ssd_1/mark ai/checkpoints/mark_0_1_step_*.pt"))
+    fallback_ckpts = sorted(glob.glob("checkpoints/mark_0_1_step_*.pt"))
+    ckpts = local_ssd_ckpts if local_ssd_ckpts else fallback_ckpts
     ckpt_path = ckpts[-1] if ckpts else None
 
     tokenizer = Tokenizer.from_file("data/tokenizer/mark_bpe_tokenizer.json")

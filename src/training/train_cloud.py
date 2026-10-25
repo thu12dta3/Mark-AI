@@ -112,16 +112,37 @@ def collate_reasoning_batch(batch: List[Dict[str, torch.Tensor]], pad_id: int = 
     }
 
 
+LOCAL_SATA_SSD_DIR = "/mnt/ssd_1/mark ai/checkpoints"
+
+
 class GoogleDriveCheckpointManager:
     """
-    Gerenciador de persistência rotativa para checkpoints de treinamento.
+    Gerenciador de persistência rotativa com suporte a:
+    1. Nuvem (Google Drive: `/content/drive/MyDrive/Mark-AI/checkpoints` ou fallback `/content/checkpoints`).
+    2. Local rígido: grava única e estritamente no SSD SATA de 256GB sem Windows (`/mnt/ssd_1/mark ai/checkpoints`).
     """
-    def __init__(self, checkpoint_dir: str = "/content/drive/MyDrive/Mark-AI/checkpoints", keep_last_n: int = 3):
+    def __init__(
+        self,
+        checkpoint_dir: str = "/content/drive/MyDrive/Mark-AI/checkpoints",
+        local_ssd_dir: Optional[str] = None,
+        keep_last_n: int = 3,
+    ):
         if not os.path.exists("/content/drive") and checkpoint_dir.startswith("/content/drive"):
-            checkpoint_dir = "checkpoints"
+            checkpoint_dir = "/content/checkpoints"
         self.checkpoint_dir = checkpoint_dir
+
+        # Destino local estrito no SSD SATA secundário de 256GB
+        if local_ssd_dir is None and os.path.exists("/mnt/ssd_1/mark ai"):
+            local_ssd_dir = LOCAL_SATA_SSD_DIR
+        self.local_ssd_dir = local_ssd_dir
+
         self.keep_last_n = keep_last_n
         os.makedirs(self.checkpoint_dir, exist_ok=True)
+        if self.local_ssd_dir and os.path.exists(os.path.dirname(self.local_ssd_dir)):
+            try:
+                os.makedirs(self.local_ssd_dir, exist_ok=True)
+            except OSError:
+                pass
 
     def save(
         self,
@@ -131,6 +152,7 @@ class GoogleDriveCheckpointManager:
         loss: float,
         config: MarkConfig,
     ) -> str:
+        filename = f"mark_0_1_step_{step:06d}.pt"
         ckpt_path = os.path.join(self.checkpoint_dir, f"mark_0_1_step_{step:06d}.pt")
         payload = {
             "step": step,
@@ -141,6 +163,15 @@ class GoogleDriveCheckpointManager:
         }
         torch.save(payload, ckpt_path)
 
+        # Se o SSD SATA local estiver montado, espelha para /mnt/ssd_1/mark ai/checkpoints
+        if self.local_ssd_dir and os.path.exists(self.local_ssd_dir):
+            try:
+                import shutil
+                local_path = os.path.join(self.local_ssd_dir, filename)
+                shutil.copyfile(ckpt_path, local_path)
+            except Exception:
+                pass
+
         all_ckpts = sorted(glob.glob(os.path.join(self.checkpoint_dir, "mark_0_1_step_*.pt")))
         if len(all_ckpts) > self.keep_last_n:
             for old_ckpt in all_ckpts[: -self.keep_last_n]:
@@ -148,6 +179,16 @@ class GoogleDriveCheckpointManager:
                     os.remove(old_ckpt)
                 except OSError:
                     pass
+
+        if self.local_ssd_dir and os.path.exists(self.local_ssd_dir):
+            local_ckpts = sorted(glob.glob(os.path.join(self.local_ssd_dir, "mark_0_1_step_*.pt")))
+            if len(local_ckpts) > self.keep_last_n:
+                for old_local in local_ckpts[: -self.keep_last_n]:
+                    try:
+                        os.remove(old_local)
+                    except OSError:
+                        pass
+
         return ckpt_path
 
     def load_latest(
