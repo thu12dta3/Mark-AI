@@ -59,7 +59,7 @@ def iter_repository_files(data_dirs: List[str]) -> Iterator[str]:
 def build_mark_bpe_tokenizer(
     corpus_dirs: Optional[List[str]] = None,
     vocab_size: int = 49152,
-    save_dir: str = "data/tokenizer",
+    save_dir: Optional[str] = None,
 ) -> Tokenizer:
     """
     Constrói e treina um tokenizador Byte-Level BPE:
@@ -67,8 +67,16 @@ def build_mark_bpe_tokenizer(
     - Separa dígitos individualmente (0-9) para melhorar aritmética e endereçamento de memória.
     - Registra as tags <think>, </think>, [RETRIEVE], [EVALUATE], [ACCEPT], [REJECT] nos IDs 0..13.
     """
+    repo_root = Path(__file__).resolve().parent.parent.parent
     if corpus_dirs is None:
-        corpus_dirs = ["data/raw", "src"]
+        corpus_dirs = [str(repo_root / "data" / "raw"), str(repo_root / "src")]
+    else:
+        corpus_dirs = [str((repo_root / d).resolve() if not os.path.isabs(d) else d) for d in corpus_dirs]
+
+    if save_dir is None:
+        save_dir = str(repo_root / "data" / "tokenizer")
+    else:
+        save_dir = str((repo_root / save_dir).resolve() if not os.path.isabs(save_dir) else save_dir)
 
     tokenizer = Tokenizer(models.BPE(byte_fallback=True))
 
@@ -121,13 +129,18 @@ def build_mark_bpe_tokenizer(
     return tokenizer
 
 
-def generate_synthetic_reasoning_dataset(output_jsonl: str = "data/synthetic_dpo/mark_reasoning_train.jsonl"):
+def generate_synthetic_reasoning_dataset(output_jsonl: Optional[str] = None) -> str:
     """
     Pipeline de preparação de dataset (`dataset_prep`) para Destilação de Raciocínio e Self-RAG
     focado em Rust, Python, Kotlin, concorrência e protocolo MCP.
     Formato JSONL compatível com SFT + DPO (`prompt`, `chosen`, `rejected`).
     """
-    os.makedirs(os.path.dirname(output_jsonl), exist_ok=True)
+    if output_jsonl is None:
+        repo_root = Path(__file__).resolve().parent.parent.parent
+        output_jsonl = str(repo_root / "data" / "synthetic_dpo" / "mark_reasoning_train.jsonl")
+
+    out_path = Path(output_jsonl).resolve()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     samples = [
         {
             "domain": "rust_concurrency_quic",

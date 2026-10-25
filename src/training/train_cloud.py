@@ -182,8 +182,8 @@ def get_cosine_lr(step: int, warmup_steps: int, max_steps: int, max_lr: float, m
 
 
 def train_mark_a100(
-    dataset_path: str = "data/synthetic_dpo/mark_reasoning_train.jsonl",
-    tokenizer_path: str = "data/tokenizer/mark_bpe_tokenizer.json",
+    dataset_path: Optional[str] = None,
+    tokenizer_path: Optional[str] = None,
     checkpoint_dir: str = "/content/drive/MyDrive/Mark-AI/checkpoints",
     max_steps: int = 1000,
     save_every_n_steps: int = 100,
@@ -192,6 +192,18 @@ def train_mark_a100(
     max_lr: float = 3e-4,
     use_full_3b_config: bool = True,
 ):
+    from pathlib import Path
+    repo_root = Path(__file__).resolve().parent.parent.parent
+
+    if dataset_path is None:
+        dataset_path = str(repo_root / "data" / "synthetic_dpo" / "mark_reasoning_train.jsonl")
+    elif not os.path.isabs(dataset_path):
+        dataset_path = str((repo_root / dataset_path).resolve())
+
+    if tokenizer_path is None:
+        tokenizer_path = str(repo_root / "data" / "tokenizer" / "mark_bpe_tokenizer.json")
+    elif not os.path.isabs(tokenizer_path):
+        tokenizer_path = str((repo_root / tokenizer_path).resolve())
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     use_bf16 = device.type == "cuda" and torch.cuda.is_bf16_supported()
     pt_dtype = torch.bfloat16 if use_bf16 else torch.float32
