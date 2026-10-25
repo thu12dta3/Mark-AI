@@ -230,7 +230,7 @@ def train_mark_a100(
     batch_size: int = 4,
     grad_accum_steps: int = 8,
     max_lr: float = 3e-4,
-    use_full_3b_config: bool = True,
+    model_variant: str = "engineer_1_5b",
 ):
     repo_root = Path(__file__).resolve().parent.parent.parent
 
@@ -254,7 +254,9 @@ def train_mark_a100(
 
     tokenizer = Tokenizer.from_file(tokenizer_path)
 
-    if use_full_3b_config:
+    if model_variant == "engineer_1_5b":
+        config = MarkConfig.create_engineer_1_5b(vocab_size=tokenizer.get_vocab_size())
+    elif model_variant == "3b":
         config = MarkConfig(vocab_size=max(49152, tokenizer.get_vocab_size()))
     else:
         config = MarkConfig(

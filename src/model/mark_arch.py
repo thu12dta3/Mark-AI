@@ -151,6 +151,46 @@ class MarkConfig:
 
         return total
 
+    @classmethod
+    def create_engineer_1_5b(cls, vocab_size: int = 4311) -> "MarkConfig":
+        """
+        Mark Engineer 1.5B: Configuracao de 1.50 Bilhoes de Parametros (1.4995B)
+        otimizada para Engenharia de Sistemas, AppSec P0, Concorrencia e Baixo Nivel.
+        - Dimensao Oculta: 1280
+        - Profundidade: 16 blocos fisicos (com Recursive Depth LoRA r=64 simulando 24-32 camadas logicas)
+        - Atencao: Multi-Head Latent Attention (MLA) com 16 cabecas, KV LoRA Rank 320, Q LoRA Rank 640
+        - DeepSeekMoE: 16 Especialistas Roteados + 1 Especialista Compartilhado
+        - Parametros Totais: 1.499.534.080 (~1.50B)
+        - Parametros Ativos por Token: ~315M (Padrao) a ~440M (Potencia Maxima)
+        - VRAM Estimada em 4-bit (IQ4_NL): ~1.1 GB a 1.4 GB
+        """
+        return cls(
+            vocab_size=vocab_size,
+            dim=1280,
+            n_layers=16,
+            n_heads=16,
+            n_kv_heads=4,
+            use_mla=True,
+            q_lora_rank=640,
+            kv_lora_rank=320,
+            qk_nope_head_dim=64,
+            qk_rope_head_dim=32,
+            v_head_dim=96,
+            n_dense_layers=2,
+            moe_layer_freq=1,
+            recursive_depth_loops=2,
+            intermediate_size=3840,
+            n_shared_experts=1,
+            n_routed_experts=16,
+            num_experts_per_tok=2,
+            moe_intermediate_size=1504,
+            mtp_depth=1,
+            mtp_loss_weight=0.3,
+            vision_enabled=False,
+            voice_prosody_enabled=False,
+            max_seq_len=4096,
+        )
+
 
 # Tabela Não-Linear IQ4_NL (Inspirada no llama.cpp / LM Studio kvalues_iq4nl):
 # Concentra os 16 níveis de 4-bit onde a distribuição Gaussiana/Laplaciana dos pesos e ativações é mais densa!
