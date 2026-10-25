@@ -9,7 +9,7 @@ import math
 import os
 import time
 from dataclasses import asdict
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import torch
 from torch.utils.data import Dataset, DataLoader
