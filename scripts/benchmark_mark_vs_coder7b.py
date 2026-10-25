@@ -113,6 +113,8 @@ def load_mark_engineer_model() -> Tuple[Any, Any, float]:
     # Carrega pesos treinados mais recentes
     ckpt_dir = Path("/content/Mark-AI/checkpoints")
     candidates = [
+        ckpt_dir / "mark_engineer_2_inference.pt",
+        ckpt_dir / "mark_engineer_2_final.pt",
         ckpt_dir / "mark_engineer_inference.pt",
         ckpt_dir / "mark_engineer_final.pt",
     ] + sorted(list(ckpt_dir.glob("mark_0_1_step_*.pt")), reverse=True)
@@ -175,9 +177,9 @@ def load_coder_7b_model() -> Tuple[Any, Any, float]:
 
 
 def generate_mark_response(model, tokenizer, prompt: str, max_tokens: int = 512) -> Tuple[str, float, float]:
-    """Gera resposta com o Mark Engineer 1.0 medindo tempo e vazão."""
+    """Gera resposta com o Mark Engineer medindo tempo e vazao."""
     t0 = time.time()
-    input_text = f"<|bos|>{prompt}"
+    input_text = f"<|bos|>{prompt}\n<think>\n"
     encoded = tokenizer.encode(input_text)
     input_ids = torch.tensor([encoded.ids], dtype=torch.long, device=device)
 
@@ -196,7 +198,8 @@ def generate_mark_response(model, tokenizer, prompt: str, max_tokens: int = 512)
     out_tokens = generated_ids.shape[-1] - input_ids.shape[-1]
     tok_per_sec = out_tokens / elapsed
 
-    out_text = tokenizer.decode(generated_ids[0].tolist())
+    gen_continuation = tokenizer.decode(generated_ids[0][input_ids.shape[-1]:].tolist())
+    out_text = "<think>\n" + gen_continuation
     return out_text, elapsed, tok_per_sec
 
 
