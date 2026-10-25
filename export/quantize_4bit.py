@@ -314,6 +314,8 @@ class MarkInferenceEngine:
         self.eos_id = tokenizer.token_to_id(SpecialTokens.EOS) or 2
         self.think_start_id = tokenizer.token_to_id(SpecialTokens.THINK_START) or 3
         self.retrieve_end_id = tokenizer.token_to_id(SpecialTokens.RETRIEVE_END) or 6
+        self.unknown_id = tokenizer.token_to_id(SpecialTokens.UNKNOWN) or 14
+        self.web_search_end_id = tokenizer.token_to_id(SpecialTokens.WEB_SEARCH_END) or 16
 
     @torch.inference_mode()
     def generate(
@@ -364,6 +366,7 @@ class MarkInferenceEngine:
             generated_ids.append(token_id)
             cur_ids = next_token
 
+            # 1. Intercepta Self-RAG Local ([RETRIEVE] ... [/RETRIEVE])
             if token_id == self.retrieve_end_id and retrieval_hops < self.rag.max_retrieval_hops:
                 decoded_so_far = self.tokenizer.decode(generated_ids)
                 query = self.rag.extract_retrieve_query(decoded_so_far)
@@ -373,6 +376,23 @@ class MarkInferenceEngine:
                     rag_ids = self.tokenizer.encode(rag_block).ids
                     generated_ids.extend(rag_ids)
                     cur_ids = torch.tensor([rag_ids], dtype=torch.long, device=self.device)
+
+            # 2. Intercepta o Módulo Perplexity ([UNKNOWN]: "Preciso pesquisar sobre isso." ou [/WEB_SEARCH])
+            elif (
+                token_id in (self.unknown_id, self.web_search_end_id)
+                and retrieval_hops < self.rag.max_retrieval_hops
+            ):
+                decoded_so_far = self.tokenizer.decode(generated_ids)
+                web_query = self.rag.extract_web_search_query(decoded_so_far, fallback_prompt=prompt)
+                if web_query:
+                    retrieval_hops += 1
+                    honest_notice = ""
+                    if token_id == self.unknown_id and "Preciso pesquisar sobre isso" not in decoded_so_far:
+                        honest_notice = ': "Preciso pesquisar sobre isso." '
+                    web_block = honest_notice + self.rag.format_web_search_injection(web_query)
+                    web_ids = self.tokenizer.encode(web_block).ids
+                    generated_ids.extend(web_ids)
+                    cur_ids = torch.tensor([web_ids], dtype=torch.long, device=self.device)
 
         return self.tokenizer.decode(generated_ids)
 

@@ -376,6 +376,42 @@ def generate_synthetic_reasoning_dataset(output_jsonl: Optional[str] = None) -> 
             ),
             "rejected": "O circuito parece ter um transistor com defeito.",
         },
+        {
+            "domain": "perplexity_web_search_honest_unknown_2026",
+            "language": "pt",
+            "prompt": "Quais são as vulnerabilidades CVE recém-descobertas em outubro de 2026 para servidores HTTP/3 baseados em QUIC e qual a versão exata corrigida da crate `quinn` no crates.io hoje?",
+            "chosen": (
+                "<think>\n"
+                "1. Verificação Epistêmica (Regra de Ouro Anti-Alucinação): A pergunta exige dados factuais em tempo real de outubro de 2026 (boletins CVE recentes e a versão exata publicada hoje no `crates.io`).\n"
+                "2. Esses fatos estão fora dos pesos estáticos do repositório local. Jamais devo adivinhar números de CVE ou versões de pacotes.\n"
+                "3. Vou emitir o Token de Falha Honesta `[UNKNOWN]: \"Preciso pesquisar sobre isso.\"` seguido da busca web estruturada `[WEB_SEARCH]` para raspar os resultados atualizados e responder com fontes citadas estilo Perplexity.\n"
+                "</think>\n"
+                "[UNKNOWN]: \"Preciso pesquisar sobre isso.\"\n"
+                "[WEB_SEARCH] quinn rust crate latest version security advisory CVE HTTP/3 QUIC October 2026 [/WEB_SEARCH]\n"
+                "<|rag_context|>\n"
+                "[PERPLEXITY_WEB_SEARCH_RESULTS query=\"quinn rust crate latest version security advisory CVE HTTP/3 QUIC October 2026\"]\n"
+                "<|citation|>[1]<|/citation|> Title: RustSec Advisory Database — Quinn QUIC Connection Exhaustion Patch | URL: https://rustsec.org/advisories/RUSTSEC-2026-0042.html | Freshness: 2026-CURRENT\n"
+                "Snippet: Fixed in quinn 0.11.8 and quinn-proto 0.11.9. Mitigates specially crafted Initial QUIC frames causing state table exhaustion.\n\n"
+                "<|citation|>[2]<|/citation|> Title: Crates.io — quinn (Async-friendly QUIC implementation in Rust) | URL: https://crates.io/crates/quinn | Freshness: 2026-CURRENT\n"
+                "Snippet: Latest stable release: 0.11.8 (Published October 2026). Enforces strict CID rate limiting and datagram buffer bounds.\n"
+                "<|/rag_context|>\n"
+                "[EVALUATE] [ACCEPT]\n"
+                "<think>\n"
+                "4. Síntese Verificada com Fontes: Os resultados raspados da web confirmam que o boletim `RUSTSEC-2026-0042` foi corrigido na versão `quinn 0.11.8` (`quinn-proto 0.11.9`). Vou sintetizar a resposta citando `[1]` e `[2]`.\n"
+                "</think>\n"
+                "De acordo com os boletins de segurança atualizados de outubro de 2026, a mitigação contra exaustão de tabela de estados em pacotes QUIC Initial (`RUSTSEC-2026-0042`) foi implementada na versão **`quinn 0.11.8`** (com `quinn-proto 0.11.9`) <|citation|>[1]<|/citation|> <|citation|>[2]<|/citation|>.\n\n"
+                "Atualize seu `Cargo.toml` para garantir os limites estritos de *Connection ID (CID)*:\n\n"
+                "```toml\n"
+                "[dependencies]\n"
+                "quinn = \"0.11.8\"\n"
+                "quinn-proto = \"0.11.9\"\n"
+                "```\n\n"
+                "**Fontes verificadas:**\n"
+                "- [1] RustSec Advisory Database (`RUSTSEC-2026-0042`)\n"
+                "- [2] Crates.io — `quinn v0.11.8` Release Notes (Outubro 2026)"
+            ),
+            "rejected": "Não houve nenhuma vulnerabilidade recente em 2026 e a versão mais recente é a 0.10.0.",
+        },
     ]
 
     with open(out_path, "w", encoding="utf-8") as f:

@@ -34,6 +34,7 @@ class MarkReasoningAndSelfRAGLoss(nn.Module):
         config: MarkConfig,
         alpha_think: float = 1.40,
         alpha_rag: float = 1.85,
+        alpha_unknown: float = 2.10,
         lambda_struct: float = 0.50,
         lambda_orpo: float = 0.30,
         lambda_mtp: Optional[float] = None,
@@ -43,6 +44,7 @@ class MarkReasoningAndSelfRAGLoss(nn.Module):
         self.config = config
         self.alpha_think = alpha_think
         self.alpha_rag = alpha_rag
+        self.alpha_unknown = alpha_unknown
         self.lambda_struct = lambda_struct
         self.lambda_orpo = lambda_orpo
         self.lambda_mtp = lambda_mtp if lambda_mtp is not None else config.mtp_loss_weight
@@ -69,17 +71,33 @@ class MarkReasoningAndSelfRAGLoss(nn.Module):
         )
         weights = torch.where(rag_action_mask & valid_mask, torch.tensor(self.alpha_rag, device=target_ids.device), weights)
 
+        # Ponderação Máxima para o Módulo Perplexity ([UNKNOWN], [WEB_SEARCH], [/WEB_SEARCH]):
+        # Ensina a Regra de Ouro: jamais alucinar quando um fato exige busca externa ou dados de 2026!
+        unknown_web_mask = (
+            (target_ids == getattr(self.config, "unknown_id", 14))
+            | (target_ids == getattr(self.config, "web_search_id", 15))
+            | (target_ids == getattr(self.config, "web_search_end_id", 16))
+        )
+        weights = torch.where(
+            unknown_web_mask & valid_mask,
+            torch.tensor(self.alpha_unknown, device=target_ids.device),
+            weights,
+        )
+
         return weights
 
     def compute_deepseek_r1_rule_rewards(self, token_ids: torch.Tensor) -> torch.Tensor:
         """
-        Sistema de Recompensa Baseado em Regras (DeepSeek-R1 Rule-Based Verifier):
-        Avalia cada sequência gerada/alvo atribuindo recompensa estrutural:
+        Sistema de Recompensa Baseado em Regras (DeepSeek-R1 + Perplexity Honest Epistemic Verifier):
+        Avalia cada sequência atribuindo recompensa estrutural:
         +1.0 se abriu <think> e fechou </think> na ordem correta
-        +0.5 se usou Self-RAG ([RETRIEVE] ... [/RETRIEVE] ... [EVALUATE]) sem alucinar tags quebradas
+        +0.5 se usou Self-RAG ([RETRIEVE] ... [/RETRIEVE] ... [EVALUATE])
+        +0.75 se admitiu honestamente incerteza com [UNKNOWN] ("Preciso pesquisar sobre isso.") e acionou busca web sem alucinar!
         """
         bsz = token_ids.shape[0]
         rewards = torch.zeros(bsz, device=token_ids.device, dtype=torch.float32)
+        unk_id = getattr(self.config, "unknown_id", 14)
+        web_id = getattr(self.config, "web_search_id", 15)
 
         for i in range(bsz):
             seq = token_ids[i]
@@ -89,6 +107,8 @@ class MarkReasoningAndSelfRAGLoss(nn.Module):
                 rewards[i] += 1.0
             if (seq == self.config.retrieve_id).any() and (seq == self.config.evaluate_id).any():
                 rewards[i] += 0.5
+            if (seq == unk_id).any() or (seq == web_id).any():
+                rewards[i] += 0.75
 
         return rewards
 

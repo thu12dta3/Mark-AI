@@ -78,7 +78,7 @@ class MarkConfig:
     dropout: float = 0.0
     tie_word_embeddings: bool = True
 
-    # IDs de Tokens Especiais de Controle (Ecossistema MARK + DeepSeek-R1 + Multimodal + Voz)
+    # IDs de Tokens Especiais de Controle (Ecossistema MARK + DeepSeek-R1 + Perplexity Web Search + Multimodal + Voz)
     pad_token_id: int = 0
     bos_token_id: int = 1
     eos_token_id: int = 2
@@ -93,6 +93,9 @@ class MarkConfig:
     vision_patch_id: int = 11              # <|vision_patch|>
     vision_end_id: int = 12                # <|vision_end|>
     voice_stream_id: int = 13              # <|voice_stream|>
+    unknown_id: int = 14                   # [UNKNOWN] (Token de Falha Honesta -> Aciona Agente Perplexity Web Search!)
+    web_search_id: int = 15                # [WEB_SEARCH]
+    web_search_end_id: int = 16            # [/WEB_SEARCH]
 
     @property
     def head_dim(self) -> int:
