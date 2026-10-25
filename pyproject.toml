@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mark-ai"
+version = "1.0.0"
+description = "Mark AI: High-Density Neural Architecture with MLA, DeepSeekMoE, MTP, and IQ4_NL Quantization"
+readme = "README.md"
+authors = [{ name = "thu12dta3" }]
+license = { text = "AGPL-3.0" }
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.2.0",
+    "tokenizers>=0.19.0",
+    "accelerate>=0.30.0"
+]
+
+[project.scripts]
+mark-inference = "inference:main"
+mark-download-302m = "download_302m:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

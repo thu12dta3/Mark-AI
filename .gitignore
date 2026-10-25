@@ -1,8 +1,57 @@
-.venv/
+# Python Bytecode & Environments
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.venv/
+env/
+venv/
+
+# Sensitive Architecture, Training Pipelines & Internal Formulations
+src/training/
+scripts/prepare_*.py
+train_reasoning.py
+tokenizer_setup.py
+
+# Sensitive Datasets, Raw Code & Prompts
+data/synthetic_dpo/
+data/raw/
+*.jsonl
+*.rs
+*.parquet
+*.arrow
+
+# Weights, Checkpoints & Quantized Blobs (Stored on Cloud A100 / SATA SSD)
 checkpoints/
 *.pt
+*.bin
+*.safetensors
 *.gguf
-*.jsonl
+*.iq4_nl
+
+# OS & Editor Artifacts
 .DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+.colab/
+*.log
