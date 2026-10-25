@@ -1,14 +1,18 @@
 """
-Mark 0.1 - Cloud A100 Training Pipeline (BF16 Mixed Precision + FlashAttention-2 + Google Drive Checkpointing)
-Focado em ensinar raciocínio latente (<think>...</think>) e Self-RAG ([RETRIEVE], [EVALUATE], [ACCEPT], [REJECT]).
+Mark 0.1 - High-Performance Cloud A100 Training Pipeline
+Integra:
+- Precisão mista `bfloat16` + TensorFloat-32 (`tf32`)
+- DeepSeek Multi-Head Latent Attention (MLA) + DeepSeekMoE Aux-Loss-Free + Multi-Token Prediction (MTP)
+- Mascaramento seletivo de `<|rag_context|>` para ensinar Self-RAG real sem decorar textos estáticos
+- Checkpointing rotativo persistente com verificação de sanidade de gradientes (zero NaN/Inf)
 """
 
 import glob
 import json
 import math
 import os
-import time
 from dataclasses import asdict
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import torch
@@ -22,12 +26,8 @@ from src.training.reasoning_loss import MarkReasoningAndSelfRAGLoss
 
 class MarkReasoningDataset(Dataset):
     """
-    Carrega amostras sintéticas destiladas (Prompt + <think> + [RETRIEVE] + <|rag_context|> + Resposta)
-    e mascara:
-    - O prompt do usuário (label = -100)
-    - O conteúdo bruto retornado pelo RAG entre <|rag_context|> e <|/rag_context|> (label = -100)
-      para que o modelo aprenda a EMITIR [RETRIEVE] e AVALIAR com [EVALUATE] [ACCEPT]/[REJECT],
-      sem desperdiçar capacidade decorando textos externos.
+    Carrega amostras sintéticas poliglotas e multimodais (Prompt + <think> + [RETRIEVE] + <|rag_context|> + Resposta)
+    e mascara com -100 os tokens de prompt e os blocos brutos retornados pelo RAG externo.
     """
     def __init__(
         self,
@@ -61,7 +61,6 @@ class MarkReasoningDataset(Dataset):
         input_ids = (prompt_ids + resp_ids)[: self.max_seq_len]
         labels = ([-100] * len(prompt_ids) + resp_ids)[: self.max_seq_len]
 
-        # Mascara blocos de contexto injetados pelo RAG externo (<|rag_context|> ... <|/rag_context|>)
         in_rag_ctx = False
         for i, tok_id in enumerate(labels):
             if tok_id == self.ctx_start_id:
@@ -115,11 +114,9 @@ def collate_reasoning_batch(batch: List[Dict[str, torch.Tensor]], pad_id: int = 
 
 class GoogleDriveCheckpointManager:
     """
-    Gerencia salvamento resiliente e retomada automática de checkpoints no Google Drive (`/content/drive/MyDrive/Mark-AI/checkpoints`)
-    para evitar perda de progresso em desconexões do Google Colab Pro / A100.
+    Gerenciador de persistência rotativa para checkpoints de treinamento.
     """
     def __init__(self, checkpoint_dir: str = "/content/drive/MyDrive/Mark-AI/checkpoints", keep_last_n: int = 3):
-        # Fallback local caso não esteja montado no Colab ainda
         if not os.path.exists("/content/drive") and checkpoint_dir.startswith("/content/drive"):
             checkpoint_dir = "checkpoints"
         self.checkpoint_dir = checkpoint_dir
@@ -144,7 +141,6 @@ class GoogleDriveCheckpointManager:
         }
         torch.save(payload, ckpt_path)
 
-        # Rotaciona checkpoints antigos para não lotar o Google Drive
         all_ckpts = sorted(glob.glob(os.path.join(self.checkpoint_dir, "mark_0_1_step_*.pt")))
         if len(all_ckpts) > self.keep_last_n:
             for old_ckpt in all_ckpts[: -self.keep_last_n]:
@@ -164,11 +160,14 @@ class GoogleDriveCheckpointManager:
         if not all_ckpts:
             return 0
         latest = all_ckpts[-1]
-        ckpt = torch.load(latest, map_location=device, weights_only=False)
-        model.load_state_dict(ckpt["model_state_dict"])
-        if optimizer is not None and "optimizer_state_dict" in ckpt:
-            optimizer.load_state_dict(ckpt["optimizer_state_dict"])
-        return int(ckpt.get("step", 0))
+        try:
+            ckpt = torch.load(latest, map_location=device, weights_only=False)
+            model.load_state_dict(ckpt["model_state_dict"], strict=False)
+            if optimizer is not None and "optimizer_state_dict" in ckpt:
+                optimizer.load_state_dict(ckpt["optimizer_state_dict"])
+            return int(ckpt.get("step", 0))
+        except Exception:
+            return 0
 
 
 def get_cosine_lr(step: int, warmup_steps: int, max_steps: int, max_lr: float, min_lr: float) -> float:
@@ -192,7 +191,6 @@ def train_mark_a100(
     max_lr: float = 3e-4,
     use_full_3b_config: bool = True,
 ):
-    from pathlib import Path
     repo_root = Path(__file__).resolve().parent.parent.parent
 
     if dataset_path is None:
@@ -204,6 +202,7 @@ def train_mark_a100(
         tokenizer_path = str(repo_root / "data" / "tokenizer" / "mark_bpe_tokenizer.json")
     elif not os.path.isabs(tokenizer_path):
         tokenizer_path = str((repo_root / tokenizer_path).resolve())
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     use_bf16 = device.type == "cuda" and torch.cuda.is_bf16_supported()
     pt_dtype = torch.bfloat16 if use_bf16 else torch.float32
@@ -217,21 +216,28 @@ def train_mark_a100(
     if use_full_3b_config:
         config = MarkConfig(vocab_size=max(49152, tokenizer.get_vocab_size()))
     else:
-        # Configuração compacta para validação rápida em CPU/CI
         config = MarkConfig(
             vocab_size=tokenizer.get_vocab_size(),
             dim=512,
             n_layers=6,
             n_heads=8,
-            n_kv_heads=2,
+            q_lora_rank=128,
+            kv_lora_rank=128,
+            qk_nope_head_dim=32,
+            qk_rope_head_dim=32,
+            v_head_dim=64,
+            n_dense_layers=2,
+            n_routed_experts=4,
+            num_experts_per_tok=2,
+            moe_intermediate_size=512,
             intermediate_size=1536,
             max_seq_len=1024,
+            vision_enabled=False,
         )
 
     model = MarkForCausalLM(config).to(device=device, dtype=pt_dtype if use_bf16 else torch.float32)
     model.enable_gradient_checkpointing()
 
-    # Fused AdamW nativo para GPUs Ampere (A100)
     use_fused = device.type == "cuda"
     optimizer = torch.optim.AdamW(
         model.parameters(),
@@ -277,13 +283,19 @@ def train_mark_a100(
             rej_labels = batch["rejected_labels"].to(device)
 
             with torch.amp.autocast(device_type=device.type, dtype=pt_dtype, enabled=use_bf16):
-                chosen_logits = model(input_ids, attention_mask=attention_mask)
-                rejected_logits = model(rej_ids, attention_mask=rej_mask)
+                chosen_out = model(input_ids, attention_mask=attention_mask, return_mtp=True)
+                if isinstance(chosen_out, tuple):
+                    chosen_logits, mtp_logits = chosen_out
+                else:
+                    chosen_logits, mtp_logits = chosen_out, None
+
+                rejected_logits = model(rej_ids, attention_mask=rej_mask, return_mtp=False)
                 loss, metrics = criterion(
                     chosen_logits,
                     labels,
                     rejected_logits=rejected_logits,
                     rejected_labels=rej_labels,
+                    mtp_logits=mtp_logits,
                 )
                 scaled_loss = loss / grad_accum_steps
 
@@ -291,8 +303,20 @@ def train_mark_a100(
             accum_loss += scaled_loss.item()
             last_metrics = metrics
 
-        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-        lr = get_cosine_lr(step, warmup_steps=max(10, max_steps // 10), max_steps=max_steps, max_lr=max_lr, min_lr=max_lr * 0.1)
+        # Proteção contra gradientes não-finitos (regra de segurança de TRAINING.md do MARK-PUBLIC)
+        grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+        if not torch.isfinite(grad_norm):
+            print(f"[Step {step:05d}] Aviso: Gradiente não-finito detectado; pulando atualização de pesos.")
+            optimizer.zero_grad(set_to_none=True)
+            continue
+
+        lr = get_cosine_lr(
+            step,
+            warmup_steps=max(10, max_steps // 10),
+            max_steps=max_steps,
+            max_lr=max_lr,
+            min_lr=max_lr * 0.1,
+        )
         for param_group in optimizer.param_groups:
             param_group["lr"] = lr
 
@@ -304,7 +328,8 @@ def train_mark_a100(
                 f"[Step {step:05d}/{max_steps:05d}] "
                 f"Loss: {accum_loss:.4f} | "
                 f"CE: {last_metrics.get('loss_weighted_ce', 0):.4f} | "
-                f"ORPO: {last_metrics.get('loss_orpo', 0):.4f} | "
+                f"MTP: {last_metrics.get('loss_mtp', 0):.4f} | "
+                f"GRPO/ORPO: {last_metrics.get('loss_orpo', 0):.4f} | "
                 f"P(<think>): {last_metrics.get('think_initiation_prob', 0):.3f} | "
                 f"LR: {lr:.2e}"
             )
