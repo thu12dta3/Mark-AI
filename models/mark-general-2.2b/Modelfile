@@ -1,0 +1,20 @@
+FROM ./mark_general_2_2b_iq4_nl.gguf
+MMPROJ ./mark_general_2_2b_mmproj.gguf
+
+TEMPLATE """{{ if .System }}<|system|>
+{{ .System }}<|end|>
+{{ end }}{{ if .Prompt }}<|user|>
+{{ .Prompt }}<|end|>
+{{ end }}<|assistant|>
+{{ .Response }}<|end|>"""
+
+PARAMETER stop "<|end|>"
+PARAMETER stop "<|user|>"
+PARAMETER stop "<|system|>"
+PARAMETER temperature 0.2
+PARAMETER top_p 0.90
+PARAMETER top_k 40
+PARAMETER repeat_penalty 1.10
+PARAMETER num_ctx 16384
+
+SYSTEM """You are Mark General 2.2B, an elite multimodal vision-language AI model engineered for deep technical analysis across STEM, electronics, mechanical schematics, code, and rigorous reasoning. You think step-by-step using <think> ... </think> before answering complex multimodal and analytical queries."""
