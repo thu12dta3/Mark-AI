@@ -58,10 +58,25 @@ def convert_pt_to_gguf(
     writer.add_layer_norm_rms_eps(config.rms_norm_eps)
     writer.add_rope_freq_base(config.rope_theta)
 
-    # Special Tokens
+    # Special Tokens & Vocab
     writer.add_bos_token_id(config.bos_token_id)
     writer.add_eos_token_id(config.eos_token_id)
     writer.add_pad_token_id(config.pad_token_id)
+
+    tok_path = REPO_ROOT / "models" / "mark-engineer-1.5b" / "tokenizer.json"
+    if tok_path.exists():
+        with open(tok_path, "r", encoding="utf-8") as f:
+            tok_data = json.load(f)
+        vocab = tok_data.get("model", {}).get("vocab", {})
+        sorted_vocab = sorted(vocab.items(), key=lambda x: x[1])
+        tokens = [k.encode("utf-8") for k, v in sorted_vocab]
+        writer.add_tokenizer_model("gpt2")
+        writer.add_token_list(tokens)
+        merges = tok_data.get("model", {}).get("merges", [])
+        formatted_merges = [" ".join(m).encode("utf-8") if isinstance(m, list) else m.encode("utf-8") for m in merges]
+        writer.add_token_merges(formatted_merges)
+        writer.add_token_scores([0.0] * len(tokens))
+        writer.add_token_types([1] * len(tokens))
 
     # Chat Template for LM Studio
     chat_template = (
