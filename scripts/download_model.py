@@ -5,6 +5,8 @@ Mark AI - Model Download Utility
 Official utility to retrieve converged weights for Mark AI model checkpoints.
 
 Usage:
+    python scripts/download_model.py --model engineer-1.5b
+    python scripts/download_model.py --model general-1.5b
     python scripts/download_model.py --model 302m
     python scripts/download_model.py --dest ./checkpoints
 
@@ -23,31 +25,39 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from src.model.mark_arch import MarkConfig, MarkModel
-from export.quantize_4bit import quantize_mark_model_nf4
-
-
-DEFAULT_METADATA = {
-    "model_name": "Mark Engineer 300M (302M)",
-    "version": "1.0.0",
-    "architecture": "DeepSeek-V3 MLA + DeepSeekMoE + MTP",
-    "total_parameters": 302019848,
-    "active_parameters_per_token": "110M (default) to 165M (top-4)",
-    "hidden_dim": 1024,
-    "num_layers": 8,
-    "attention_heads": 16,
-    "kv_lora_rank": 256,
-    "routed_experts": 16,
-    "shared_experts": 1,
-    "formats": {
-        "iq4_nl": {
-            "filename": "mark_engineer_302m_iq4_nl.pt",
-            "url": "https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-302m/mark_engineer_302m_iq4_nl.pt",
-            "size_mb": 162.99,
-            "vram_mb": 350.0,
-            "sha256": "daf05dd0dab4fc90f620d959cb6e5731c49b3f3c4ddce0ff28765e0751075fd9",
-            "description": "Converged checkpoint in native non-linear 4-bit quantization (163 MB)."
-        }
+CATALOG = {
+    "302m": {
+        "model_name": "Mark Engineer 300M (302M)",
+        "version": "1.0.0",
+        "total_parameters": 302019848,
+        "filename": "mark_engineer_302m_iq4_nl.gguf",
+        "url": "https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-302m/mark_engineer_302m_iq4_nl.gguf",
+        "size_mb": 576.07,
+        "vram_mb": 350.0,
+        "sha256": "070657c1a6910a6f770a871ed73e7bb529bf6eb2183e4c4bb816fa8a7864f128",
+        "description": "Mark Engineer 302M in GGUF format for LM Studio and Ollama."
+    },
+    "engineer-1.5b": {
+        "model_name": "Mark Engineer 1.5B (Conversational & Systems)",
+        "version": "1.0.0",
+        "total_parameters": 1501680656,
+        "filename": "mark_engineer_1_5b_iq4_nl.gguf",
+        "url": "https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-engineer-1.5b/mark_engineer_1_5b_iq4_nl.gguf",
+        "size_mb": 823.84,
+        "vram_mb": 1250.0,
+        "sha256": "b89e7c51480f27918ca193f40e325141ef31174092b774e1d9361be92d472280",
+        "description": "Mark Engineer 1.5B in GGUF format for LM Studio and Ollama."
+    },
+    "general-1.5b": {
+        "model_name": "Mark General 1.5B (General Knowledge & STEM)",
+        "version": "1.0.0",
+        "total_parameters": 1501680656,
+        "filename": "mark_general_1_5b_iq4_nl.gguf",
+        "url": "https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-general-1.5b/mark_general_1_5b_iq4_nl.gguf",
+        "size_mb": 823.84,
+        "vram_mb": 1250.0,
+        "sha256": "43cae74164b81c4e97666249ab1a0f90e66c75bc6e9cf94cfafbc8e37d579220",
+        "description": "Mark General 1.5B in GGUF format for LM Studio and Ollama."
     }
 }
 
@@ -61,7 +71,6 @@ def compute_sha256(filepath: Path) -> str:
 
 
 def resolve_local_storage(filename: str) -> Path | None:
-    """Check if the weight file already exists on secondary SATA SSD or local directories."""
     candidates = [
         Path(f"/mnt/ssd_1/mark ai/checkpoints/{filename}"),
         Path(f"/mnt/ssd_1/mark ai/checkpoints/300m_backup/{filename}"),
@@ -92,14 +101,54 @@ def download_with_progress(url: str, dest_path: Path):
     print("\n[Download] Finished successfully.")
 
 
+def download_single_model(model_key: str, dest_dir: Path):
+    if model_key not in CATALOG:
+        print(f"[Error] Unknown model key: {model_key}. Available: {list(CATALOG.keys())}")
+        return
+
+    info = CATALOG[model_key]
+    target_filename = info["filename"]
+    target_path = dest_dir / target_filename
+    expected_sha = info["sha256"]
+    url = info["url"]
+
+    print(f"\n=== [Downloading: {info['model_name']}] ===")
+    print(f"[Target File] {target_path.resolve()}")
+    print(f"[Expected Size] ~{info['size_mb']:.1f} MB")
+
+    if target_path.exists() and target_path.stat().st_size > 1024 * 1024:
+        current_sha = compute_sha256(target_path)
+        if current_sha == expected_sha:
+            size_mb = target_path.stat().st_size / (1024 * 1024)
+            print(f"[Mark AI] Verified and present: {target_path} ({size_mb:.2f} MB)")
+            return
+
+    local_source = resolve_local_storage(target_filename)
+    if local_source is not None and local_source.resolve() != target_path.resolve():
+        print(f"[Mark AI] Found in local storage: {local_source}")
+        shutil.copy2(local_source, target_path)
+        print(f"[Mark AI] Copied to {target_path} ({target_path.stat().st_size / (1024*1024):.2f} MB).")
+    else:
+        try:
+            download_with_progress(url, target_path)
+        except Exception as e:
+            print(f"[Download Error] {e}")
+            return
+
+    current_sha = compute_sha256(target_path)
+    size_mb = target_path.stat().st_size / (1024 * 1024)
+    print(f"[Verification] File: {target_filename} ({size_mb:.2f} MB)")
+    print(f"[SHA256] {current_sha}")
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Download trained checkpoint for Mark AI models.")
+    parser = argparse.ArgumentParser(description="Download trained checkpoints for Mark AI models.")
     parser.add_argument(
         "--model",
         type=str,
-        default="302m",
-        choices=["302m", "1.5b", "general-1.5b"],
-        help="Model checkpoint variant to download (default: 302m)."
+        default="engineer-1.5b",
+        choices=["302m", "1.5b", "engineer-1.5b", "general-1.5b", "all"],
+        help="Model checkpoint variant to download (default: engineer-1.5b)."
     )
     parser.add_argument(
         "--dest",
@@ -112,56 +161,15 @@ def main():
     dest_dir = Path(args.dest)
     dest_dir.mkdir(parents=True, exist_ok=True)
 
-    target_info = DEFAULT_METADATA["formats"]["iq4_nl"]
-    target_filename = target_info["filename"]
-    target_path = dest_dir / target_filename
-    expected_sha = target_info["sha256"]
-    url = target_info["url"]
-
-    print("=== [Mark AI: Checkpoint Download Utility] ===")
-    print(f"[Model] {args.model}")
-    print(f"[Destination] {target_path.resolve()}")
-
-    if target_path.exists() and target_path.stat().st_size > 1024 * 1024:
-        current_sha = compute_sha256(target_path)
-        if current_sha == expected_sha:
-            size_mb = target_path.stat().st_size / (1024 * 1024)
-            print(f"[Mark AI] Checkpoint already verified and present: {target_path} ({size_mb:.2f} MB)")
-            print(f"[Integrity SHA256] {current_sha} (OK)")
-            return
-
-    # 1. Check local secondary SATA SSD cache
-    local_source = resolve_local_storage(target_filename)
-    if local_source is not None and local_source.resolve() != target_path.resolve():
-        print(f"[Mark AI] Found in local storage: {local_source}")
-        shutil.copy2(local_source, target_path)
-        print(f"[Mark AI] Copied to {target_path} ({target_path.stat().st_size / (1024*1024):.2f} MB).")
-    else:
-        # 2. Direct HTTPS download from official GitHub release asset
-        try:
-            download_with_progress(url, target_path)
-        except Exception as e:
-            print(f"[Download Error] {e}")
-            sys.exit(1)
-
-    # Verification
-    current_sha = compute_sha256(target_path)
-    size_mb = target_path.stat().st_size / (1024 * 1024)
-    print(f"\n[Final Verification] File: {target_filename} ({size_mb:.2f} MB)")
-    print(f"[SHA256] {current_sha}")
-    if current_sha == expected_sha:
-        print("[Integrity Status] SHA256 VALIDATED SUCCESSFULLY (100% matched to production release).")
-    else:
-        print("[Integrity Warning] Checksum mismatch against official release.")
-
-    # Save metadata
-    meta_path = dest_dir / "mark_engineer_300m_metadata.json"
-    with open(meta_path, "w", encoding="utf-8") as f:
-        json.dump(DEFAULT_METADATA, f, indent=2)
-
-    print("\n=== [Model Ready for Inference] ===")
-    print("Run inference with:")
-    print("  python scripts/inference.py --model 302m --prompt \"Write a concurrent lock-free ring buffer in C++20.\"")
+    if args.model in ("1.5b", "engineer-1.5b"):
+        download_single_model("engineer-1.5b", dest_dir)
+    elif args.model == "general-1.5b":
+        download_single_model("general-1.5b", dest_dir)
+    elif args.model == "302m":
+        download_single_model("302m", dest_dir)
+    elif args.model == "all":
+        for k in CATALOG.keys():
+            download_single_model(k, dest_dir)
 
 
 if __name__ == "__main__":

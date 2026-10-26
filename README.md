@@ -16,46 +16,68 @@
 
 ## Model Hierarchy
 
-| Variant | Total Parameters | Active Params / Token | Target & Purpose | Disk (IQ4_NL) | Local VRAM |
-| :--- | :---: | :---: | :--- | :---: | :---: |
-| **Mark Engineer 300M (302M)** | **302.02M** | **~110M - 165M** | Preserved ultra-lightweight edge production checkpoint. | **163 MB** | **~350 MB** |
-| **Mark Engineer 1.5B** | **1.502B** | **~315M - 440M** | High-capacity systems engineering, AppSec P0, low-level OS & concurrency. | **820 MB** | **~1.25 GB** |
-| **Mark General 1.5B** | **1.502B** | **~315M - 440M** | Omniscient reasoning across 10 official cognition domains, STEM & Self-RAG. | **820 MB** | **~1.25 GB** |
-| **Mark Primal Base** | **~2.98B** | **~2.35B** | Multimodal foundation base with vision encoder and acoustic streaming. | **1.62 GB** | **~2.45 GB** |
+| Variant | Total Parameters | Active Params / Token | Target & Purpose | Disk (IQ4_NL) | Local VRAM (RTX 2060S) | Download Link |
+| :--- | :---: | :---: | :--- | :---: | :---: | :--- |
+| **Mark Engineer 1.5B** | **1.502B** | **~315M FLOPs** | Systems engineering, eBPF, KMDF, Tokio & Senior Tech Lead dialogue. | **823 MB** | **~1.25 GB** | [Release Assets](https://github.com/thu12dta3/Mark-AI/releases/tag/v1.0.0-engineer-1.5b) |
+| **Mark General 1.5B** | **1.502B** | **~315M FLOPs** | Preserved baseline: 10 Cognition Domains, STEM & Epistemic Self-RAG. | **823 MB** | **~1.25 GB** | [Release Assets](https://github.com/thu12dta3/Mark-AI/releases/tag/v1.0.0-general-1.5b) |
+| **Mark Engineer 300M (302M)** | **302.02M** | **~110M FLOPs** | Preserved ultralight edge production checkpoint. | **163 MB** | **~350 MB** | [Release Assets](https://github.com/thu12dta3/Mark-AI/releases/tag/v1.0.0-302m) |
+| **Mark General 2.2B-VL** | **2.224B** | **~354M FLOPs** | Next-gen multimodal vision: AnyRes 2048x2048, 2D-RoPE & PixelShuffle 2x2. | **1.18 GB** | **~1.85 GB** | [`models/mark-general-2.2b`](./models/mark-general-2.2b/) |
 
 ---
 
-## Quickstart: Mark Engineer 300M (302M)
+## 1-Click Plug-and-Play Downloads (LM Studio & Ollama)
 
-The 302M trained model is ready for 1-click download as a single file (163 MB IQ4_NL), identical to downloading from Hugging Face:
+All models are packaged for single-file download and local execution without internet dependency:
 
-### 1. LM Studio & Ollama (Plug-and-Play GGUF)
+### 1. Mark Engineer 1.5B (Senior Systems & Natural Dialogue)
 
 ```bash
-# Direct download of the compiled GGUF file into LM Studio models directory (576 MB)
+# 1. Download compiled GGUF directly to your LM Studio models directory:
+mkdir -p ~/.lmstudio/models/Mark-AI/mark-engineer-1.5b
+curl -L -o ~/.lmstudio/models/Mark-AI/mark-engineer-1.5b/mark_engineer_1_5b.gguf \
+  https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-engineer-1.5b/mark_engineer_1_5b_iq4_nl.gguf
+
+# 2. Or create with Ollama:
+cd models/mark-engineer-1.5b && ollama create mark-engineer-1.5b -f Modelfile
+```
+
+### 2. Mark General 1.5B (STEM & Knowledge Preserved Baseline)
+
+```bash
+# 1. Download compiled GGUF directly to your LM Studio models directory:
+mkdir -p ~/.lmstudio/models/Mark-AI/mark-general-1.5b
+curl -L -o ~/.lmstudio/models/Mark-AI/mark-general-1.5b/mark_general_1_5b.gguf \
+  https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-general-1.5b/mark_general_1_5b_iq4_nl.gguf
+
+# 2. Or create with Ollama:
+cd models/mark-general-1.5b && ollama create mark-general-1.5b -f Modelfile
+```
+
+### 3. Mark Engineer 300M (302M Ultralight Embedded)
+
+```bash
 mkdir -p ~/.lmstudio/models/Mark-AI/mark-engineer-302m
 curl -L -o ~/.lmstudio/models/Mark-AI/mark-engineer-302m/mark_engineer_302m.gguf \
   https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-302m/mark_engineer_302m_iq4_nl.gguf
 ```
 
-### 2. PyTorch Native Single-File Download (163 MB IQ4_NL)
+### 4. Automated Python CLI Downloader
 
 ```bash
-# Option A: Direct download via curl (single unified file)
-curl -L -O https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-302m/mark_engineer_302m_iq4_nl.pt
-
-# Option B: Automated download with SHA256 integrity verification via Python
-python scripts/download_302m.py
+# Download any model with SHA256 integrity verification:
+python scripts/download_model.py --model engineer-1.5b
+python scripts/download_model.py --model general-1.5b
+python scripts/download_model.py --model 302m
 ```
 
-### 3. Run Local Inference
+### 5. Run Local Inference
 
 ```bash
 # Execute local inference with a custom prompt
 python scripts/inference.py --model 302m --prompt "Write a concurrent lock-free ring buffer in C++20."
 ```
 
-### 4. Python API Quickstart
+### 6. Python API Quickstart
 
 ```python
 from src.mark import load_model, enforce_vram_ceiling

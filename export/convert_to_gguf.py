@@ -26,10 +26,20 @@ def convert_pt_to_gguf(
     ckpt_path: Path,
     output_gguf: Path,
     model_name: str = "Mark Engineer 300M",
+    model_type: str = "302m",
 ):
     print(f"[GGUF Converter] Loading checkpoint: {ckpt_path}...")
     state_dict = torch.load(ckpt_path, map_location="cpu", weights_only=False)
-    config = MarkConfig.create_engineer_300m()
+
+    if model_type in ("1.5b", "engineer-1.5b"):
+        config = MarkConfig.create_engineer_1_5b()
+        description = "Mark Engineer 1.5B (1.502B) - MLA + DeepSeekMoE + MTP trained on A100."
+    elif model_type == "general-1.5b":
+        config = MarkConfig.create_engineer_1_5b()
+        description = "Mark General 1.5B (1.502B) - MLA + DeepSeekMoE + MTP + Self-RAG trained on A100."
+    else:
+        config = MarkConfig.create_engineer_300m()
+        description = "Mark Engineer 300M (302M) - MLA + DeepSeekMoE + MTP trained on A100."
 
     output_gguf.parent.mkdir(parents=True, exist_ok=True)
     writer = gguf.GGUFWriter(str(output_gguf), "llama")
@@ -38,7 +48,7 @@ def convert_pt_to_gguf(
     writer.add_name(model_name)
     writer.add_author("thu12dta3")
     writer.add_version("1.0.0")
-    writer.add_description("Mark Engineer 300M (302M) - MLA + DeepSeekMoE + MTP trained on A100.")
+    writer.add_description(description)
     writer.add_context_length(config.max_seq_len)
     writer.add_embedding_length(config.dim)
     writer.add_block_count(config.n_layers)
@@ -131,6 +141,35 @@ def convert_pt_to_gguf(
 
 
 if __name__ == "__main__":
-    src_pt = Path("/mnt/ssd_1/mark ai/checkpoints/mark_engineer_302m_iq4_nl.pt")
-    out_gguf = Path("/mnt/ssd_1/mark ai/checkpoints/mark_engineer_302m_iq4_nl.gguf")
-    convert_pt_to_gguf(src_pt, out_gguf)
+    import argparse
+    parser = argparse.ArgumentParser(description="Convert Mark AI checkpoints to GGUF format.")
+    parser.add_argument("--model", type=str, default="302m", choices=["302m", "1.5b", "engineer-1.5b", "general-1.5b"], help="Model variant")
+    parser.add_argument("--ckpt", type=str, default="", help="Path to source .pt checkpoint")
+    parser.add_argument("--out", type=str, default="", help="Path to output .gguf file")
+    args = parser.parse_args()
+
+    default_paths = {
+        "302m": (
+            Path("/mnt/ssd_1/mark ai/checkpoints/mark_engineer_302m_iq4_nl.pt"),
+            Path("/mnt/ssd_1/mark ai/checkpoints/mark_engineer_302m_iq4_nl.gguf"),
+            "Mark Engineer 300M"
+        ),
+        "engineer-1.5b": (
+            Path("/mnt/ssd_1/mark ai/checkpoints/mark_engineer_1_5b_iq4_nl.pt"),
+            Path("/mnt/ssd_1/mark ai/checkpoints/mark_engineer_1_5b_iq4_nl.gguf"),
+            "Mark Engineer 1.5B"
+        ),
+        "general-1.5b": (
+            Path("/mnt/ssd_1/mark ai/checkpoints/mark_general_1_5b_iq4_nl.pt"),
+            Path("/mnt/ssd_1/mark ai/checkpoints/mark_general_1_5b_iq4_nl.gguf"),
+            "Mark General 1.5B"
+        ),
+    }
+
+    m_key = "engineer-1.5b" if args.model in ("1.5b", "engineer-1.5b") else args.model
+    def_src, def_out, def_name = default_paths.get(m_key, default_paths["302m"])
+
+    src_pt = Path(args.ckpt) if args.ckpt else def_src
+    out_gguf = Path(args.out) if args.out else def_out
+
+    convert_pt_to_gguf(src_pt, out_gguf, model_name=def_name, model_type=m_key)
