@@ -11,7 +11,7 @@ This directory centralizes architectural definitions, configuration files, token
 | **Mark Engineer 300M (302M)** | **302M** | **GGUF / IQ4_NL** | **~350 MB** | **Available (Production)** | [`mark-engineer-302m/`](./mark-engineer-302m/) |
 | **Mark Engineer 1.5B** | **1.50B** | **GGUF / IQ4_NL** | **~1.25 GB** | **Available (Production)** | [`mark-engineer-1.5b/`](./mark-engineer-1.5b/) |
 | **Mark General 1.5B** | **1.50B** | **GGUF / IQ4_NL** | **~1.25 GB** | **Available (Preserved Baseline)** | [`mark-general-1.5b/`](./mark-general-1.5b/) |
-| **Mark General 2.2B-VL** | **2.22B** | **GGUF / IQ4_NL** | **~1.85 GB** | **Next-Gen Multimodal Vision** | [`mark-general-2.2b/`](./mark-general-2.2b/) |
+| **MarkVL-2.2B** | **2.22B** | **GGUF / IQ4_NL** | **~1.85 GB** | **Dense Visual Perception Specialist** | [`mark-vl-2.2b/`](./mark-vl-2.2b/) |
 
 ---
 

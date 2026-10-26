@@ -21,7 +21,7 @@
 | **Mark Engineer 1.5B** | **1.502B** | **~315M FLOPs** | Systems engineering, eBPF, KMDF, Tokio & Senior Tech Lead dialogue. | **823 MB** | **~1.25 GB** | [Release Assets](https://github.com/thu12dta3/Mark-AI/releases/tag/v1.0.0-engineer-1.5b) |
 | **Mark General 1.5B** | **1.502B** | **~315M FLOPs** | Preserved baseline: 10 Cognition Domains, STEM & Epistemic Self-RAG. | **823 MB** | **~1.25 GB** | [Release Assets](https://github.com/thu12dta3/Mark-AI/releases/tag/v1.0.0-general-1.5b) |
 | **Mark Engineer 300M (302M)** | **302.02M** | **~110M FLOPs** | Preserved ultralight edge production checkpoint. | **163 MB** | **~350 MB** | [Release Assets](https://github.com/thu12dta3/Mark-AI/releases/tag/v1.0.0-302m) |
-| **Mark General 2.2B-VL** | **2.224B** | **~354M FLOPs** | Next-gen multimodal vision: AnyRes 2048x2048, 2D-RoPE & PixelShuffle 2x2. | **1.18 GB** | **~1.85 GB** | [`models/mark-general-2.2b`](./models/mark-general-2.2b/) |
+| **MarkVL-2.2B** | **2.224B** | **~313M FLOPs** | Dense visual perception, AnyRes 2048x2048, FACS expressions & micro-OCR. | **1.18 GB** | **~1.85 GB** | [`models/mark-vl-2.2b`](./models/mark-vl-2.2b/) |
 
 ---
 
