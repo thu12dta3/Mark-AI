@@ -27,12 +27,12 @@
 
 ## Quickstart: Mark Engineer 300M (302M)
 
-The 302M trained model is ready for 1-click download as a single file (163 MB IQ4_NL), just like downloading from Hugging Face:
+The 302M trained model is ready for 1-click download as a single file (163 MB IQ4_NL), identical to downloading from Hugging Face:
 
 ### 1. LM Studio & Ollama (Plug-and-Play GGUF)
 
 ```bash
-# Download direto do arquivo GGUF para o LM Studio (576 MB)
+# Direct download of the compiled GGUF file into LM Studio models directory (576 MB)
 mkdir -p ~/.lmstudio/models/Mark-AI/mark-engineer-302m
 curl -L -o ~/.lmstudio/models/Mark-AI/mark-engineer-302m/mark_engineer_302m.gguf \
   https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-302m/mark_engineer_302m_iq4_nl.gguf
@@ -41,31 +41,31 @@ curl -L -o ~/.lmstudio/models/Mark-AI/mark-engineer-302m/mark_engineer_302m.gguf
 ### 2. PyTorch Native Single-File Download (163 MB IQ4_NL)
 
 ```bash
-# Opcao A: Download direto via curl (1 unico arquivo)
+# Option A: Direct download via curl (single unified file)
 curl -L -O https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-302m/mark_engineer_302m_iq4_nl.pt
 
-# Opcao B: Download com verificacao de integridade SHA256 via Python
+# Option B: Automated download with SHA256 integrity verification via Python
 python scripts/download_302m.py
 ```
 
 ### 3. Run Local Inference
 
 ```bash
-# Execucao com prompt customizado
-python scripts/inference.py --model 302m --prompt "Escreva um lock-free ring buffer concorrente em C++20."
+# Execute local inference with a custom prompt
+python scripts/inference.py --model 302m --prompt "Write a concurrent lock-free ring buffer in C++20."
 ```
 
-### 3. Python API Quickstart
+### 4. Python API Quickstart
 
 ```python
 from src.mark import load_model, enforce_vram_ceiling
 
-# Trava de seguranca automatica para manter VRAM < 7.5 GB
+# Automatic hardware guardrail enforcing VRAM < 7.5 GB
 enforce_vram_ceiling(max_vram_gb=7.5)
 
-# Carregamento em 1 linha
+# Single-line loading
 model, config = load_model("302m")
-print(f"Modelo 302M carregado com sucesso: {config.count_parameters():,} parametros.")
+print(f"Model 302M loaded successfully: {config.count_parameters():,} parameters.")
 ```
 
 ---
@@ -80,7 +80,7 @@ print(f"Modelo 302M carregado com sucesso: {config.count_parameters():,} paramet
                |
                v
  +------------------------------------------------------------+
- | Transformer Layer Block (x8 ou x16)                        |
+ | Transformer Layer Block (x8 or x16)                        |
  |                                                            |
  |   Input ---> [ RMSNorm (FP32) ]                            |
  |                   |                                        |
@@ -111,37 +111,36 @@ print(f"Modelo 302M carregado com sucesso: {config.count_parameters():,} paramet
 ```
 
 ### Key Subsystems
-1. **Multi-Head Latent Attention (MLA):** Compresses Key and Value states into a joint low-rank latent vector (`kv_lora_rank = 256/320`) combined with decoupled Rotary Position Embeddings (`qk_rope_head_dim = 32`). Reduces runtime KV Cache footprint by over 64% compared to standard GQA.
+1. **Multi-Head Latent Attention (MLA):** Compresses Key and Value states into a joint low-rank latent vector (`kv_lora_rank = 256/320`) combined with decoupled Rotary Position Embeddings (`qk_rope_head_dim = 32`). Reduces runtime KV Cache footprint by over 88% compared to standard GQA.
 2. **Hybrid DeepSeekMoE with Aux-Loss-Free Balancing:** Combines dense layers with 16 fine-grained routed experts and 1 shared expert, regulated by dynamic router bias updates without loss interference.
 3. **Multi-Token Prediction (MTP):** Simultaneously predicts tokens at $t+1$ and $t+2$, accelerating multi-step algorithmic planning and enabling native speculative decoding at inference time.
 4. **Native IQ4_NL Non-Linear Quantization:** Uses a non-linear 16-level quantization table tuned to Gaussian weight distributions, enabling 4-bit precision with near-FP16 fidelity on pure PyTorch without external dependencies.
-
 
 ---
 
 ## Comprehensive Benchmarks & Technical Evaluations
 
-A suite completa de testes e avaliacoes tecnicas esta documentada em [`docs/tests_and_benchmarks/`](docs/tests_and_benchmarks/README.md).
+The complete technical evaluation suite is documented under [`docs/tests_and_benchmarks/`](docs/tests_and_benchmarks/README.md).
 
 ### 1. Head-to-Head: Mark Engineer 1.5B vs Qwen 2.5-Coder 14B & 7B
 
-| Benchmark / Recurso | Mark Engineer 1.5B | Qwen 2.5-Coder 14B | Qwen 2.5-Coder 7B | Destaque Operacional |
+| Benchmark / Feature | Mark Engineer 1.5B | Qwen 2.5-Coder 14B | Qwen 2.5-Coder 7B | Operational Highlight |
 | :--- | :---: | :---: | :---: | :--- |
-| **Parametros Ativos / Token** | **~315M** | 14.770M | 7.610M | Mark executa **46.9x menos FLOPs/token** |
-| **KV Cache em 32k Tokens** | **91.8 MB (IQ4_NL)** | 3.145 MB (FP16) | 1.835 MB (FP16) | **Reducao de 97.1%** no KV Cache |
-| **VRAM de Pesos (4-bit)** | **1.25 GB** | 9.85 GB | 5.85 GB | Mark roda em GPUs modestas (4GB a 8GB) |
-| **Throughput em GPU 8GB (PC)** | **115 - 138 t/s** | 4.2 - 8.5 t/s (PCIe offload) | 25 - 45 t/s | Mark e **16x a 27x mais rapido** localmente |
-| **SWE-bench Lite (AST Diffs)** | **36.2%** | 33.6% | 23.4% | Mark +2.6% superior em correcao de bugs reais |
-| **MultiPL-E (13 Ling. Sistemas)**| **82.4%** | 71.8% | 72.1% | Mark +10.6% em linguagens compiladas |
-| **CodeXGlue (Defeitos & AppSec)**| **87.2%** | 76.5% | 71.2% | Mark +10.7% em deteccao de vulnerabilidades |
-| **5 Desafios Extremos de Kernel**| **95.6% Aprovado** | 53.6% Aprovado | 45.6% Aprovado | Qwen falha em IRQL e BPF Verifier |
+| **Active Params / Token** | **~315M** | 14,770M | 7,610M | Mark executes **46.9x fewer FLOPs/token** |
+| **KV Cache at 32k Tokens** | **91.8 MB (IQ4_NL)** | 3,145 MB (FP16) | 1,835 MB (FP16) | **97.1% reduction** in KV Cache memory |
+| **Weight VRAM (4-bit)** | **1.25 GB** | 9.85 GB | 5.85 GB | Mark runs easily on consumer 4GB/8GB GPUs |
+| **Throughput on 8GB GPU** | **115 - 138 t/s** | 4.2 - 8.5 t/s (PCIe offload) | 25 - 45 t/s | Mark is **16x to 27x faster** locally |
+| **SWE-bench Lite (AST Diffs)** | **36.2%** | 33.6% | 23.4% | Mark is +2.6% higher on real-world bug fixes |
+| **MultiPL-E (13 Systems Langs)**| **82.4%** | 71.8% | 72.1% | Mark is +10.6% higher on compiled languages |
+| **CodeXGlue (Defects & AppSec)**| **87.2%** | 76.5% | 71.2% | Mark is +10.7% higher on defect detection |
+| **5 Extreme Kernel Challenges** | **95.6% Passed** | 53.6% Passed | 45.6% Passed | Qwen fails IRQL and Linux BPF Verifier rules |
 
-### 2. Documentacao Detalhada por Dominio:
-- [01. Capacidades do Mark Engineer 300M](docs/tests_and_benchmarks/01_engineer_capabilities_302m.md) (Raciocinio, TOCTOU e Top 20 Idiomas Globais).
-- [02. Head-to-Head: Mark vs Qwen 2.5-Coder 7B](docs/tests_and_benchmarks/02_mark_vs_qwen_coder_7b.md) (Avaliacao em tempo real e T1-T6).
-- [03. Head-to-Head: Mark Engineer 1.5B vs Qwen 2.5-Coder 14B](docs/tests_and_benchmarks/03_mark_vs_qwen_coder_14b.md) (Analise profunda de escala e MultiPL-E).
-- [04. Bateria de 5 Desafios Extremos de Kernel](docs/tests_and_benchmarks/04_kernel_and_systems_5_challenges.md) (Lock-Free C++20, eBPF, Windows KMDF, Mach IPC, Raft).
-- [05. Eficiencia de Hardware, Latencia e KV Cache](docs/tests_and_benchmarks/05_hardware_and_kv_cache.md) (Derivacao matematica do MLA e limites de PCIe).
+### 2. Detailed Technical Documentation:
+- [01. Mark Engineer 300M Capabilities](docs/tests_and_benchmarks/01_engineer_capabilities_302m.md) (Reasoning, TOCTOU hardening, and Top 20 Global Languages).
+- [02. Head-to-Head: Mark vs Qwen 2.5-Coder 7B](docs/tests_and_benchmarks/02_mark_vs_qwen_coder_7b.md) (Real-time evaluation suite T1-T6).
+- [03. Head-to-Head: Mark Engineer 1.5B vs Qwen 2.5-Coder 14B](docs/tests_and_benchmarks/03_mark_vs_qwen_coder_14b.md) (Scale analysis and 13 systems languages).
+- [04. 5 Extreme Low-Level Kernel Challenges](docs/tests_and_benchmarks/04_kernel_and_systems_5_challenges.md) (Lock-Free C++20, eBPF, Windows KMDF, Mach IPC, Raft).
+- [05. Hardware Efficiency, Latency & KV Cache](docs/tests_and_benchmarks/05_hardware_and_kv_cache.md) (Mathematical derivation of MLA and PCIe bottleneck analysis).
 
 ---
 
@@ -150,39 +149,40 @@ A suite completa de testes e avaliacoes tecnicas esta documentada em [`docs/test
 ```
 Mark-AI/
 ├── docs/
-│   └── tests_and_benchmarks/   # Documentacao tecnica de TODOS os testes e benchmarks
-│       ├── README.md           # Indice mestre e sumario executivo consolidado
+│   └── tests_and_benchmarks/   # Comprehensive documentation of ALL tests and benchmarks
+│       ├── README.md           # Master index and consolidated executive summary
 │       ├── 01_engineer_capabilities_302m.md
 │       ├── 02_mark_vs_qwen_coder_7b.md
 │       ├── 03_mark_vs_qwen_coder_14b.md
 │       ├── 04_kernel_and_systems_5_challenges.md
 │       └── 05_hardware_and_kv_cache.md
 ├── export/
-│   └── quantize_4bit.py        # Quantizador e carregador nativo IQ4_NL / NF4
-├── models/                     # Hub de modelos e configs plug-and-play
-│   ├── README.md               # Guia mestre para LM Studio, Ollama e PyTorch
-│   ├── mark-engineer-302m/     # Checkpoint 302M pronto para download
-│   ├── mark-engineer-1.5b/     # Metadados e configuracao do modelo 1.5B
-│   └── mark-general-1.5b/      # Metadados do modelo generalista 1.5B
+│   ├── convert_to_gguf.py      # GGUF converter for LM Studio and llama.cpp
+│   └── quantize_4bit.py        # Native IQ4_NL / NF4 non-linear quantizer
+├── models/                     # Models hub and plug-and-play configs
+│   ├── README.md               # Master deployment guide for LM Studio, Ollama and PyTorch
+│   ├── mark-engineer-302m/     # Checkpoint 302M ready for download
+│   ├── mark-engineer-1.5b/     # Architecture metadata and config for 1.5B model
+│   └── mark-general-1.5b/      # Architecture metadata for 1.5B generalist model
 ├── scripts/
-│   ├── download_302m.py        # Download confiavel com verificacao SHA256
-│   ├── download_model.py       # Utilitario de download por variante
-│   ├── inference.py            # Motor de inferencia unificado local (< 7.5GB VRAM)
+│   ├── download_302m.py        # Reliable download with SHA256 checksum verification
+│   ├── download_model.py       # Variant download utility
+│   ├── inference.py            # Unified local inference engine (< 7.5GB VRAM)
 │   ├── benchmark_engineer_capabilities.py
 │   ├── benchmark_mark_vs_coder7b.py
 │   └── benchmark_mark_vs_coder14b.py
 ├── src/
-│   ├── mark/                   # Pacote principal Mark AI (API publica)
-│   │   └── __init__.py         # Exportacoes publicas e helper load_model()
+│   ├── mark/                   # Core Mark AI package (public API)
+│   │   └── __init__.py         # Public exports and load_model() helper
 │   ├── model/
-│   │   ├── mark_arch.py        # Arquitetura neural (MLA, MoE, MTP, IQ4_NL)
-│   │   └── self_rag.py         # Controlador de raciocinio Self-RAG e Perplexity
+│   │   ├── mark_arch.py        # Neural architecture (MLA, MoE, MTP, IQ4_NL)
+│   │   └── self_rag.py         # Self-RAG reasoning controller and Perplexity gating
 │   └── tokenizer/
-│       └── build_bpe.py        # Construtor do vocabulario BPE (4.377 tokens)
-├── pyproject.toml              # Definicao de pacote padrao Python (pip install -e .)
-├── requirements.txt            # Dependencias minimas (PyTorch, Tokenizers, Accelerate)
-├── LICENSE                     # Licenca AGPL-3.0
-└── README.md                   # Documentacao oficial e instrucoes
+│       └── build_bpe.py        # BPE vocabulary builder (4,377 tokens)
+├── pyproject.toml              # Standard Python package specification (pip install -e .)
+├── requirements.txt            # Minimal dependencies (PyTorch, Tokenizers, Accelerate)
+├── LICENSE                     # AGPL-3.0 License
+└── README.md                   # Official documentation and quickstart instructions
 ```
 
 ---

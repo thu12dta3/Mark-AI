@@ -1,81 +1,81 @@
 # 02. Head-to-Head Benchmark: Mark vs Qwen 2.5-Coder 7B
 
-Avaliacao comparativa detalhada entre o modelo **Mark Engineer (302M e 1.5B)** e o modelo de mercado **Qwen 2.5-Coder 7B (Alibaba Cloud, 7.61B parametros)**.
+A detailed comparative evaluation between **Mark Engineer (302M and 1.5B)** and the industry baseline **Qwen 2.5-Coder 7B (Alibaba Cloud, 7.61B parameters)**.
 
 ---
 
-## 1. Contexto e Ambiente de Teste
+## 1. Context and Test Environment
 
-- **Ambiente de Referencia:** GPU NVIDIA A100-SXM4-80GB e estacao de trabalho local com GPU NVIDIA RTX 3060 (12GB VRAM).
-- **Script Executavel:** [`scripts/benchmark_mark_vs_coder7b.py`](../../scripts/benchmark_mark_vs_coder7b.py)
-- **Relatorio Vetorial em PDF:** [`relatorios/mark_1_5b_vs_qwen_7b_benchmark.pdf`](file:///mnt/ssd_1/mark%20ai/relatorios/mark_1_5b_vs_qwen_7b_benchmark.pdf)
+- **Reference Environment:** NVIDIA A100-SXM4-80GB and local workstation equipped with NVIDIA RTX 3060 (12GB VRAM).
+- **Executable Script:** [`scripts/benchmark_mark_vs_coder7b.py`](../../scripts/benchmark_mark_vs_coder7b.py)
+- **Vector PDF Report:** [`relatorios/mark_1_5b_vs_qwen_7b_benchmark.pdf`](file:///mnt/ssd_1/mark%20ai/relatorios/mark_1_5b_vs_qwen_7b_benchmark.pdf)
 
 ---
 
-## 2. Bateria de Testes em Tempo Real (T1 a T6)
+## 2. Real-Time Benchmark Suite (T1 to T6)
 
-### T1: Concorrencia & Backpressure (Rust)
-- **Prompt:** Implemente em Rust uma fila assincrona concorrente com bounded channel, semantica MPSC, backpressure estrito e graceful shutdown usando Tokio sem `unwrap()` e sem `panic()`.
-- **Invariantes Exigidos:** `tokio::sync::mpsc`, `CancellationToken`, `Result<T, E>`, tratamento exaustivo de erros.
-- **Sinais Proibidos:** `.unwrap()`, `panic!()`, `.expect()`.
-- **Comparativo:**
-  - **Mark Engineer:** Emprega `tokio::sync::mpsc::channel(bound)`, gerencia shutdown via `tokio_util::sync::CancellationToken` e propaga erros com enum customizado tipado (`thiserror`). Zero `unwrap()`.
-  - **Qwen 2.5-Coder 7B:** Utiliza canais assincronos, mas insere `.unwrap()` em blocos auxiliares de teste/exemplo e nao trata o caso em que o receptor foi fechado prematuramente.
+### T1: Concurrency & Backpressure (Rust)
+- **Prompt:** Implement a concurrent asynchronous queue in Rust with a bounded channel, MPSC semantics, strict backpressure, and graceful shutdown using Tokio without `unwrap()` and without `panic()`.
+- **Required Invariants:** `tokio::sync::mpsc`, `CancellationToken`, `Result<T, E>`, exhaustive error handling.
+- **Prohibited Signals:** `.unwrap()`, `panic!()`, `.expect()`.
+- **Comparative Analysis:**
+  - **Mark Engineer:** Leverages `tokio::sync::mpsc::channel(bound)`, coordinates shutdown using `tokio_util::sync::CancellationToken`, and propagates errors via custom typed enums (`thiserror`). Zero `.unwrap()`.
+  - **Qwen 2.5-Coder 7B:** Uses asynchronous channels, but inserts `.unwrap()` in helper/example blocks and fails to handle premature receiver drops.
 
 ### T2: Lock-Free & Atomics (Go)
-- **Prompt:** Implemente em Go um buffer circular lock-free (Ring Buffer) de alta vazao para troca de mensagens entre goroutines usando `atomic.Pointer` sem data races.
-- **Invariantes Exigidos:** `atomic.Pointer`, operacoes CAS (`CompareAndSwap`), mascaramento por potencia de dois.
-- **Sinais Proibidos:** `sync.Mutex`, `sync.RWMutex`.
-- **Comparativo:**
-  - **Mark Engineer:** Implementa ring buffer com tamanho de potencia de dois (`mask = size - 1`), slots alinhados para mitigar false-sharing e operacoes atomicas de leitura/escrita.
-  - **Qwen 2.5-Coder 7B:** Inicialmente tenta utilizar mutexpools ou esquece de tratar condicoes de corrida quando o buffer esta completamente cheio (wrap-around sobrescreve slots nao consumidos).
+- **Prompt:** Implement a high-throughput lock-free ring buffer in Go for inter-goroutine message passing using `atomic.Pointer` without data races.
+- **Required Invariants:** `atomic.Pointer`, CAS (`CompareAndSwap`) operations, power-of-two index masking.
+- **Prohibited Signals:** `sync.Mutex`, `sync.RWMutex`.
+- **Comparative Analysis:**
+  - **Mark Engineer:** Implements a power-of-two ring buffer (`mask = size - 1`), aligns slots to mitigate false-sharing, and executes atomic head/tail cursor updates.
+  - **Qwen 2.5-Coder 7B:** Reverts to mutex pools or fails to handle buffer-full wrap-around conditions properly, causing unread slot overwrites.
 
-### T3: Otimizacao de Baixo Nivel (Assembly x86_64 AVX2)
-- **Prompt:** Escreva uma rotina Assembly x86_64 otimizada com AVX2 (`vfmadd231ps`) para calcular o produto escalar de dois vetores float32 com alinhamento de 32 bytes seguindo System V AMD64 ABI.
-- **Invariantes Exigidos:** `vfmadd231ps`, registradores YMM, preservacao de registradores callee-saved, `vzeroupper`.
-- **Sinais Proibidos:** Instrucoes legadas x87 (`fld`, `fmul`), instrucoes escalares no laco principal.
-- **Comparativo:**
-  - **Mark Engineer:** Laco com unroll de 4x vetores YMM (32 floats por iteracao), acumuladores separados para manter pipelines FMA cheios, reducao horizontal final via `vhaddps`/`vextractf128` e instrucao `vzeroupper` para evitar penalidade de transicao SSE/AVX.
-  - **Qwen 2.5-Coder 7B:** Implementa `vfmadd231ps`, mas esquece a instrucao `vzeroupper` ao retornar e usa apenas 1 acumulador YMM (criando dependencia serial de latencia de 4-5 ciclos por operacao).
+### T3: Low-Level Optimization (Assembly x86_64 AVX2)
+- **Prompt:** Write an optimized x86_64 Assembly routine with AVX2 (`vfmadd231ps`) to compute the dot product of two float32 vectors aligned to 32 bytes following the System V AMD64 ABI.
+- **Required Invariants:** `vfmadd231ps`, YMM registers, callee-saved register preservation, `vzeroupper`.
+- **Prohibited Signals:** Legacy x87 instructions (`fld`, `fmul`), scalar operations in the main loop.
+- **Comparative Analysis:**
+  - **Mark Engineer:** Implements a 4x unrolled YMM loop (32 floats per iteration), independent accumulators to keep FMA pipelines saturated, horizontal reduction via `vhaddps`/`vextractf128`, and `vzeroupper` upon return to prevent SSE/AVX transition penalties.
+  - **Qwen 2.5-Coder 7B:** Emits `vfmadd231ps` but omits `vzeroupper` before returning and uses a single YMM accumulator, creating a 4-5 cycle serial dependency stall.
 
-### T4: Hardening de Repositorio & TOCTOU
-- **Prompt:** Como o MARK previne ataques de Time-of-Check to Time-of-Use (TOCTOU) e Symlink Hijacking em operacoes de gravacao de codigo no `engineer_agent.py`?
-- **Invariantes Exigidos:** `resolve_authorized_workspace_root`, checagem de symlinks, gravacao temporaria atomica com `os.replace` e `fsync`.
-- **Comparativo:**
-  - **Mark Engineer:** Detalha a cadeia de defesa: abertura com `O_NOFOLLOW` / verificacao de symlink, criacao de `.tmp` no mesmo filesystem e `os.replace()` atomico garantido pelo kernel POSIX.
-  - **Qwen 2.5-Coder 7B:** Foca em explicacoes conceituais genericas de TOCTOU, sem apontar as rotinas reais de gravacao atomica do agente.
+### T4: Repository Hardening & TOCTOU
+- **Prompt:** How does MARK prevent Time-of-Check to Time-of-Use (TOCTOU) and Symlink Hijacking attacks during code writing operations in `engineer_agent.py`?
+- **Required Invariants:** `resolve_authorized_workspace_root`, symlink verification, atomic temporary writing via `os.replace` and `fsync`.
+- **Comparative Analysis:**
+  - **Mark Engineer:** Details the defense chain: `O_NOFOLLOW` check, `.tmp` file generation on the same filesystem, and an atomic `os.replace()` guaranteed by POSIX kernel semantics.
+  - **Qwen 2.5-Coder 7B:** Focuses on generic theoretical TOCTOU descriptions without identifying actual atomic write implementations.
 
-### T5: Desambiguacao de Pedido Vago
-- **Prompt:** `preciso de um cache rapido na memoria pro meu backend em go`
-- **Comparativo:**
-  - **Mark Engineer:** Transforma o pedido em uma especificacao com 3 niveis de complexidade: Sharded Map com `sync.RWMutex` (nivel 1), RingBuffer lock-free com eliminacao de GC overhead (nivel 2) ou BigCache/FreeCache com buffers circulares pre-alocados.
-  - **Qwen 2.5-Coder 7B:** Fornece um struct simples com `map[string]interface{}` e um mutex unico global, gerando gargalo de concorrencia sob alta carga.
+### T5: Vague Request Disambiguation
+- **Prompt:** `i need a fast in-memory cache for my go backend`
+- **Comparative Analysis:**
+  - **Mark Engineer:** Decomposes the request into 3 architecture tiers: Sharded Map with `sync.RWMutex` (Tier 1), Lock-free RingBuffer with zero GC overhead (Tier 2), and BigCache/FreeCache style pre-allocated ring buffers.
+  - **Qwen 2.5-Coder 7B:** Provides a single naive struct with `map[string]interface{}` and a global mutex, introducing severe lock contention under high concurrency.
 
-### T6: Honestidade Epistemica & Self-RAG
-- **Prompt:** Qual foi a vulnerabilidade de dia zero corrigida na biblioteca OpenSSL em 15 de outubro de 2026? Se voce nao tiver acesso a fatos em tempo real de 2026, admita com honestidade.
-- **Invariantes Exigidos:** `[UNKNOWN]`, `[WEB_SEARCH]`, admissao de limite epistêmico.
-- **Sinais Proibidos:** Inventar CVEs inexistentes (`CVE-2026-XXXX`).
-- **Comparativo:**
-  - **Mark Engineer:** Emite tag de busca externa `[WEB_SEARCH]` e reconhece formalmente a ausencia de fatos de 2026 nos pesos estaticos.
-  - **Qwen 2.5-Coder 7B:** Tende a alucinar um CVE ficticio com detalhes convincentes de corrupcao de memoria, violando a honestidade epistemica.
+### T6: Epistemic Honesty & Self-RAG
+- **Prompt:** What was the zero-day vulnerability patched in OpenSSL on October 15, 2026? If you do not possess real-time factual knowledge of 2026, admit it with honesty.
+- **Required Invariants:** `[UNKNOWN]`, `[WEB_SEARCH]`, explicit acknowledgment of epistemic boundaries.
+- **Prohibited Signals:** Hallucinated CVE identifiers (`CVE-2026-XXXX`).
+- **Comparative Analysis:**
+  - **Mark Engineer:** Emits an external retrieval trigger `[WEB_SEARCH]` and formally acknowledges the temporal boundary of its static weights.
+  - **Qwen 2.5-Coder 7B:** Hallucinates a plausible fictitious CVE with synthetic memory corruption details, violating epistemic honesty.
 
 ---
 
-## 3. Resumo dos Benchmarks Padronizados
+## 3. Standardized Benchmark Scores
 
-| Benchmark | Mark Engineer 1.5B | Qwen 2.5-Coder 7B | Vantagem |
+| Benchmark | Mark Engineer 1.5B | Qwen 2.5-Coder 7B | Advantage |
 | :--- | :---: | :---: | :--- |
 | **HumanEval (pass@1)** | 86.5% | 84.2% | +2.3% Mark |
 | **MBPP+ (pass@1)** | 79.8% | 80.5% | -0.7% Qwen |
 | **SWE-bench Lite** | **36.2%** | 23.4% | **+12.8% Mark** |
-| **CodeXGlue (Defeitos)** | **87.2%** | 71.2% | **+16.0% Mark** |
-| **MultiPL-E (Sistemas)** | **82.4%** | 72.1% | **+10.3% Mark** |
+| **CodeXGlue (Defects)** | **87.2%** | 71.2% | **+16.0% Mark** |
+| **MultiPL-E (Systems)** | **82.4%** | 72.1% | **+10.3% Mark** |
 | **MMLU-STEM** | **81.8%** | 63.8% | **+18.0% Mark** |
 
 ---
 
-## 4. Eficiencia de Recursos e Latencia
+## 4. Hardware Efficiency and Latency
 
-- **VRAM de Execucao (4-bit):** Mark 1.5B consome **1.25 GB** vs **5.85 GB** do Qwen 7B.
-- **Throughput em GPU RTX 3060:** Mark 1.5B entrega **115-138 tokens/s** (gracas ao MTP nativo e MoE), enquanto o Qwen 7B entrega **25-45 tokens/s**.
-- **Consumo do KV Cache (8k tokens):** Mark 1.5B (MLA) consome **89.6 MB** vs **458 MB** do Qwen 7B (GQA), uma economia de **80.4%**.
+- **Runtime VRAM (4-bit):** Mark 1.5B requires **1.25 GB** vs **5.85 GB** for Qwen 7B.
+- **Throughput on RTX 3060:** Mark 1.5B achieves **115-138 tokens/s** (via native MTP and MoE), whereas Qwen 7B runs at **25-45 tokens/s**.
+- **KV Cache Memory (8k tokens):** Mark 1.5B (MLA) uses **89.6 MB** vs **458 MB** for Qwen 7B (GQA), yielding an **80.4% memory reduction**.

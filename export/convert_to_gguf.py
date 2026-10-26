@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Mark AI - Conversor de Checkpoint para GGUF (LM Studio & llama.cpp Plug-and-Play)
-==================================================================================
-Converte pesos Mark Engineer 300M (302M) para formato GGUF compativel
-com LM Studio, Ollama, llama.cpp e vLLM.
+Mark AI - Checkpoint to GGUF Converter (LM Studio & llama.cpp Plug-and-Play)
+===========================================================================
+Converts Mark Engineer 300M (302M) weights into a GGUF container compatible
+with LM Studio, Ollama, llama.cpp, and vLLM.
 
-Regra Estrita: Zero emojis em qualquer texto, log ou print.
+Strict Constraint: Zero emojis across all output and logs.
 """
 
 import sys
@@ -27,14 +27,14 @@ def convert_pt_to_gguf(
     output_gguf: Path,
     model_name: str = "Mark Engineer 300M",
 ):
-    print(f"[Conversor GGUF] Carregando checkpoint: {ckpt_path}...")
+    print(f"[GGUF Converter] Loading checkpoint: {ckpt_path}...")
     state_dict = torch.load(ckpt_path, map_location="cpu", weights_only=False)
     config = MarkConfig.create_engineer_300m()
 
     output_gguf.parent.mkdir(parents=True, exist_ok=True)
     writer = gguf.GGUFWriter(str(output_gguf), "llama")
 
-    # Metadados do Modelo para LM Studio
+    # Model Metadata for LM Studio
     writer.add_name(model_name)
     writer.add_author("thu12dta3")
     writer.add_version("1.0.0")
@@ -48,12 +48,12 @@ def convert_pt_to_gguf(
     writer.add_layer_norm_rms_eps(config.rms_norm_eps)
     writer.add_rope_freq_base(config.rope_theta)
 
-    # Tokens Especiais
+    # Special Tokens
     writer.add_bos_token_id(config.bos_token_id)
     writer.add_eos_token_id(config.eos_token_id)
     writer.add_pad_token_id(config.pad_token_id)
 
-    # Chat Template para LM Studio
+    # Chat Template for LM Studio
     chat_template = (
         "{% for message in messages %}"
         "{% if message['role'] == 'user' %}"
@@ -66,7 +66,7 @@ def convert_pt_to_gguf(
     )
     writer.add_chat_template(chat_template)
 
-    print("[Conversor GGUF] Mapeando e desquantizando tensores para precisao float16 GGUF...")
+    print("[GGUF Converter] Mapping and dequantizing tensors to float16 GGUF precision...")
     lut = torch.tensor(IQ4_NL_LOOKUP_VALUES, dtype=torch.float32)
 
     tensor_count = 0
@@ -91,7 +91,7 @@ def convert_pt_to_gguf(
         else:
             continue
 
-        # Mapeamento de nomes padrao GGUF
+        # Standard GGUF tensor naming
         gguf_name = name
         if name == "tok_embeddings.weight":
             gguf_name = "token_embd.weight"
@@ -119,14 +119,14 @@ def convert_pt_to_gguf(
         writer.add_tensor(gguf_name, t_data)
         tensor_count += 1
 
-    print(f"[Conversor GGUF] Gravando cabecalho e {tensor_count} tensores em {output_gguf}...")
+    print(f"[GGUF Converter] Writing header and {tensor_count} tensors to {output_gguf}...")
     writer.write_header_to_file()
     writer.write_kv_data_to_file()
     writer.write_tensors_to_file()
     writer.close()
 
     size_mb = output_gguf.stat().st_size / (1024 * 1024)
-    print(f"[Conversor GGUF] Concluido com exito! Arquivo GGUF gerado: {output_gguf} ({size_mb:.2f} MB)")
+    print(f"[GGUF Converter] Finished successfully. GGUF generated: {output_gguf} ({size_mb:.2f} MB)")
     return output_gguf
 
 

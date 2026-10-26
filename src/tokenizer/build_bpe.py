@@ -1,10 +1,10 @@
 """
 Mark 0.1 - Polyglot Code, Multilingual & DeepSeek/OpenAI Architectural Tokenizer + Distillation Pipeline
-Cobre todas as linguagens de programação (Rust, Python, Ruby, JavaScript/TypeScript, CSS, PHP, Kotlin,
-Java, Go, C++, C, C#, Assembly x86_64/ARM64, SQL, Shell), idiomas globais (Português, Inglês, Espanhol,
-Francês, Alemão, Italiano, Russo, Japonês, Coreano, Árabe, Hindi e Mandarim Simplificado - excluindo
-Mandarim Tradicional), Fill-in-the-Middle (FIM) estilo Qwen-Coder, Visão Multimodal (Super-Qwen3-VL)
-e Raciocínio Arquitetural estilo OpenAI o1/o3 + DeepSeek-R1.
+Covers all programming languages (Rust, Python, Ruby, JavaScript/TypeScript, CSS, PHP, Kotlin,
+Java, Go, C++, C, C#, Assembly x86_64/ARM64, SQL, Shell), global languages (Portuguese, English, Spanish,
+French, German, Italian, Russian, Japanese, Korean, Arabic, Hindi, and Simplified Mandarin - excluding
+Traditional Mandarin), Fill-in-the-Middle (FIM) Qwen-Coder style, Multimodal Vision (Super-Qwen3-VL),
+and Architectural Reasoning OpenAI o1/o3 + DeepSeek-R1 style.
 """
 
 import json
@@ -18,18 +18,18 @@ from tokenizers import Tokenizer, decoders, models, normalizers, pre_tokenizers,
 from src.model.self_rag import SpecialTokens
 
 
-# Filtro de exclusão de caracteres CJK Tradicionais exclusivos (preserva Mandarim Simplificado + Japonês/Coreano)
+# Traditional CJK exclusion filter (preserves Simplified Mandarin + Japanese/Korean)
 _TRADITIONAL_ONLY_HANZI_RE = re.compile(r"[體國學應點發開關門問間見観語話讀書寫買賣車東馬鳥魚麗龍龜]")
 
 
 def filter_traditional_chinese(text: str) -> str:
     """
-    Remove caracteres exclusivos de Mandarim Tradicional mantendo Mandarim Simplificado e todos os demais idiomas.
+    Filters out Traditional Mandarin exclusive glyphs while preserving Simplified Mandarin and other languages.
     """
     return _TRADITIONAL_ONLY_HANZI_RE.sub("", text)
 
 
-# Corpus Semente Poliglota (Todas as Linguagens de Programação + Idiomas + FIM + Visão + Voz + Self-RAG)
+# Polyglot Seed Corpus (All Programming Languages + Global Idioms + FIM + Vision + Voice + Self-RAG)
 DOMAIN_CODE_SEED_CORPUS: List[str] = [
     # 1. Rust (Zero-cost abstractions, Tokio QUIC, Memory Safety)
     "pub async fn spawn_quic_relay<'a>(stream: &'a mut QuicStream, state: Arc<RwLock<DaemonState>>) -> Result<(), McpError> { Ok(()) }",
@@ -53,9 +53,9 @@ DOMAIN_CODE_SEED_CORPUS: List[str] = [
     # 9. Ruby & PHP 8.3 (Metaprogramming, Fibers, Strict Types)
     "module MarkCore; class Worker; def self.spawn(&block); Fiber.new { block.call }.resume; end; end; end",
     "<?php declare(strict_types=1); namespace Mark\\Gateway; readonly class WebhookPayload { public function __construct(public string $hmac, public int $timestamp) {} }",
-    # 10. Fill-in-the-Middle (FIM) para Autocomplete estilo Qwen-Coder
+    # 10. Fill-in-the-Middle (FIM) for Qwen-Coder style autocomplete
     "<|fim_prefix|>pub fn verify_hmac(key: &[u8], msg: &[u8], tag: &[u8]) -> bool {\n    <|fim_suffix|>\n}<|fim_middle|>let mut mac = HmacSha256::new_from_slice(key).unwrap();\n    mac.update(msg);\n    mac.verify_slice(tag).is_ok()",
-    # 11. Multilíngue Global (PT, EN, ES, FR, DE, IT, RU, JA, KO, AR, HI, ZH-Hans Simplificado)
+    # 11. Multilingual Global Sentences (PT, EN, ES, FR, DE, IT, RU, JA, KO, AR, HI, ZH-Hans)
     "Arquitetura distribuída de alta confiabilidade e baixa latência.",
     "High-reliability distributed systems architecture with deterministic memory bounds.",
     "Arquitectura de sistemas distribuidos de baja latencia y seguridad criptográfica.",
@@ -69,7 +69,7 @@ DOMAIN_CODE_SEED_CORPUS: List[str] = [
 
 def iter_repository_files(data_dirs: List[str]) -> Iterator[str]:
     """
-    Varre diretórios de código-fonte do MARK-PUBLIC e Mark-AI em todas as linguagens suportadas.
+    Scans source code directories across MARK-PUBLIC and Mark-AI in all supported languages.
     """
     valid_extensions = {
         ".rs", ".py", ".rb", ".js", ".ts", ".tsx", ".css", ".php",
@@ -101,11 +101,11 @@ def build_mark_bpe_tokenizer(
     save_dir: Optional[str] = None,
 ) -> Tokenizer:
     """
-    Constrói o tokenizador Byte-Level BPE Poliglota do Mark 0.1:
-    - Suporte nativo a FIM (<|fim_prefix|>, <|fim_suffix|>, <|fim_middle|>) estilo Qwen-Coder
-    - Tokens de Visão (<|vision_start|>, <|vision_patch|>, <|vision_end|>) estilo Qwen3-VL
-    - Tokens de Voz (<|voice_stream|>) para ElevenLabs / Fish Speech
-    - Tokens de Arquitetura & Self-RAG (<think>, </think>, [RETRIEVE], [EVALUATE], [ACCEPT], [REJECT])
+    Builds the Byte-Level BPE Polyglot Tokenizer for Mark 0.1:
+    - Native FIM support (<|fim_prefix|>, <|fim_suffix|>, <|fim_middle|>) Qwen-Coder style
+    - Vision Tokens (<|vision_start|>, <|vision_patch|>, <|vision_end|>) Qwen3-VL style
+    - Voice Tokens (<|voice_stream|>) for ElevenLabs / Fish Speech
+    - Architecture & Self-RAG Tokens (<think>, </think>, [RETRIEVE], [EVALUATE], [ACCEPT], [REJECT])
     """
     repo_root = Path(__file__).resolve().parent.parent.parent
     mark_root = Path("/home/thu12/MARK")
@@ -206,11 +206,11 @@ def build_mark_bpe_tokenizer(
 
 def generate_synthetic_reasoning_dataset(output_jsonl: Optional[str] = None) -> str:
     """
-    Gera dataset sintético de alta densidade combinando:
-    - Raciocínio Arquitetural de Sistemas (estilo OpenAI o1/o3 + DeepSeek-R1)
-    - Poliglotismo extremo (Rust, Python, C++, Go, Kotlin, Assembly, TypeScript, CSS, Ruby, PHP, C#, Java)
-    - Integração real com módulos do MARK-PUBLIC (`mcp/protocol.rs`, `smart_home_gateway.py`, `vision.py`, `tts.py`)
-    - Descontaminação automática contra `benchmarks/markbench-v0.1.json`
+    Generates high-density synthetic reasoning dataset combining:
+    - Systems Architectural Reasoning (OpenAI o1/o3 + DeepSeek-R1 style)
+    - Extreme polyglotism (Rust, Python, C++, Go, Kotlin, Assembly, TypeScript, CSS, Ruby, PHP, C#, Java)
+    - Real integration with MARK-PUBLIC modules (`mcp/protocol.rs`, `smart_home_gateway.py`, `vision.py`, `tts.py`)
+    - Automatic decontamination against `benchmarks/markbench-v0.1.json`
     """
     repo_root = Path(__file__).resolve().parent.parent.parent
     if output_jsonl is None:
@@ -222,12 +222,12 @@ def generate_synthetic_reasoning_dataset(output_jsonl: Optional[str] = None) -> 
     samples = [
         {
             "domain": "rust_mcp_protocol_security",
-            "language": "pt",
-            "prompt": "Audite e otimize o parser JSON-RPC 2.0 do módulo Rust `src-rust/mark_core/src/mcp/protocol.rs` para rejeitar ataques de Path Traversal nos argumentos de ferramentas e evitar cópias desnecessárias em memória.",
+            "language": "en",
+            "prompt": "Audit and optimize the JSON-RPC 2.0 parser in the Rust module `src-rust/mark_core/src/mcp/protocol.rs` to reject Path Traversal attacks in tool arguments and avoid unnecessary memory copies.",
             "chosen": (
                 "<think>\n"
-                "1. Escopo Arquitetural: O módulo `src-rust/mark_core/src/mcp/protocol.rs` valida mensagens JSON-RPC 2.0 com limite de 4 MB (`MAX_PAYLOAD_BYTES`).\n"
-                "2. Vou consultar a implementação exata via `[RETRIEVE]` para verificar os tipos `McpError` e `parse_json_rpc_message`.\n"
+                "1. Architectural Scope: Module `src-rust/mark_core/src/mcp/protocol.rs` validates JSON-RPC 2.0 messages up to 4 MB (`MAX_PAYLOAD_BYTES`).\n"
+                "2. Retrieving implementation via `[RETRIEVE]` to verify `McpError` and `parse_json_rpc_message`.\n"
                 "</think>\n"
                 "[RETRIEVE] src-rust/mark_core/src/mcp/protocol.rs [/RETRIEVE]\n"
                 "<|rag_context|>\n"
@@ -236,12 +236,12 @@ def generate_synthetic_reasoning_dataset(output_jsonl: Optional[str] = None) -> 
                 "<|/rag_context|>\n"
                 "[EVALUATE] [ACCEPT]\n"
                 "<think>\n"
-                "3. Análise de Sistemas (Nível OpenAI o3 / DeepSeek-R1):\n"
-                "   - Invariante 1: Limite estrito de buffer <= 4 MiB antes de alocar AST JSON.\n"
-                "   - Invariante 2: Varredura SIMD-friendly de bytes nulos (`\\0`) e sequências `..` / `%2e%2e` em caminhos de parâmetros.\n"
-                "   - Invariante 3: Zero-copy borrowing onde possível.\n"
+                "3. Systems Engineering Analysis (OpenAI o3 / DeepSeek-R1 standard):\n"
+                "   - Invariant 1: Strict buffer limit <= 4 MiB before allocating JSON AST.\n"
+                "   - Invariant 2: SIMD-friendly scan for null bytes (`\\0`) and `..` / `%2e%2e` sequences in parameter paths.\n"
+                "   - Invariant 3: Zero-copy borrowing where possible.\n"
                 "</think>\n"
-                "O parser abaixo reforça a verificação contra *path traversal* diretamente na validação da requisição JSON-RPC 2.0 em Rust:\n\n"
+                "The parser below enforces path traversal checks directly inside JSON-RPC 2.0 validation in Rust:\n\n"
                 "```rust\n"
                 "pub fn validate_request_security(req: &JsonRpcRequest, max_bytes: usize) -> Result<(), McpError> {\n"
                 "    if req.jsonrpc != \"2.0\" {\n"
@@ -260,7 +260,7 @@ def generate_synthetic_reasoning_dataset(output_jsonl: Optional[str] = None) -> 
                 "}\n"
                 "```"
             ),
-            "rejected": "Use `serde_json::from_str` diretamente sem checar o tamanho do slice.",
+            "rejected": "Use `serde_json::from_str` directly without checking slice length.",
         },
         {
             "domain": "polyglot_systems_cpp_asm_go_csharp",
@@ -314,14 +314,14 @@ def generate_synthetic_reasoning_dataset(output_jsonl: Optional[str] = None) -> 
         },
         {
             "domain": "polyglot_web_js_css_ruby_php_java",
-            "language": "pt",
-            "prompt": "Projete o fluxo completo de um painel de telemetria IoT do Smart Home Gateway usando TypeScript + CSS Grid no frontend, e mostre os validadores HMAC-SHA256 equivalentes em Python, Ruby, PHP 8.3 e Java 21.",
+            "language": "en",
+            "prompt": "Design the complete telemetry flow of an IoT dashboard for Smart Home Gateway using TypeScript + CSS Grid on frontend, and provide equivalent constant-time HMAC-SHA256 verifiers in Python, Ruby, PHP 8.3, and Java 21.",
             "chosen": (
                 "<think>\n"
-                "1. O módulo `src/mark/smart_home_gateway.py` exige validação HMAC-SHA256 em tempo constante (`compare_digest`) e janela anti-replay de 60 segundos (`WEBHOOK_MAX_SKEW_SECONDS = 60`).\n"
-                "2. Vou estruturar os validadores criptográficos equivalentes em Python, Ruby, PHP 8.3 e Java 21, além do componente UI em TypeScript e CSS moderno.\n"
+                "1. Module `src/mark/smart_home_gateway.py` requires constant-time HMAC-SHA256 verification (`compare_digest`) and a 60-second anti-replay window (`WEBHOOK_MAX_SKEW_SECONDS = 60`).\n"
+                "2. Structuring equivalent cryptographic verifiers in Python, Ruby, PHP 8.3, and Java 21, alongside modern TypeScript and CSS Grid UI components.\n"
                 "</think>\n"
-                "Abaixo estão as implementações consistentes em todas as linguagens do ecossistema:\n\n"
+                "Below are the verified implementations across each language in the ecosystem:\n\n"
                 "```typescript\n"
                 "// TypeScript Frontend Telemetry Stream\n"
                 "export interface SensorFrame { readonly deviceId: string; readonly value: number; readonly ts: number; }\n"
@@ -332,7 +332,7 @@ def generate_synthetic_reasoning_dataset(output_jsonl: Optional[str] = None) -> 
                 "}\n"
                 "```\n\n"
                 "```css\n"
-                "/* CSS Grid Responsivo com Aceleração de Composição */\n"
+                "/* Responsive CSS Grid with Composite Layer Acceleration */\n"
                 ".telemetry-grid {\n"
                 "    display: grid;\n"
                 "    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));\n"
@@ -374,33 +374,33 @@ def generate_synthetic_reasoning_dataset(output_jsonl: Optional[str] = None) -> 
                 "}\n"
                 "```"
             ),
-            "rejected": "Basta comparar as strings de hash usando `==` no backend.",
+            "rejected": "Simply compare hash strings using `==` on the backend.",
         },
         {
             "domain": "multimodal_vision_and_voice_prosody",
-            "language": "pt",
-            "prompt": "<|vision_start|><|vision_patch|><|vision_end|> Analise o diagrama de circuito MOSFET e explique o diagnóstico para síntese de voz natural no ElevenLabs/Fish Speech.",
+            "language": "en",
+            "prompt": "<|vision_start|><|vision_patch|><|vision_end|> Analyze the MOSFET circuit schematic and provide natural speech diagnosis for ElevenLabs/Fish Speech.",
             "chosen": (
                 "<think>\n"
-                "1. Análise Visual de Alta Resolução (PixelShuffle 2x2): Identifico no esquemático um MOSFET canal N com resistor de gate de 10k ohms em pull-down e diodo flyback em paralelo com a carga indutiva.\n"
-                "2. A tensão de gate medida no ponto de teste é 2.1V, insuficiente para saturar um MOSFET padrão não-logic-level (requer V_GS >= 4.5V a 10V), causando aquecimento por operação na região linear.\n"
-                "3. Vou formular a resposta com cadência natural para ElevenLabs e Fish Speech.\n"
+                "1. High-Resolution Visual Analysis (PixelShuffle 2x2): Identifying an N-channel MOSFET with a 10k ohm pull-down gate resistor and flyback diode across the inductive load.\n"
+                "2. Measured gate voltage at test point is 2.1V, insufficient to fully saturate a standard non-logic-level MOSFET (requires V_GS >= 4.5V to 10V), causing linear region thermal dissipation.\n"
+                "3. Formulating response with natural cadence for ElevenLabs and Fish Speech.\n"
                 "</think>\n"
-                "O aquecimento ocorre porque a tensão no gate está em dois vírgula um volts — abaixo do limiar de saturação total do MOSFET. Substitua o componente por um modelo logic-level da série IRLZ, ou utilize um driver de gate dedicado de doze volts."
+                "The overheating occurs because the gate voltage is at two point one volts — below the saturation threshold of the MOSFET. Replace the transistor with a logic-level IRLZ series component, or employ a dedicated twelve-volt gate driver."
             ),
-            "rejected": "O circuito parece ter um transistor com defeito.",
+            "rejected": "The circuit appears to have a defective transistor.",
         },
         {
             "domain": "perplexity_web_search_honest_unknown_2026",
-            "language": "pt",
-            "prompt": "Quais são as vulnerabilidades CVE recém-descobertas em outubro de 2026 para servidores HTTP/3 baseados em QUIC e qual a versão exata corrigida da crate `quinn` no crates.io hoje?",
+            "language": "en",
+            "prompt": "What CVE vulnerabilities were discovered in October 2026 for QUIC-based HTTP/3 servers, and what is the exact patched version of the `quinn` crate on crates.io?",
             "chosen": (
                 "<think>\n"
-                "1. Verificação Epistêmica (Regra de Ouro Anti-Alucinação): A pergunta exige dados factuais em tempo real de outubro de 2026 (boletins CVE recentes e a versão exata publicada hoje no `crates.io`).\n"
-                "2. Esses fatos estão fora dos pesos estáticos do repositório local. Jamais devo adivinhar números de CVE ou versões de pacotes.\n"
-                "3. Vou emitir o Token de Falha Honesta `[UNKNOWN]: \"Preciso pesquisar sobre isso.\"` seguido da busca web estruturada `[WEB_SEARCH]` para raspar os resultados atualizados e responder com fontes citadas estilo Perplexity.\n"
+                "1. Epistemic Verification (Anti-Hallucination Golden Rule): The question requires real-time factual data from October 2026 (recent CVE advisories and the exact version on crates.io).\n"
+                "2. These facts lie outside static model weights. Never hallucinate CVE IDs or version strings.\n"
+                "3. Emitting Honest Failure Token `[UNKNOWN]: \"Need to research this.\"` followed by structured `[WEB_SEARCH]` to scrape updated findings and synthesize with cited sources.\n"
                 "</think>\n"
-                "[UNKNOWN]: \"Preciso pesquisar sobre isso.\"\n"
+                "[UNKNOWN]: \"Need to research this.\"\n"
                 "[WEB_SEARCH] quinn rust crate latest version security advisory CVE HTTP/3 QUIC October 2026 [/WEB_SEARCH]\n"
                 "<|rag_context|>\n"
                 "[PERPLEXITY_WEB_SEARCH_RESULTS query=\"quinn rust crate latest version security advisory CVE HTTP/3 QUIC October 2026\"]\n"
@@ -411,20 +411,20 @@ def generate_synthetic_reasoning_dataset(output_jsonl: Optional[str] = None) -> 
                 "<|/rag_context|>\n"
                 "[EVALUATE] [ACCEPT]\n"
                 "<think>\n"
-                "4. Síntese Verificada com Fontes: Os resultados raspados da web confirmam que o boletim `RUSTSEC-2026-0042` foi corrigido na versão `quinn 0.11.8` (`quinn-proto 0.11.9`). Vou sintetizar a resposta citando `[1]` e `[2]`.\n"
+                "4. Verified Source Synthesis: Scraped web results confirm advisory `RUSTSEC-2026-0042` is patched in `quinn 0.11.8` (`quinn-proto 0.11.9`). Synthesizing response citing `[1]` and `[2]`.\n"
                 "</think>\n"
-                "De acordo com os boletins de segurança atualizados de outubro de 2026, a mitigação contra exaustão de tabela de estados em pacotes QUIC Initial (`RUSTSEC-2026-0042`) foi implementada na versão **`quinn 0.11.8`** (com `quinn-proto 0.11.9`) <|citation|>[1]<|/citation|> <|citation|>[2]<|/citation|>.\n\n"
-                "Atualize seu `Cargo.toml` para garantir os limites estritos de *Connection ID (CID)*:\n\n"
+                "According to updated security advisories from October 2026, mitigation against state table exhaustion in Initial QUIC frames (`RUSTSEC-2026-0042`) was implemented in version **`quinn 0.11.8`** (with `quinn-proto 0.11.9`) <|citation|>[1]<|/citation|> <|citation|>[2]<|/citation|>.\n\n"
+                "Update your `Cargo.toml` to enforce strict Connection ID (CID) rate limits:\n\n"
                 "```toml\n"
                 "[dependencies]\n"
                 "quinn = \"0.11.8\"\n"
                 "quinn-proto = \"0.11.9\"\n"
                 "```\n\n"
-                "**Fontes verificadas:**\n"
+                "**Verified Sources:**\n"
                 "- [1] RustSec Advisory Database (`RUSTSEC-2026-0042`)\n"
-                "- [2] Crates.io — `quinn v0.11.8` Release Notes (Outubro 2026)"
+                "- [2] Crates.io — `quinn v0.11.8` Release Notes (October 2026)"
             ),
-            "rejected": "Não houve nenhuma vulnerabilidade recente em 2026 e a versão mais recente é a 0.10.0.",
+            "rejected": "There were no recent vulnerabilities in 2026 and version 0.10.0 is the latest.",
         },
     ]
 

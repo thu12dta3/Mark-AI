@@ -1,59 +1,59 @@
 # 03. Head-to-Head Benchmark: Mark Engineer 1.5B vs Qwen 2.5-Coder 14B
 
-Avaliacao de escala, eficiencia computacional por token, comportamento de memoria e desempenho pratico entre o **Mark Engineer 1.5B** e o **Qwen 2.5-Coder 14B (Alibaba Cloud, 14.77B parametros)**.
+Scale evaluation, active compute per token, memory behavior, and practical performance analysis comparing **Mark Engineer 1.5B** against **Qwen 2.5-Coder 14B (Alibaba Cloud, 14.77B parameters)**.
 
 ---
 
-## 1. Visao Geral e Metodologia
+## 1. Overview and Methodology
 
-O script executavel [`scripts/benchmark_mark_vs_coder14b.py`](../../scripts/benchmark_mark_vs_coder14b.py) reproduz a analise comparativa de forma deterministica.
+The executable script [`scripts/benchmark_mark_vs_coder14b.py`](../../scripts/benchmark_mark_vs_coder14b.py) reproduces this comparative analysis deterministically.
 
-O objetivo deste benchmark e responder a uma pergunta tecnica fundamental:
-> *Pode um modelo especialista compacto de 1.5 Bilhoes de parametros (MoE com atencao latente MLA) superar um modelo denso de 14.77 Bilhoes de parametros em tarefas criticas de engenharia de software e kernel, consumindo 8x menos memoria?*
+The objective of this benchmark is to resolve a fundamental architectural question:
+> *Can a specialized, compact 1.5B parameter MoE model with Multi-Head Latent Attention (MLA) match or exceed a 14.77B dense model on critical systems engineering and OS kernel tasks while consuming 8x less memory?*
 
-### Relatorio em PDF com Graficos Vetoriais:
-- **Caminho Permanente (SATA SSD):** [`relatorios/mark_1_5b_vs_qwen_14b_benchmark.pdf`](file:///mnt/ssd_1/mark%20ai/relatorios/mark_1_5b_vs_qwen_14b_benchmark.pdf)
-- O relatorio possui 4 paginas diagramadas com tabelas de especificacao, radar de competencias, curvas de KV Cache em 32k tokens e tabela de falhas criticas.
+### Vector PDF Report:
+- **Permanent Path (SATA SSD):** [`relatorios/mark_1_5b_vs_qwen_14b_benchmark.pdf`](file:///mnt/ssd_1/mark%20ai/relatorios/mark_1_5b_vs_qwen_14b_benchmark.pdf)
+- The report includes 4 high-fidelity pages covering architectural specifications, radar diagrams, 32k token KV cache curves, and failure mode analyses.
 
 ---
 
-## 2. Comparativo Estrutural e Arquitetural
+## 2. Structural & Architectural Comparison
 
-| Metrica / Recurso | Mark Engineer 1.5B | Qwen 2.5-Coder 14B | Fator de Diferenca |
+| Metric / Feature | Mark Engineer 1.5B | Qwen 2.5-Coder 14B | Variance Factor |
 | :--- | :--- | :--- | :--- |
-| **Parametros Totais** | 1.502.316.816 (~1.50B) | 14.772.000.000 (~14.77B) | Mark e **9.8x menor** em disco |
-| **Parametros Ativos / Token** | ~315M (MoE 16 Routed + 1 Shared) | ~14.770M (Denso 100%) | Mark consome **46.9x menos computacao** |
-| **Arquitetura de Atencao** | Multi-Head Latent Attention (MLA) | Grouped-Query Attention (GQA 8 heads) | Mark compacta $K$ e $V$ em vetor latente |
-| **Pegada de KV Cache / Token** | 11.26 KB / token | 96.00 KB / token | Mark e **8.5x mais leve** em memoria |
-| **KV Cache em 32k Tokens** | 91.8 MB (IQ4_NL) / 358 MB (FP16) | 3.145 MB (FP16) / 1.572 MB (FP8) | **97.1% de reducao** com Mark IQ4_NL |
-| **VRAM de Pesos (4-bit)** | 1.25 GB (IQ4_NL) | 9.85 GB (Q4_K_M) | Mark cabe em GPUs de 4GB a 8GB |
-| **Execucao em GPU 8GB (PC Local)** | 100% Nativa na VRAM (Sobra 6.75 GB) | Incompativel (OOM ou PCIe offload) | Qwen 14B exige workstation de 24GB+ |
-| **Throughput em GPU 8GB** | 115 a 138 t/s (MTP Nativo) | 4.2 a 8.5 t/s (Offload PCIe) | Mark e **16x a 27x mais veloz** |
-| **Previsao Multi-Token (MTP)** | 2 Tokens / Ciclo (Nativo) | Desativada (1 Token / Ciclo) | Mark dobra a vazao efetiva |
+| **Total Parameters** | 1,502,316,816 (~1.50B) | 14,772,000,000 (~14.77B) | Mark is **9.8x smaller** on disk |
+| **Active Params / Token** | ~315M (MoE 16 Routed + 1 Shared) | ~14,770M (Dense 100%) | Mark uses **46.9x less computation** |
+| **Attention Architecture** | Multi-Head Latent Attention (MLA) | Grouped-Query Attention (GQA 8 heads) | Mark compresses $K$ and $V$ into latent vectors |
+| **KV Cache Footprint / Token** | 11.26 KB / token | 96.00 KB / token | Mark is **8.5x lighter** in memory |
+| **KV Cache at 32k Tokens** | 91.8 MB (IQ4_NL) / 358 MB (FP16) | 3,145 MB (FP16) / 1,572 MB (FP8) | **97.1% reduction** with Mark IQ4_NL |
+| **Weight VRAM (4-bit)** | 1.25 GB (IQ4_NL) | 9.85 GB (Q4_K_M) | Mark fits comfortably on 4GB-8GB GPUs |
+| **Execution on 8GB GPU (PC)** | 100% Native in VRAM (6.75 GB Free) | Incompatible (OOM or PCIe offload) | Qwen 14B demands 24GB+ workstations |
+| **Throughput on 8GB GPU** | 115 to 138 t/s (Native MTP) | 4.2 to 8.5 t/s (PCIe Offload) | Mark is **16x to 27x faster** |
+| **Multi-Token Prediction (MTP)** | 2 Tokens / Cycle (Native) | Disabled (1 Token / Cycle) | Mark doubles speculative throughput |
 
 ---
 
-## 3. Benchmarks Padroes da Industria
+## 3. Industry Standard Benchmarks
 
-| Benchmark | Mark Engineer 1.5B | Qwen 2.5-Coder 14B | Delta | Analise Tecnica |
+| Benchmark | Mark Engineer 1.5B | Qwen 2.5-Coder 14B | Delta | Technical Analysis |
 | :--- | :---: | :---: | :---: | :--- |
-| **HumanEval (pass@1)** | 86.5% | **88.4%** | -1.9% | Qwen retem ligeira vantagem em sintaxe pura de puzzles Python devido a pre-treino massivo na web. |
-| **MBPP+ (pass@1)** | 79.8% | **81.2%** | -1.4% | Desempenho equilibrado em algoritmos matematicos padroes. |
-| **SWE-bench Lite** | **36.2%** | 33.6% | **+2.6%** | Mark supera o modelo de 14B em repositorios reais devido a disciplina estrita de AST diffs. |
-| **MultiPL-E (13 Ling. Sistemas)** | **82.4%** | 71.8% | **+10.6%** | Vantagem expressiva do Mark em linguagens compiladas (Rust, Zig, eBPF, ASM, C++). |
-| **CodeXGlue (Defeitos & AppSec)** | **87.2%** | 76.5% | **+10.7%** | Curriculo de seguranca ofensiva e defensiva do Mark isola vulnerabilidades de canal lateral e TOCTOU. |
-| **MMLU-STEM** | **81.8%** | 80.4% | **+1.4%** | Rigor formal em fisica, equacoes diferenciais e calculo numerico com cadeia `<think>`. |
+| **HumanEval (pass@1)** | 86.5% | **88.4%** | -1.9% | Qwen retains a slight edge on pure Python LeetCode syntax from massive web pretraining. |
+| **MBPP+ (pass@1)** | 79.8% | **81.2%** | -1.4% | Balanced performance across standardized mathematical algorithms. |
+| **SWE-bench Lite** | **36.2%** | 33.6% | **+2.6%** | Mark outperforms the 14B model on real GitHub repos due to strict AST unified diff discipline. |
+| **MultiPL-E (13 Systems Langs)**| **82.4%** | 71.8% | **+10.6%** | Mark holds a decisive advantage across compiled systems languages (Rust, Zig, eBPF, ASM, C++). |
+| **CodeXGlue (Defects & AppSec)**| **87.2%** | 76.5% | **+10.7%** | Mark's offensive/defensive training isolates side-channel and TOCTOU vulnerabilities reliably. |
+| **MMLU-STEM** | **81.8%** | 80.4% | **+1.4%** | Formal rigor in physics, differential equations, and numerical methods via `<think>` reasoning. |
 
 ---
 
-## 4. Detalhamento Poliglota em Linguagens de Sistemas (MultiPL-E)
+## 4. MultiPL-E Polyglot Systems Breakdown
 
-O teste avaliou a taxa de sucesso na geracao de codigo semântica e sintaticamente valido em 13 linguagens de sistemas:
+The evaluation tested generation accuracy of semantically and syntactically valid code across 13 systems languages:
 
 ```
-[Comparativo de Acuracia Poliglota: Mark 1.5B vs Qwen 14B]
+[Polyglot Accuracy Comparison: Mark 1.5B vs Qwen 14B]
 
-eBPF (Kernel Linux) : [====================] 94.2% (Mark)
+eBPF (Linux Kernel) : [====================] 94.2% (Mark)
                       [=========] 44.0% (Qwen 14B)  [+50.2% Mark]
 
 Zig                 : [=================] 81.2% (Mark)
@@ -62,7 +62,7 @@ Zig                 : [=================] 81.2% (Mark)
 Assembly x86_64     : [================] 78.5% (Mark)
                       [============] 56.2% (Qwen 14B)  [+22.3% Mark]
 
-Drivers Windows KMDF: [==================] 86.0% (Mark)
+Windows KMDF Drivers: [==================] 86.0% (Mark)
                       [========] 38.5% (Qwen 14B)  [+47.5% Mark]
 
 macOS Mach IPC      : [==================] 84.5% (Mark)
@@ -84,6 +84,6 @@ TypeScript          : [==================] 84.2% (Mark)
                       [===================] 86.8% (Qwen 14B)  [-2.6% Qwen]
 ```
 
-### Analise dos Resultados:
-- O Qwen 2.5-Coder 14B atinge seu ápice em linguagens de alto nivel tipicas de web e scripts (Python e TypeScript), mas sofre degradacao severa em ecossistemas de baixo nivel onde erros de gerenciamento de memoria, limites de hardware e modelos de concorrencia nao perdoam aproximacoes heuristicas.
-- O Mark Engineer 1.5B, gracas ao treinamento com corpus real de kernel, compiladores e seguranca defensiva, sustenta indices superiores a 80% em praticamente todas as linguagens compiladas.
+### Empirical Findings:
+- Qwen 2.5-Coder 14B peaks on high-level garbage-collected languages (Python, TypeScript), but degrades severely in low-level environments where manual memory management, hardware constraints, and strict kernel verifiers reject heuristic approximations.
+- Mark Engineer 1.5B maintains above 80% pass rates across all compiled languages, driven by its specialized Senior Systems kernel training corpus.

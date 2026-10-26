@@ -1,18 +1,18 @@
 """
 Mark Primal - DeepSeek-V3/R1 + Qwen3-VL Inspired Core Neural Architecture (PyTorch Native)
 =======================================================================================
-Inovações de Engenharia Implementadas:
+Implemented Engineering Innovations:
 1. Multi-Head Latent Attention (MLA - DeepSeek-V2/V3):
-   - Comprime Key e Value em um vetor latente conjunto c_KV (kv_lora_rank = 512) + k_R desacoplado (qk_rope_head_dim = 64).
-   - Reduz o KV Cache de inferência em 64.4% em relação ao GQA padrão! Em 32k tokens, gasta apenas ~1.18 GB.
-2. DeepSeekMoE Híbrido (Shared Expert + Top-K Fine-Grained Routed Experts com Aux-Loss-Free Load Balancing):
-   - Camadas densas SwiGLU nos primeiros blocos + Camadas DeepSeekMoE com Bias Dinâmico sem perda auxiliar.
+   - Compresses Key and Value into joint latent vector c_KV (kv_lora_rank = 512) + decoupled k_R (qk_rope_head_dim = 64).
+   - Reduces inference KV Cache by 64.4% compared to standard GQA. In 32k tokens, requires only ~1.18 GB.
+2. Hybrid DeepSeekMoE (Shared Expert + Top-K Fine-Grained Routed Experts with Aux-Loss-Free Load Balancing):
+   - Dense SwiGLU layers in initial blocks + DeepSeekMoE layers with Dynamic Bias and no auxiliary loss.
 3. Multi-Token Prediction (MTP - DeepSeek-V3):
-   - Cabeça de predição futura (t+1 e t+2) que acelera a convergência de raciocínio e permite Speculative Decoding nativo (2x tokens/s).
-4. Multimodal Vision Encoder (AnyRes + 2D-RoPE + 2x2 PixelShuffle Projector - superior ao Qwen3-VL em eficiência de VRAM):
-   - Comprime grids visuais 4x antes da atenção, com suporte a regiões de foco (`vision_focus.py`).
+   - Future token prediction head (t+1 and t+2) accelerating reasoning convergence and enabling native Speculative Decoding (2x tokens/s).
+4. Multimodal Vision Encoder (AnyRes + 2D-RoPE + 2x2 PixelShuffle Projector - superior VRAM efficiency vs Qwen3-VL):
+   - Compresses visual grids 4x prior to attention, with focus region support (`vision_focus.py`).
 5. Prosody & Streaming Acoustic Adapter (ElevenLabs / Fish Speech Ready):
-   - Cabeça prosódica leve para predizer emoção, cadência e fronteiras de chunking em tempo real.
+   - Lightweight prosody head predicting emotion, cadence, and chunking boundaries in real time.
 """
 
 import math
@@ -26,36 +26,36 @@ import torch.nn.functional as F
 
 @dataclass
 class MarkConfig:
-    # Topologia Base (~2.98B Parâmetros Totais | ~2.35B Ativos por Token)
+    # Base Topology (~2.98B Total Parameters | ~2.35B Active per Token)
     vocab_size: int = 49152
-    dim: int = 2304                        # Dimensão oculta principal (d_model)
-    n_layers: int = 28                     # 28 blocos Transformer
-    n_heads: int = 24                      # Cabeças de atenção
+    dim: int = 2304                        # Main hidden dimension (d_model)
+    n_layers: int = 28                     # 28 Transformer blocks
+    n_heads: int = 24                      # Attention heads
 
     # 1. DeepSeek Multi-Head Latent Attention (MLA)
     use_mla: bool = True
-    q_lora_rank: int = 768                 # Compressão low-rank de Query
-    kv_lora_rank: int = 512                # Vetor latente comprimido c_KV (armazenado no PagedLatentKVCache!)
-    qk_nope_head_dim: int = 64             # Dimensão por cabeça sem RoPE
-    qk_rope_head_dim: int = 32             # Dimensão por cabeça com RoPE desacoplado (Decoupled RoPE)
-    v_head_dim: int = 96                   # Dimensão de saída de Value por cabeça
-    n_kv_heads: int = 8                    # Usado apenas se use_mla=False (fallback GQA)
-    kv_cache_quant: str = "IQ4_NL"         # Suporta: "F16", "Q8_0", "Q4_0", "IQ4_NL" (estilo LM Studio / llama.cpp!)
+    q_lora_rank: int = 768                 # Query low-rank compression
+    kv_lora_rank: int = 512                # Compressed latent vector c_KV (stored in PagedLatentKVCache)
+    qk_nope_head_dim: int = 64             # Head dimension without RoPE
+    qk_rope_head_dim: int = 32             # Head dimension with decoupled RoPE
+    v_head_dim: int = 96                   # Value head dimension
+    n_kv_heads: int = 8                    # Used only if use_mla=False (fallback GQA)
+    kv_cache_quant: str = "IQ4_NL"         # Supports: "F16", "Q8_0", "Q4_0", "IQ4_NL" (LM Studio / llama.cpp style)
 
-    # 2. DeepSeekMoE + Recursive Weight-Sharing (Mais Potência em Menos Parâmetros)
-    n_dense_layers: int = 4                # Primeiras 4 camadas densas para estabilidade de representação
-    moe_layer_freq: int = 2                # Aplica MoE a cada 2 camadas após n_dense_layers
-    recursive_depth_loops: int = 2         # Recicla blocos intermediários com LoRA por passo (dobra profundidade lógica com ~0 MB extra!)
-    intermediate_size: int = 6144          # Dimensão SwiGLU para camadas densas
-    n_shared_experts: int = 1              # Especialistas sempre ativos (capturam sintaxe base Rust/Python/Kotlin)
-    n_routed_experts: int = 16             # Especialistas roteados por domínio (COMPUTING, ELECTRONICS, CHEMISTRY, AFV, etc.)
-    num_experts_per_tok: int = 2           # Top-2 especialistas ativados por token
-    moe_intermediate_size: int = 1536      # Dimensão de cada especialista fino
-    router_bias_update_rate: float = 1e-3  # Taxa de atualização do bias Aux-Loss-Free (DeepSeek-V3)
+    # 2. DeepSeekMoE + Recursive Weight-Sharing (More Capacity in Fewer Parameters)
+    n_dense_layers: int = 4                # First 4 dense layers for representational stability
+    moe_layer_freq: int = 2                # MoE layer frequency after n_dense_layers
+    recursive_depth_loops: int = 2         # Recycles intermediate blocks with LoRA per step (doubles logical depth with ~0 MB extra overhead)
+    intermediate_size: int = 6144          # SwiGLU intermediate dimension for dense layers
+    n_shared_experts: int = 1              # Always-active shared experts (capture syntax for Rust/Python/Kotlin/etc.)
+    n_routed_experts: int = 16             # Domain-routed experts (COMPUTING, ELECTRONICS, CHEMISTRY, AFV, etc.)
+    num_experts_per_tok: int = 2           # Top-2 activated experts per token
+    moe_intermediate_size: int = 1536      # Dimension per fine-grained expert
+    router_bias_update_rate: float = 1e-3  # Aux-Loss-Free dynamic bias update rate (DeepSeek-V3)
 
     # 3. Multi-Token Prediction (MTP - DeepSeek-V3)
-    mtp_depth: int = 1                     # Prediz t+1 (principal) e t+2 (MTP head) simultaneamente
-    mtp_loss_weight: float = 0.3           # Peso lambda_MTP na loss de treinamento
+    mtp_depth: int = 1                     # Predicts t+1 (main) and t+2 (MTP head) simultaneously
+    mtp_loss_weight: float = 0.3           # lambda_MTP loss weight during training
 
     # 4. Multimodal Vision (Super-Qwen3-VL: AnyRes + 2D-RoPE + 2x2 PixelShuffle)
     vision_enabled: bool = True
@@ -64,13 +64,13 @@ class MarkConfig:
     vision_dim: int = 768
     vision_layers: int = 6
     vision_heads: int = 12
-    vision_pixel_shuffle_scale: int = 2    # Comprime 2x2 patches (4 tokens -> 1 token visual denso)
+    vision_pixel_shuffle_scale: int = 2    # Compresses 2x2 patches (4 tokens -> 1 dense visual token)
 
     # 5. Voice & Prosody Head (ElevenLabs / Fish Speech Streaming Integration)
     voice_prosody_enabled: bool = True
     n_prosody_tags: int = 8                # [calm, technical, urgent, empathetic, concise, pause_short, pause_long, breath]
 
-    # Contexto e RoPE
+    # Context and RoPE
     max_seq_len: int = 8192
     rope_theta: float = 500000.0
     rope_scaling_factor: float = 1.0
@@ -78,7 +78,7 @@ class MarkConfig:
     dropout: float = 0.0
     tie_word_embeddings: bool = True
 
-    # IDs de Tokens Especiais de Controle (Ecossistema MARK + DeepSeek-R1 + Perplexity Web Search + Multimodal + Voz)
+    # Special Control Token IDs (MARK Ecosystem + DeepSeek-R1 + Perplexity Web Search + Multimodal + Voice)
     pad_token_id: int = 0
     bos_token_id: int = 1
     eos_token_id: int = 2
@@ -93,7 +93,7 @@ class MarkConfig:
     vision_patch_id: int = 11              # <|vision_patch|>
     vision_end_id: int = 12                # <|vision_end|>
     voice_stream_id: int = 13              # <|voice_stream|>
-    unknown_id: int = 14                   # [UNKNOWN] (Token de Falha Honesta -> Aciona Agente Perplexity Web Search!)
+    unknown_id: int = 14                   # [UNKNOWN] (Epistemic token -> triggers Perplexity Web Search Agent)
     web_search_id: int = 15                # [WEB_SEARCH]
     web_search_end_id: int = 16            # [/WEB_SEARCH]
 
@@ -119,7 +119,7 @@ class MarkConfig:
         if not self.tie_word_embeddings:
             total += self.vocab_size * self.dim
 
-        # MLA params por camada
+        # MLA parameters per layer
         mla_per_layer = (
             self.dim * self.q_lora_rank
             + self.q_lora_rank * (self.n_heads * self.qk_head_dim)
@@ -154,15 +154,15 @@ class MarkConfig:
     @classmethod
     def create_engineer_1_5b(cls, vocab_size: int = 4311) -> "MarkConfig":
         """
-        Mark Engineer 1.5B: Configuracao de 1.50 Bilhoes de Parametros (1.4995B)
-        otimizada para Engenharia de Sistemas, AppSec P0, Concorrencia e Baixo Nivel.
-        - Dimensao Oculta: 1280
-        - Profundidade: 16 blocos fisicos (com Recursive Depth LoRA r=64 simulando 24-32 camadas logicas)
-        - Atencao: Multi-Head Latent Attention (MLA) com 16 cabecas, KV LoRA Rank 320, Q LoRA Rank 640
-        - DeepSeekMoE: 16 Especialistas Roteados + 1 Especialista Compartilhado
-        - Parametros Totais: 1.499.534.080 (~1.50B)
-        - Parametros Ativos por Token: ~315M (Padrao) a ~440M (Potencia Maxima)
-        - VRAM Estimada em 4-bit (IQ4_NL): ~1.1 GB a 1.4 GB
+        Mark Engineer 1.5B: 1.50 Billion Parameter Configuration (1.4995B)
+        optimized for Systems Engineering, AppSec P0, Concurrency, and Low-Level Runtimes.
+        - Hidden Dimension: 1280
+        - Depth: 16 physical blocks (with Recursive Depth LoRA r=64 simulating 24-32 logical layers)
+        - Attention: Multi-Head Latent Attention (MLA) with 16 heads, KV LoRA Rank 320, Q LoRA Rank 640
+        - DeepSeekMoE: 16 Routed Experts + 1 Shared Expert
+        - Total Parameters: 1,499,534,080 (~1.50B)
+        - Active Parameters per Token: ~315M (Default) to ~440M (Peak Throughput)
+        - Estimated VRAM at 4-bit (IQ4_NL): ~1.1 GB to 1.4 GB
         """
         return cls(
             vocab_size=vocab_size,
@@ -194,17 +194,17 @@ class MarkConfig:
     @classmethod
     def create_general_1_5b(cls, vocab_size: int = 4377) -> "MarkConfig":
         """
-        Mark General 1.5B: Configuracao de 1.50 Bilhoes de Parametros (1.502B)
-        otimizada para Cognicao Geral Multidominio (10 dominios oficiais MARK),
-        STEM avancado (Matematica Simbolica, Fisica, Quimica), Self-RAG Perplexity
-        ([UNKNOWN], [WEB_SEARCH], [/WEB_SEARCH]) e Sintese Estruturada de Documentos.
-        - Dimensao Oculta: 1280
-        - Profundidade: 16 blocos fisicos (com Recursive Depth LoRA r=64)
-        - Atencao: Multi-Head Latent Attention (MLA) com 16 cabecas, KV LoRA Rank 320, Q LoRA Rank 640
-        - DeepSeekMoE: 16 Especialistas Roteados + 1 Especialista Compartilhado
-        - Parametros Totais: 1.502.301.456 (~1.50B)
-        - Parametros Ativos por Token: ~315M (Padrao) a ~440M (Potencia Maxima)
-        - VRAM Estimada em 4-bit (IQ4_NL): ~1.1 GB a 1.4 GB
+        Mark General 1.5B: 1.50 Billion Parameter Configuration (1.502B)
+        optimized for Multi-Domain General Cognition (10 official MARK domains),
+        Advanced STEM (Symbolic Math, Physics, Chemistry), Self-RAG Perplexity
+        ([UNKNOWN], [WEB_SEARCH], [/WEB_SEARCH]), and Structured Document Synthesis.
+        - Hidden Dimension: 1280
+        - Depth: 16 physical blocks (with Recursive Depth LoRA r=64)
+        - Attention: Multi-Head Latent Attention (MLA) with 16 heads, KV LoRA Rank 320, Q LoRA Rank 640
+        - DeepSeekMoE: 16 Routed Experts + 1 Shared Expert
+        - Total Parameters: 1,502,301,456 (~1.50B)
+        - Active Parameters per Token: ~315M (Default) to ~440M (Peak Throughput)
+        - Estimated VRAM at 4-bit (IQ4_NL): ~1.1 GB to 1.4 GB
         """
         return cls(
             vocab_size=vocab_size,
@@ -236,15 +236,15 @@ class MarkConfig:
     @classmethod
     def create_engineer_300m(cls, vocab_size: int = 4311) -> "MarkConfig":
         """
-        Mark Engineer 300M (Copia Preservada de Producao):
-        Topologia ultraleve de 302.019.848 parametros treinada e convergida na A100.
-        - Dimensao Oculta: 1024
-        - Profundidade: 8 blocos fisicos (com Recursive LoRA r=64)
-        - Atencao: MLA com 16 cabecas, KV LoRA Rank 256, Q LoRA Rank 512
-        - DeepSeekMoE: 16 Especialistas Roteados + 1 Compartilhado (moe_inter=1536)
-        - Parametros Totais: 302.02M
-        - Parametros Ativos por Token: ~110M (Padrao) a ~165M (Potencia Maxima)
-        - VRAM 4-bit (IQ4_NL): ~350 MB a 500 MB (163 MB em disco)
+        Mark Engineer 300M (Preserved Production Weights):
+        Ultra-lightweight topology with 302,019,848 parameters trained and converged on A100.
+        - Hidden Dimension: 1024
+        - Depth: 8 physical blocks (with Recursive LoRA r=64)
+        - Attention: MLA with 16 heads, KV LoRA Rank 256, Q LoRA Rank 512
+        - DeepSeekMoE: 16 Routed Experts + 1 Shared Expert (moe_inter=1536)
+        - Total Parameters: 302.02M
+        - Active Parameters per Token: ~110M (Default) to ~165M (Peak Throughput)
+        - 4-bit VRAM (IQ4_NL): ~350 MB to 500 MB (163 MB on disk)
         """
         return cls(
             vocab_size=vocab_size,
@@ -275,14 +275,14 @@ class MarkConfig:
     @classmethod
     def create_primal(cls, vocab_size: int = 49152) -> "MarkConfig":
         """
-        Mark Primal (Anteriormente Mark 0.1):
-        Arquitetura Fundacional Base com ~2.95B parametros densos/MoE.
-        - Dimensao Oculta: 2304
-        - Profundidade: 28 blocos Transformer
-        - Atencao: MLA com 24 cabecas, KV LoRA Rank 512, Q LoRA Rank 768
-        - DeepSeekMoE: 16 Especialistas Roteados + 1 Compartilhado
-        - Parametros Totais: ~2.98 Bilhoes
-        - Suporte a Multimodal Vision (SigLIP/Patch 14) + Voz/Prosodia
+        Mark Primal (Formerly Mark 0.1):
+        Foundational Base Architecture with ~2.95B dense/MoE parameters.
+        - Hidden Dimension: 2304
+        - Depth: 28 Transformer blocks
+        - Attention: MLA with 24 heads, KV LoRA Rank 512, Q LoRA Rank 768
+        - DeepSeekMoE: 16 Routed Experts + 1 Shared Expert
+        - Total Parameters: ~2.98 Billion
+        - Multimodal Vision Support (SigLIP/Patch 14) + Voice/Prosody
         """
         return cls(
             vocab_size=vocab_size,
@@ -311,8 +311,8 @@ class MarkConfig:
         )
 
 
-# Tabela Não-Linear IQ4_NL (Inspirada no llama.cpp / LM Studio kvalues_iq4nl):
-# Concentra os 16 níveis de 4-bit onde a distribuição Gaussiana/Laplaciana dos pesos e ativações é mais densa!
+# Non-Linear IQ4_NL Lookup Table (Inspired by llama.cpp / LM Studio kvalues_iq4nl):
+# Focuses the 16 4-bit levels where Gaussian/Laplacian distributions of weights/activations are densest.
 IQ4_NL_LOOKUP_VALUES = [
     -1.0, -0.6961928009986877, -0.5250730514526367, -0.39491748809814453,
     -0.28444138169288635, -0.18477343022823334, -0.09105003625154495, 0.0,
@@ -323,7 +323,7 @@ IQ4_NL_LOOKUP_VALUES = [
 
 class RMSNorm(nn.Module):
     """
-    Root Mean Square Layer Normalization executada em FP32 para estabilidade numérica.
+    Root Mean Square Layer Normalization executed in FP32 for numerical stability.
     """
     def __init__(self, dim: int, eps: float = 1e-5):
         super().__init__()
@@ -345,7 +345,7 @@ def precompute_freqs_cis(
     device: Optional[torch.device] = None,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """
-    Pré-computa senos e cossenos para Decoupled RoPE com suporte a YaRN / NTK-Dynamic Scaling.
+    Precomputes cosines and sines for Decoupled RoPE with YaRN / NTK-Dynamic Scaling support.
     """
     if scaling_factor > 1.0:
         theta = theta * (
@@ -367,7 +367,7 @@ def apply_rotary_emb(
     sin: torch.Tensor,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """
-    Aplica RoPE a tensores 4D: xq (bsz, seqlen, n_heads, rope_dim), xk (bsz, seqlen, 1_or_heads, rope_dim).
+    Applies RoPE to 4D tensors: xq (bsz, seqlen, n_heads, rope_dim), xk (bsz, seqlen, 1_or_heads, rope_dim).
     """
     dtype = xq.dtype
     xq_f = xq.float().reshape(*xq.shape[:-1], -1, 2)
@@ -387,11 +387,11 @@ def apply_rotary_emb(
 
 class PagedKVCache:
     """
-    Super-Cache Latente Híbrido (DeepSeek MLA + Quantização Nativa estilo LM Studio: F16, Q8_0, Q4_0, IQ4_NL):
-    - Combina a compressão estrutural do MLA (544 valores por token em vez de 1280) com quantização de KV Cache!
-    - Modo `IQ4_NL` / `Q4_0`: Empacota 2 valores de 4-bit por byte (`uint8`) usando tabela não-linear `IQ4_NL_LOOKUP_VALUES`.
-      Em 32.768 tokens de contexto, o KV Cache inteiro gasta apenas **~240 MB** (contra 2.68 GB de um GQA FP16 normal — **91% de redução de VRAM**!).
-    - Modo `Q8_0`: Armazena em `int8` com escala por token (~478 MB em 32k tokens).
+    Hybrid Latent Super-Cache (DeepSeek MLA + Native Quantization LM Studio style: F16, Q8_0, Q4_0, IQ4_NL):
+    - Combines structural compression of MLA (544 values per token vs 1280) with KV Cache quantization.
+    - Mode `IQ4_NL` / `Q4_0`: Packs 2 4-bit values per byte (`uint8`) using non-linear lookup `IQ4_NL_LOOKUP_VALUES`.
+      At 32,768 context tokens, the entire KV Cache requires only **~240 MB** (vs 2.68 GB standard GQA FP16 — **91% VRAM reduction**).
+    - Mode `Q8_0`: Stores in `int8` with per-token scale (~478 MB at 32k tokens).
     """
     def __init__(
         self,
@@ -466,7 +466,7 @@ class PagedKVCache:
             )
 
     def _quantize_latent(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Comprime o vetor latente MLA para Q8_0, Q4_0 ou IQ4_NL (Não-Linear estilo LM Studio)."""
+        """Compresses MLA latent vector to Q8_0, Q4_0, or IQ4_NL (Non-linear LM Studio style)."""
         scale = x.abs().amax(dim=-1, keepdim=True).clamp(min=1e-6)
         norm_x = (x / scale).clamp(-1.0, 1.0)
 
@@ -486,7 +486,7 @@ class PagedKVCache:
         return packed, scale.to(torch.float16)
 
     def _dequantize_latent(self, q: torch.Tensor, scale: torch.Tensor) -> torch.Tensor:
-        """Reconstrói o vetor latente MLA em FP16/BF16 on-the-fly para o cálculo de atenção."""
+        """Reconstructs MLA latent vector in FP16/BF16 on-the-fly for attention computation."""
         scale_d = scale.to(self.dtype)
         if self.quant_mode == "Q8_0":
             return (q.to(self.dtype) / 127.0) * scale_d
@@ -601,11 +601,11 @@ class PagedKVCache:
 
 class DeepSeekMLAAttention(nn.Module):
     """
-    Multi-Head Latent Attention (MLA) extraída do DeepSeek-V2/V3:
-    1. Compressão Low-Rank de Query: c_Q = RMSNorm(x W_{DQ}), q = c_Q W_{UQ}
-    2. Compressão Low-Rank de KV:   c_KV = RMSNorm(x W_{DKV}), [k_C, v_C] = c_KV W_{UKV}
-    3. Decoupled RoPE:              k_R = RoPE(x W_{KR}), q_R = RoPE(c_Q W_{QR})
-    4. No KV Cache de inferência, apenas (c_KV, k_R) é salvo na VRAM!
+    Multi-Head Latent Attention (MLA) derived from DeepSeek-V2/V3:
+    1. Low-Rank Query Compression: c_Q = RMSNorm(x W_{DQ}), q = c_Q W_{UQ}
+    2. Low-Rank KV Compression:    c_KV = RMSNorm(x W_{DKV}), [k_C, v_C] = c_KV W_{UKV}
+    3. Decoupled RoPE:             k_R = RoPE(x W_{KR}), q_R = RoPE(c_Q W_{QR})
+    4. In inference KV Cache, only (c_KV, k_R) is stored in VRAM.
     """
     def __init__(self, config: MarkConfig, layer_idx: int = 0):
         super().__init__()
@@ -619,12 +619,12 @@ class DeepSeekMLAAttention(nn.Module):
         self.v_head_dim = config.v_head_dim
         self.dropout = config.dropout
 
-        # Compressão e descompressão de Query
+        # Query compression and decompression
         self.wq_a = nn.Linear(config.dim, config.q_lora_rank, bias=False)
         self.q_norm = RMSNorm(config.q_lora_rank, eps=config.rms_norm_eps)
         self.wq_b = nn.Linear(config.q_lora_rank, config.n_heads * self.qk_head_dim, bias=False)
 
-        # Compressão conjunta de KV + chave posicional desacoplada k_R
+        # Joint KV compression + decoupled positional key k_R
         self.wkv_a = nn.Linear(config.dim, config.kv_lora_rank + config.qk_rope_head_dim, bias=False)
         self.kv_norm = RMSNorm(config.kv_lora_rank, eps=config.rms_norm_eps)
         self.wkv_b = nn.Linear(
@@ -647,37 +647,37 @@ class DeepSeekMLAAttention(nn.Module):
     ) -> torch.Tensor:
         bsz, seqlen, _ = x.shape
 
-        # 1. Projeção Low-Rank de Query
+        # 1. Low-Rank Query Projection
         q = self.wq_b(self.q_norm(self.wq_a(x)))
         q = q.view(bsz, seqlen, self.n_heads, self.qk_head_dim)
         q_nope, q_pe = torch.split(q, [self.qk_nope_head_dim, self.qk_rope_head_dim], dim=-1)
 
-        # 2. Projeção Latente Comprimida de KV
+        # 2. Compressed Latent KV Projection
         kv_latent = self.wkv_a(x)
         c_kv, k_pe = torch.split(kv_latent, [self.kv_lora_rank, self.qk_rope_head_dim], dim=-1)
         c_kv = self.kv_norm(c_kv)
-        k_pe = k_pe.unsqueeze(2)  # (bsz, seqlen, 1, qk_rope_head_dim) - compartilhado entre cabeças!
+        k_pe = k_pe.unsqueeze(2)  # (bsz, seqlen, 1, qk_rope_head_dim) - shared across heads
 
-        # 3. Decoupled RoPE apenas nas fatias posicionais q_pe e k_pe
+        # 3. Decoupled RoPE only on positional slices q_pe and k_pe
         q_pe, k_pe = apply_rotary_emb(q_pe, k_pe, cos, sin)
 
-        # 4. Atualiza Cache Latente (salva apenas c_kv e k_pe na VRAM!)
+        # 4. Update Latent Cache (stores only c_kv and k_pe in VRAM)
         if kv_cache is not None and kv_cache.use_mla:
             c_kv, k_pe = kv_cache.update_mla(self.layer_idx, c_kv, k_pe, start_pos)
 
         total_seqlen = c_kv.shape[1]
 
-        # 5. Reconstrói K_nope e V a partir do vetor latente comprimido c_kv
+        # 5. Reconstruct K_nope and V from compressed latent vector c_kv
         kv = self.wkv_b(c_kv).view(bsz, total_seqlen, self.n_heads, self.qk_nope_head_dim + self.v_head_dim)
         k_nope, v = torch.split(kv, [self.qk_nope_head_dim, self.v_head_dim], dim=-1)
 
-        # Concatena parte sem RoPE + parte com RoPE
+        # Concatenate un-rotated slice + rotated slice
         q_full = torch.cat([q_nope, q_pe], dim=-1).transpose(1, 2)  # (bsz, n_heads, seqlen, qk_head_dim)
         k_pe_expanded = k_pe.expand(bsz, total_seqlen, self.n_heads, self.qk_rope_head_dim)
         k_full = torch.cat([k_nope, k_pe_expanded], dim=-1).transpose(1, 2)
         v_full = v.transpose(1, 2)
 
-        # 6. FlashAttention-2 via SDPA otimizado
+        # 6. FlashAttention-2 via optimized SDPA
         is_causal = (mask is None) and (kv_cache is None or seqlen > 1)
         if q_full.is_cuda and q_full.dtype in (torch.float16, torch.bfloat16):
             try:
@@ -717,7 +717,7 @@ class DeepSeekMLAAttention(nn.Module):
         return self.wo(output)
 
 
-# Alias para retrocompatibilidade com importações existentes
+# Backward compatibility alias for existing imports
 MarkSelfAttention = DeepSeekMLAAttention
 
 
@@ -737,15 +737,15 @@ class MarkSwiGLUFFN(nn.Module):
 
 class DeepSeekMoELayer(nn.Module):
     """
-    Arquitetura DeepSeekMoE (DeepSeek-V3) com Anti-Collapse Auto-Bias e Router Z-Loss:
-    - 1 Shared Expert sempre ativo (captura sintaxe universal e padrões de segurança)
-    - N Fine-Grained Routed Experts especializados nos domínios do MARK (Rust/C++/Assembly,
-      Python/JS/TS/Ruby/PHP/Kotlin/Java/Go/C#, Arquitetura, Visão, Eletrônica)
-    - Aux-Loss-Free Load Balancing + Rebalanceamento Anti-Colapso a cada 100 passos:
-      acumula estatísticas de seleção por token e corrige automaticamente qualquer especialista
-      que concentre chamadas demais ou fique subutilizado, garantindo distribuição uniforme entre
-      todas as linguagens (Assembly/C++ vs Ruby/PHP).
-    - Router Z-Loss leve: estabiliza os logits do roteador evitando saturação numérica em BF16/FP16.
+    DeepSeekMoE Architecture (DeepSeek-V3) with Anti-Collapse Auto-Bias and Router Z-Loss:
+    - 1 Shared Expert always active (captures universal syntax and core safety invariants)
+    - N Fine-Grained Routed Experts specialized in MARK domains (Rust/C++/Assembly,
+      Python/JS/TS/Ruby/PHP/Kotlin/Java/Go/C#, Architecture, Vision, Electronics)
+    - Aux-Loss-Free Load Balancing + Anti-Collapse Rebalancing every 100 steps:
+      accumulates selection statistics per token and automatically adjusts bias for any expert
+      that concentrates excessive calls or is underutilized, ensuring uniform distribution
+      across all languages (Assembly/C++ vs Ruby/PHP).
+    - Lightweight Router Z-Loss: stabilizes router logits, preventing numerical saturation in BF16/FP16.
     """
     def __init__(self, config: MarkConfig):
         super().__init__()
@@ -755,19 +755,19 @@ class DeepSeekMoELayer(nn.Module):
         self.bias_update_rate = config.router_bias_update_rate
         self.rebalance_interval = 100
 
-        # Especialista compartilhado sempre ativo
+        # Always-active shared expert
         self.shared_experts = MarkSwiGLUFFN(
             config.dim, config.moe_intermediate_size * config.n_shared_experts
         )
 
-        # Especialistas finos roteados
+        # Fine-grained routed experts
         self.routed_experts = nn.ModuleList([
             MarkSwiGLUFFN(config.dim, config.moe_intermediate_size)
             for _ in range(config.n_routed_experts)
         ])
 
         self.router = nn.Linear(config.dim, config.n_routed_experts, bias=False)
-        # Buffers Aux-Loss-Free + Acumulador de 100 passos contra colapso de roteamento
+        # Aux-Loss-Free buffers + 100-step routing collapse accumulator
         self.register_buffer("expert_bias", torch.zeros(config.n_routed_experts))
         self.register_buffer("window_expert_counts", torch.zeros(config.n_routed_experts))
         self.register_buffer("router_step_counter", torch.zeros(1, dtype=torch.long))
@@ -777,13 +777,13 @@ class DeepSeekMoELayer(nn.Module):
         bsz, seqlen, dim = x.shape
         x_flat = x.view(-1, dim)  # (N_tokens, dim)
 
-        # 1. Saída determinística do Shared Expert
+        # 1. Deterministic output from Shared Expert
         shared_out = self.shared_experts(x_flat)
 
-        # 2. Roteamento Sigmoid + Aux-Loss-Free Bias + Router Z-Loss
+        # 2. Sigmoid Routing + Aux-Loss-Free Bias + Router Z-Loss
         router_logits = self.router(x_flat)
         if self.training:
-            # Router Z-Loss: penaliza logits extremos (logsumexp^2) para evitar colapso de roteamento
+            # Router Z-Loss: penalizes extreme logits (logsumexp^2) to prevent routing collapse
             z_loss = torch.logsumexp(router_logits.float(), dim=-1).pow(2).mean()
             self.last_router_z_loss = 1e-4 * z_loss
         else:
@@ -796,7 +796,7 @@ class DeepSeekMoELayer(nn.Module):
         topk_weights = torch.gather(scores, dim=-1, index=topk_idx)
         topk_weights = (topk_weights / topk_weights.sum(dim=-1, keepdim=True).clamp(min=1e-6)).to(x.dtype)
 
-        # Atualização Aux-Loss-Free passo a passo + Auto-Ajuste Anti-Colapso a cada 100 passos
+        # Step-by-step Aux-Loss-Free update + 100-step Anti-Collapse self-tuning
         if self.training:
             with torch.no_grad():
                 counts = torch.bincount(topk_idx.flatten(), minlength=self.n_routed_experts).float()
@@ -811,15 +811,15 @@ class DeepSeekMoELayer(nn.Module):
                     total_calls = self.window_expert_counts.sum().clamp(min=1.0)
                     freq = self.window_expert_counts / total_calls
                     target_freq = 1.0 / float(self.n_routed_experts)
-                    # Se 2 ou 3 especialistas concentrarem a carga (> 2.5x o ideal) ou ficarem mortos (< 0.3x),
-                    # aplica correção proporcional mais forte e centraliza o bias em média zero
+                    # If 2 or 3 experts concentrate load (> 2.5x ideal) or starve (< 0.3x),
+                    # apply stronger proportional correction and center bias to zero mean
                     imbalance = target_freq - freq
                     self.expert_bias.add_(5.0 * self.bias_update_rate * (imbalance / target_freq).clamp(-3.0, 3.0))
                     self.expert_bias.sub_(self.expert_bias.mean())
                     self.expert_bias.clamp_(-0.35, 0.35)
                     self.window_expert_counts.zero_()
 
-        # 3. Despacho esparso para os Top-K especialistas
+        # 3. Sparse dispatch to Top-K experts
         routed_out = torch.zeros_like(x_flat)
         for k in range(self.top_k):
             expert_indices = topk_idx[:, k]
@@ -836,10 +836,10 @@ class DeepSeekMoELayer(nn.Module):
 
 class MarkVisionEncoder(nn.Module):
     """
-    Codificador Visual Nativo de Alta Densidade (Supera Qwen3-VL em eficiência de VRAM):
-    - Extração de Patches Conv2d + 2D Rotary Position Embeddings (suporta qualquer aspect ratio / resolução)
-    - PixelShuffle 2x2 Spatial Merger: comprime cada janela de 2x2 patches visuais em 1 único token denso,
-      reduzindo o custo de KV Cache de imagem em 4x sem perder detalhes de OCR, esquemas elétricos ou UI!
+    High-Density Native Visual Encoder (Surpasses Qwen3-VL in VRAM efficiency):
+    - Conv2d Patch Extraction + 2D Rotary Position Embeddings (supports arbitrary aspect ratio / resolution)
+    - PixelShuffle 2x2 Spatial Merger: compresses each 2x2 visual patch window into 1 dense token,
+      reducing image KV Cache cost by 4x without losing OCR, circuit schematic, or UI details.
     """
     def __init__(self, config: MarkConfig):
         super().__init__()
@@ -868,7 +868,7 @@ class MarkVisionEncoder(nn.Module):
         ])
         self.norm = RMSNorm(config.vision_dim)
 
-        # Projector MLP após fusão espacial 2x2 (4 * vision_dim -> dim do LLM)
+        # Projector MLP after 2x2 spatial merge (4 * vision_dim -> LLM dim)
         merged_dim = config.vision_dim * (self.scale ** 2)
         self.projector = nn.Sequential(
             nn.Linear(merged_dim, config.dim, bias=False),
@@ -878,11 +878,11 @@ class MarkVisionEncoder(nn.Module):
 
     def pixel_shuffle_merge(self, x: torch.Tensor, grid_h: int, grid_w: int) -> torch.Tensor:
         """
-        Funde blocos espaciais 2x2 de tokens visuais: (B, H*W, D) -> (B, (H/2)*(W/2), 4*D).
+        Merges 2x2 spatial blocks of visual tokens: (B, H*W, D) -> (B, (H/2)*(W/2), 4*D).
         """
         bsz, _, d = x.shape
         x = x.view(bsz, grid_h, grid_w, d)
-        # Padding caso grid_h ou grid_w seja ímpar
+        # Pad if grid_h or grid_w is odd
         pad_h = (self.scale - (grid_h % self.scale)) % self.scale
         pad_w = (self.scale - (grid_w % self.scale)) % self.scale
         if pad_h > 0 or pad_w > 0:
@@ -896,7 +896,7 @@ class MarkVisionEncoder(nn.Module):
 
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
         """
-        pixel_values: (bsz, 3, H, W) -> retorna visual tokens (bsz, N_visual_compressed, config.dim)
+        pixel_values: (bsz, 3, H, W) -> returns visual tokens (bsz, N_visual_compressed, config.dim)
         """
         patches = self.patch_embed(pixel_values)  # (bsz, vision_dim, grid_h, grid_w)
         grid_h, grid_w = patches.shape[2], patches.shape[3]
@@ -913,10 +913,10 @@ class MarkVisionEncoder(nn.Module):
 class DeepSeekMTPModule(nn.Module):
     """
     Multi-Token Prediction (MTP - DeepSeek-V3):
-    A partir do estado oculto h_t e do embedding do próximo token e_{t+1}, prediz o token t+2.
-    Benefício Duplo:
-    1. No treino: força o modelo a planejar múltiplos passos lógicos à frente (melhora código Rust e matemática).
-    2. Na inferência: serve como Draft Model nativo para Speculative Decoding sem gastar VRAM extra!
+    From hidden state h_t and next token embedding e_{t+1}, predicts token t+2.
+    Dual Benefit:
+    1. During training: forces model to plan multiple logical steps ahead (improves Rust code & math).
+    2. During inference: serves as native Draft Model for Speculative Decoding without extra VRAM.
     """
     def __init__(self, config: MarkConfig):
         super().__init__()
@@ -945,10 +945,10 @@ class MarkTransformerBlock(nn.Module):
         else:
             self.ffn = MarkSwiGLUFFN(config.dim, config.intermediate_size)
 
-        # Recursive Latent Refinement ($r=64$) com Estabilidade Garantida:
-        # 1. RMSNorm pré-loop (`refine_norm`) + RMSNorm residual pós-FFN (`refine_post_norm`)
-        # 2. Inicialização ZERO nos pesos de saída do LoRA (`nn.init.zeros_(self.refine_up.weight)`)
-        #    e `refine_scale` iniciado em 0.0 -> garante identidade exata no passo 0 (zero explosão de gradiente!)
+        # Recursive Latent Refinement (r=64) with Guaranteed Stability:
+        # 1. Pre-loop RMSNorm (`refine_norm`) + Post-FFN residual RMSNorm (`refine_post_norm`)
+        # 2. ZERO initialization on LoRA output weights (`nn.init.zeros_(self.refine_up.weight)`)
+        #    and `refine_scale` initialized at 0.0 -> guarantees exact identity at step 0 (zero gradient explosion).
         self.recursive_loops = max(1, getattr(config, "recursive_depth_loops", 1))
         if self.recursive_loops > 1:
             rank = 64
@@ -981,7 +981,7 @@ class MarkTransformerBlock(nn.Module):
 
 class MarkModel(nn.Module):
     """
-    Arquitetura Fundacional Completa Mark 0.1 (DeepSeek-V3/R1 + Multimodal Vision + Voice Prosody).
+    Complete Mark 0.1 Foundational Architecture (DeepSeek-V3/R1 + Multimodal Vision + Voice Prosody).
     """
     def __init__(self, config: MarkConfig):
         super().__init__()
@@ -996,13 +996,13 @@ class MarkModel(nn.Module):
         if config.tie_word_embeddings:
             self.lm_head.weight = self.tok_embeddings.weight
 
-        # Módulo Multi-Token Prediction (DeepSeek-V3)
+        # Multi-Token Prediction module (DeepSeek-V3)
         self.mtp_module = DeepSeekMTPModule(config) if config.mtp_depth > 0 else None
 
-        # Módulo de Visão Multimodal (AnyRes + PixelShuffle 2x2)
+        # Multimodal Vision Module (AnyRes + PixelShuffle 2x2)
         self.vision_encoder = MarkVisionEncoder(config) if config.vision_enabled else None
 
-        # Cabeça Prosódica Acústica para ElevenLabs / Fish Speech Streaming
+        # Acoustic Prosody Head for ElevenLabs / Fish Speech Streaming
         self.prosody_head = (
             nn.Linear(config.dim, config.n_prosody_tags, bias=False)
             if config.voice_prosody_enabled
@@ -1037,11 +1037,11 @@ class MarkModel(nn.Module):
             if name.endswith("wo.weight") or name.endswith("w_down.weight"):
                 nn.init.normal_(p, mean=0.0, std=std / math.sqrt(2 * self.config.n_layers))
             elif name.endswith("refine_up.weight") or name.endswith("refine_scale"):
-                # Garante inicialização zero estrita no adaptador recursivo LoRA para evitar explosão de gradiente!
+                # Guarantees strict zero-init in recursive LoRA adapter to prevent gradient explosion
                 nn.init.zeros_(p)
 
     def get_router_z_loss(self) -> torch.Tensor:
-        """Soma a Router Z-Loss de todas as camadas DeepSeekMoE ativas no passo de treinamento."""
+        """Sums Router Z-Loss across all active DeepSeekMoE layers during the training step."""
         z_losses = [
             layer.ffn.last_router_z_loss
             for layer in self.layers
@@ -1066,7 +1066,7 @@ class MarkModel(nn.Module):
         bsz, seqlen = input_ids.shape
         h = self.tok_embeddings(input_ids)
 
-        # Injeção Multimodal de Tokens Visuais (substitui tokens <|vision_patch|> pelos embeddings reais da imagem)
+        # Multimodal Visual Token Injection (replaces <|vision_patch|> tokens with real image embeddings)
         if pixel_values is not None and self.vision_encoder is not None:
             vis_embeds = self.vision_encoder(pixel_values).to(h.dtype)
             vis_mask = input_ids == self.config.vision_patch_id
@@ -1118,7 +1118,7 @@ class MarkModel(nn.Module):
         logits = self.lm_head(h_final)
 
         if return_mtp and self.mtp_module is not None and seqlen > 1:
-            # Prediz t+2 usando h_t e o embedding do próximo token real/predito
+            # Predicts t+2 using h_t and embedding of next token
             next_embeds = self.tok_embeddings(input_ids[:, 1:])
             h_mtp = self.mtp_module(h_final[:, :-1, :], next_embeds)
             mtp_logits = self.lm_head(h_mtp)
@@ -1134,8 +1134,8 @@ class MarkModel(nn.Module):
         start_pos: int,
     ) -> Tuple[int, Optional[int]]:
         """
-        Speculative Decoding Nativo usando a cabeça MTP (DeepSeek-V3):
-        Retorna (token_t+1, draft_token_t+2) em uma única passada!
+        Native Speculative Decoding using the MTP head (DeepSeek-V3):
+        Returns (token_t+1, draft_token_t+2) in a single forward pass.
         """
         bsz, seqlen = cur_ids.shape
         h = self.tok_embeddings(cur_ids)

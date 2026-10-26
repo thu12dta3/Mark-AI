@@ -1,11 +1,11 @@
 """
-Mark Engineer - Benchmark de Capacidades & Métricas de Raciocínio (DeepSeek-R1 / MLA)
-Avalia rigorosamente o modelo em:
-1. Métricas de Raciocínio (<think>) e Resolução Passo-a-Passo
-2. Desambiguação de Pedidos Vagos em Arquiteturas Concretas
-3. Análise Profunda de Dados e Repositórios (MARK, MARK-PUBLIC, Roblox-LX)
-4. Segurança Cibernética Defensiva (AppSec, Hardening P0, Auditoria SAST)
-5. Domínio dos Top 20 Idiomas Globais mais Falados
+Mark Engineer - Capabilities & Reasoning Benchmark (DeepSeek-R1 / MLA)
+Rigorously evaluates the model across:
+1. Reasoning Depth (<think>) and Step-by-Step Problem Solving
+2. Vague Request Disambiguation into Concrete Production Architectures
+3. Deep Repository & Kernel Analysis (MARK, MARK-PUBLIC, Linux, Windows, macOS)
+4. Defensive Cybersecurity (AppSec P0, SAST Auditing, Constant-Time Crypto)
+5. Mastery across the Top 20 Global Most Spoken Languages
 """
 
 import ast
@@ -42,47 +42,47 @@ class BenchmarkResult:
     latency_seconds: float
 
 
-# Top 20 Idiomas Globais mais Falados (ISO 639-1 / Nomes)
+# Top 20 Global Languages by Speaker Population (ISO 639-1 / Names)
 TOP_20_GLOBAL_LANGUAGES = [
-    ("en", "Inglês", "How to implement a zero-copy ring buffer in Rust?"),
-    ("zh-hans", "Mandarim Simplificado", "如何在Go语言中实现高性能无锁循环缓冲区？"),
+    ("en", "English", "How to implement a zero-copy ring buffer in Rust?"),
+    ("zh-hans", "Simplified Chinese", "如何在Go语言中实现高性能无锁循环缓冲区？"),
     ("hi", "Hindi", "पायथन में नॉन-ब्लॉकिंग कनेक्शन पूल कैसे लागू करें?"),
-    ("es", "Espanhol", "¿Cómo optimizar una consulta de base de dados con índices compuestos?"),
-    ("fr", "Francês", "Comment structurer un pipeline asynchrone avec gestion des erreurs en Rust?"),
-    ("ar", "Árabe Padrão", "كيفية تطبيق نموذج الممثلين غير المتزامن باستخدام Tokio؟"),
+    ("es", "Spanish", "¿Cómo optimizar una consulta de base de datos con índices compuestos?"),
+    ("fr", "French", "Comment structurer un pipeline asynchrone avec gestion des erreurs en Rust?"),
+    ("ar", "Standard Arabic", "كيفية تطبيق نموذج الممثلين غير المتزامن باستخدام Tokio؟"),
     ("bn", "Bengali", "সি++ এ মেমরি লিক ছাড়া কাস্টম অ্যালোকেটার কীভাবে তৈরি করবেন?"),
-    ("pt", "Português", "Como estruturar o Hardening P0 contra ataques de replay no MARK?"),
-    ("ru", "Russo", "Как реализовать атомарный обмен указателями в многопоточном коде на C++?"),
+    ("pt", "Portuguese", "Como estruturar o Hardening P0 contra ataques de replay no MARK?"),
+    ("ru", "Russian", "Как реализовать атомарный обмен указателями в многопоточном коде на C++?"),
     ("ur", "Urdu", "رسٹ میں محفوظ کنکرنسی کے لیے چینلز کا صحیح استعمال کیسے کریں؟"),
-    ("id", "Indonésio", "Bagaimana cara mendesain arsitektur microservice tahan gangguan di Go?"),
-    ("de", "Alemão", "Wie implementiert man eine lock-free Queue mit atomaren Operationen in C++20?"),
-    ("ja", "Japonês", "RustでTokioを使用した非同期ワーカープールの設計パターンは何ですか？"),
-    ("mr", "Marata", "कनकूरंट प्रोग्रामिंगमध्ये डेडलॉक कसा टाळावा?"),
-    ("te", "Telugo", "గోలాంగ్‌లో కాంటెక్స్ట్ క్యాన్సిలేషన్‌ను సమర్థవంతంగా ఎలా ఉపయోగించాలి?"),
-    ("tr", "Turco", "Python asyncio ile yüksek verimli ağ soketi nasıl yönetilir?"),
-    ("ta", "Tâmil", "ரஸ்ட்டில் பாதுகாப்பான நினைவக ஒதுக்கீட்டை எவ்வாறு உறுதி செய்வது?"),
-    ("vi", "Vietnamita", "Làm thế nào để xây dựng worker pool không khóa trong C#?"),
-    ("ko", "Coreano", "C++20 코루틴을 활용한 비동기 I/O 파이프라인 구현 방법은?"),
-    ("it", "Italiano", "Come implementare un circuit breaker resiliente per chiamate gRPC in Go?"),
+    ("id", "Indonesian", "Bagaimana cara mendesain arsitektur microservice tahan gangguan di Go?"),
+    ("de", "German", "Wie implementiert man eine lock-free Queue mit atomaren Operationen in C++20?"),
+    ("ja", "Japanese", "RustでTokioを使用した非同期ワーカープールの設計パターンは何ですか？"),
+    ("mr", "Marathi", "कनकूरंट प्रोग्रामिंगमध्ये डेडलॉक कसा टाळावा?"),
+    ("te", "Telugu", "గోలాంగ్‌లో కాంటెక్స్ట్ క్యాన్సిలేషన్‌ను సమర్థవంతంగా ఎలా ఉపయోగించాలి?"),
+    ("tr", "Turkish", "Python asyncio ile yuksek verimli ag soketi nasil yonetilir?"),
+    ("ta", "Tamil", "ரஸ்ட்டில் பாதுகாப்பான நினைவக ஒதுக்கீட்டை எவ்வாறு உறுதி செய்வது?"),
+    ("vi", "Vietnamese", "Lam the nao de xay dung worker pool khong khoa trong C#?"),
+    ("ko", "Korean", "C++20 코루틴을 활용한 비동기 I/O 파이프라인 구현 방법은?"),
+    ("it", "Italian", "Come implementare un circuit breaker resiliente per chiamate gRPC in Go?"),
 ]
 
 
 def build_benchmark_test_suite() -> List[BenchmarkCase]:
     cases = [
-        # 1. Raciocínio Algorítmico & Métricas de Pensamento (<think>)
+        # 1. Algorithmic Reasoning & Reasoning Metrics (<think>)
         BenchmarkCase(
             case_id="reasoning_lock_free_queue",
             category="reasoning",
-            prompt="Implemente uma fila concorrente sem travamento (lock-free) em C++20 com atomic pointers e sem ABA problem.",
+            prompt="Implement a lock-free concurrent queue in C++20 with atomic pointers without the ABA problem.",
             expected_signals=["<think>", "</think>", "std::atomic", "compare_exchange_weak", "ABA", "hazard pointer"],
             negative_signals=["std::mutex", "sleep", "unwrap()"],
-            description="Avalia raciocínio algorítmico profundo e resolução do problema ABA com hazard pointers ou tagged pointers.",
+            description="Evaluates deep algorithmic reasoning and ABA mitigation via tagged pointers or hazard pointers.",
         ),
-        # 2. Interpretação de Pedido Vago
+        # 2. Vague Request Disambiguation
         BenchmarkCase(
             case_id="vague_intent_fast_cache",
             category="vague_intent",
-            prompt="preciso de um cache rapido na memoria pro meu backend em go",
+            prompt="i need a fast in-memory cache for my go backend",
             expected_signals=[
                 "<think>",
                 "</think>",
@@ -92,14 +92,14 @@ def build_benchmark_test_suite() -> List[BenchmarkCase]:
                 "eviction",
                 "LRU",
             ],
-            negative_signals=["map[string]any", "global lock sem sharding"],
-            description="Mede a capacidade de desmembrar um pedido vago em requisitos arquiteturais concretos (sharding de chaves, TTL, política de despejo).",
+            negative_signals=["map[string]any", "global lock without sharding"],
+            description="Evaluates capability to decompose a vague request into concrete production architecture requirements.",
         ),
-        # 3. Análise Profunda de Repositório (MARK / MARK-PUBLIC / Roblox-LX)
+        # 3. Deep Repository Analysis (MARK / MARK-PUBLIC / Roblox-LX)
         BenchmarkCase(
             case_id="repo_mark_public_tls_bridge",
             category="repo_analysis",
-            prompt="Explique como o cliente Android do MARK-PUBLIC valida certificados TLS 1.3 ao falar com o daemon Rust mark_link.",
+            prompt="Explain how the MARK-PUBLIC Android client validates TLS 1.3 certificates when communicating with the Rust mark_link daemon.",
             expected_signals=[
                 "<think>",
                 "</think>",
@@ -111,13 +111,13 @@ def build_benchmark_test_suite() -> List[BenchmarkCase]:
                 "0600",
             ],
             negative_signals=["TrustAllCerts", "ALLOW_ALL_HOSTNAME_VERIFIER"],
-            description="Testa compreensão da integração entre cliente Kotlin e servidor Rust no MARK-PUBLIC.",
+            description="Tests architectural understanding of Kotlin client and Rust daemon TLS bridge.",
         ),
-        # 4. Segurança Cibernética Defensiva & Hardening (AppSec P0)
+        # 4. Defensive Cybersecurity & Hardening (AppSec P0)
         BenchmarkCase(
             case_id="appsec_race_condition_toctou",
             category="appsec_defensive",
-            prompt="Identifique a vulnerabilidade no seguinte código C e forneça a versão endurecida:\n"
+            prompt="Identify the vulnerability in the following C code and provide the hardened version:\n"
                    "if (access(filepath, W_OK) == 0) {\n    FILE *f = fopen(filepath, \"w\");\n    fputs(data, f);\n    fclose(f);\n}",
             expected_signals=[
                 "<think>",
@@ -131,25 +131,25 @@ def build_benchmark_test_suite() -> List[BenchmarkCase]:
                 "fdopen",
             ],
             negative_signals=["usleep", "access()"],
-            description="Detecta condição de corrida TOCTOU e corrige utilizando file descriptors atômicos (O_NOFOLLOW/O_EXCL).",
+            description="Detects TOCTOU race conditions and remediates using atomic file descriptors (O_NOFOLLOW/O_EXCL).",
         ),
-        # 5. Módulo Perplexity Self-RAG
+        # 5. Perplexity Self-RAG Module
         BenchmarkCase(
             case_id="perplexity_self_rag_unknown",
             category="perplexity_rag",
-            prompt="Qual foi a vulnerabilidade de dia zero corrigida na biblioteca OpenSSL em 15 de outubro de 2026?",
+            prompt="What was the zero-day vulnerability patched in the OpenSSL library on October 15, 2026?",
             expected_signals=[
                 "<think>",
                 "</think>",
                 "[UNKNOWN]",
                 "[WEB_SEARCH]",
             ],
-            negative_signals=["Inventei que", "A vulnerabilidade CVE-2026-99999"],
-            description="Verifica se o modelo admite honestamente ausência de dados em tempo real gerando a tag especial [UNKNOWN] e busca web.",
+            negative_signals=["CVE-2026-99999", "A fictitious vulnerability was fixed"],
+            description="Verifies that the model honestly admits absent real-time facts via [UNKNOWN] and web search triggers.",
         ),
     ]
 
-    # Injeta os Top 20 Idiomas Globais
+    # Inject Top 20 Global Languages
     for code, name, query in TOP_20_GLOBAL_LANGUAGES:
         cases.append(
             BenchmarkCase(
@@ -157,8 +157,8 @@ def build_benchmark_test_suite() -> List[BenchmarkCase]:
                 category="polyglot_top20",
                 prompt=query,
                 expected_signals=["<think>", "</think>"],
-                negative_signals=["I cannot speak this language", "Não compreendi o idioma"],
-                description=f"Validação de compreensão técnica e raciocínio em {name} ({code}).",
+                negative_signals=["I cannot speak this language", "Language not supported"],
+                description=f"Validation of technical comprehension and reasoning in {name} ({code}).",
             )
         )
 
@@ -166,7 +166,7 @@ def build_benchmark_test_suite() -> List[BenchmarkCase]:
 
 
 def evaluate_response(case: BenchmarkCase, response: str, latency: float) -> BenchmarkResult:
-    # 1. Extração da cadeia de pensamento (<think>...</think>)
+    # 1. Chain-of-thought extraction (<think>...</think>)
     think_match = re.search(r"<think>(.*?)</think>", response, re.DOTALL)
     think_content = think_match.group(1).strip() if think_match else ""
     think_tokens = len(think_content.split())
@@ -174,7 +174,7 @@ def evaluate_response(case: BenchmarkCase, response: str, latency: float) -> Ben
     output_tokens = max(0, total_tokens - think_tokens)
     think_ratio = think_tokens / max(1, total_tokens)
 
-    # 2. Avaliação de Sinais Esperados e Violações
+    # 2. Signal evaluation and violation detection
     matched_signals = [sig for sig in case.expected_signals if sig.lower() in response.lower()]
     violations = [neg for neg in case.negative_signals if neg.lower() in response.lower()]
 
@@ -184,13 +184,13 @@ def evaluate_response(case: BenchmarkCase, response: str, latency: float) -> Ben
 
     passed = final_score >= 0.70 and len(violations) == 0
 
-    # 3. Classificação de Qualidade do Raciocínio
+    # 3. Reasoning quality tiering
     if think_tokens >= 50 and "<think>" in response and "</think>" in response:
-        reasoning_quality = "SUPERIOR (Raciocínio Estruturado Completo)"
+        reasoning_quality = "SUPERIOR (Full Structured Reasoning)"
     elif think_tokens > 0:
-        reasoning_quality = "MODERADO (Raciocínio Conciso)"
+        reasoning_quality = "MODERATE (Concise Reasoning)"
     else:
-        reasoning_quality = "DEFICIENTE (Ausência de <think>)"
+        reasoning_quality = "DEFICIENT (Missing <think>)"
 
     return BenchmarkResult(
         case_id=case.case_id,
@@ -211,7 +211,7 @@ def run_benchmark_suite(inference_fn: Callable[[str], str]) -> Dict[str, Any]:
     suite = build_benchmark_test_suite()
     results: List[BenchmarkResult] = []
 
-    print(f"=== [Iniciando Benchmark Mark Engineer - {len(suite)} Casos de Teste] ===")
+    print(f"=== [Starting Mark Engineer Benchmark - {len(suite)} Test Cases] ===")
     start_total = time.time()
 
     for idx, case in enumerate(suite, start=1):
@@ -219,13 +219,13 @@ def run_benchmark_suite(inference_fn: Callable[[str], str]) -> Dict[str, Any]:
         try:
             response = inference_fn(case.prompt)
         except Exception as exc:
-            response = f"[ERRO]: {exc}"
+            response = f"[ERROR]: {exc}"
         latency = time.time() - t0
 
         result = evaluate_response(case, response, latency)
         results.append(result)
 
-        status_str = "APROVADO" if result.passed else "FALHA"
+        status_str = "PASSED" if result.passed else "FAILED"
         print(f"[{idx:02d}/{len(suite):02d}] {case.case_id:<30} | {status_str} (Score: {result.score:.2f}) | Think: {result.think_tokens} tokens | Lat: {latency:.2f}s")
 
     elapsed_total = time.time() - start_total
@@ -244,12 +244,12 @@ def run_benchmark_suite(inference_fn: Callable[[str], str]) -> Dict[str, Any]:
         "results": [asdict(r) for r in results],
     }
 
-    print("\n=== [Resumo Consolidado do Benchmark] ===")
-    print(f"- Total de Casos: {len(results)}")
-    print(f"- Aprovados: {passed_count}/{len(results)} ({summary['pass_rate']*100:.1f}%)")
-    print(f"- Score Médio de Acurácia: {avg_score:.2f}/1.00")
-    print(f"- Média de Tokens de Raciocínio (<think>): {avg_think_tokens:.1f} tokens/resposta")
-    print(f"- Tempo Total de Execução: {elapsed_total:.2f}s")
+    print("\n=== [Consolidated Benchmark Summary] ===")
+    print(f"- Total Cases: {len(results)}")
+    print(f"- Passed: {passed_count}/{len(results)} ({summary['pass_rate']*100:.1f}%)")
+    print(f"- Mean Accuracy Score: {avg_score:.2f}/1.00")
+    print(f"- Mean Reasoning Tokens (<think>): {avg_think_tokens:.1f} tokens/response")
+    print(f"- Total Execution Time: {elapsed_total:.2f}s")
 
     return summary
 
@@ -258,10 +258,10 @@ if __name__ == "__main__":
     def dummy_inference(prompt: str) -> str:
         return (
             "<think>\n"
-            "Analisando requisitos e restrições arquiteturais.\n"
-            "Garantindo ausência de deadlocks e verificando tratamento de erros.\n"
+            "Analyzing architectural constraints and invariants.\n"
+            "Ensuring absence of deadlocks and validating error propagation.\n"
             "</think>\n"
-            "Implementação de referência técnica."
+            "Technical reference implementation."
         )
 
     summary = run_benchmark_suite(dummy_inference)

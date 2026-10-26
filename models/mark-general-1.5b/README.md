@@ -1,9 +1,9 @@
 # Mark General 1.5B - LM Studio & Omniscient Reasoning Guide
 
-## Especificacoes Tecnicas
-- **Parametros Totais:** 1.502.301.456 (1.502B)
-- **Parametros Ativos:** ~315M por token
-- **Atencao:** Multi-Head Latent Attention (MLA)
-- **DeepSeekMoE:** 16 Especialistas Roteados + 1 Especialista Compartilhado
-- **Orçamento de Memoria (IQ4_NL):** ~820 MB em disco | ~1.25 GB VRAM
-- **Dominio Principal:** 10 Dominios Oficiais de Cognicao MARK, STEM (Matematica Simbolica, Fisica, Quimica), Self-RAG estilo Perplexity e Sintese de Relatorios.
+## Technical Specifications
+- **Total Parameters:** 1,502,301,456 (1.502B)
+- **Active Parameters:** ~315M per token
+- **Attention:** Multi-Head Latent Attention (MLA)
+- **DeepSeekMoE:** 16 Routed Experts + 1 Shared Expert
+- **Memory Footprint (IQ4_NL):** ~820 MB on disk | ~1.25 GB VRAM
+- **Core Domain:** 10 Official MARK Cognition Domains, STEM (Symbolic Mathematics, Physics, Chemistry), Perplexity-style Self-RAG, and Document Synthesis.

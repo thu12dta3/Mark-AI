@@ -1,9 +1,9 @@
 """
 Mark 0.1 - 8GB VRAM Local Inference Engine (DeepSeek MLA + NF4 Double Quant + Speculative MTP + Voice/Vision)
-Garante execução estritamente abaixo de 7.5GB de VRAM combinando:
-- Quantização 4-bit NormalFloat (`nf4` + `compress_statistics=True`) via bitsandbytes
-- DeepSeek Multi-Head Latent Attention (MLA) PagedKVCache (reduz o KV Cache em 64.4% -> apenas 236 MB em 8k tokens!)
-- Decodificação com Self-RAG ativo + Formatador de Voz em Tempo Real para ElevenLabs / Fish Speech
+Enforces execution strictly below 7.5GB VRAM by combining:
+- 4-bit NormalFloat quantization (`nf4` + `compress_statistics=True`) via bitsandbytes
+- DeepSeek Multi-Head Latent Attention (MLA) PagedKVCache (reduces KV Cache by 64.4% -> only 236 MB at 8k tokens)
+- Active Self-RAG decoding + real-time voice formatter for ElevenLabs / Fish Speech
 """
 
 import os
@@ -23,8 +23,8 @@ MAX_ALLOWED_VRAM_GB: float = 7.5
 
 def enforce_vram_ceiling(max_vram_gb: float = MAX_ALLOWED_VRAM_GB) -> Dict[str, float]:
     """
-    Trava o alocador CUDA do PyTorch (`set_per_process_memory_fraction`) para garantir que o processo
-    jamais ultrapasse 7.5GB de VRAM na GPU local de 8GB.
+    Locks the PyTorch CUDA allocator (`set_per_process_memory_fraction`) to guarantee the process
+    never exceeds 7.5GB VRAM on an 8GB local GPU.
     """
     if not torch.cuda.is_available():
         return {"total_vram_gb": 0.0, "capped_vram_gb": max_vram_gb}
@@ -43,11 +43,11 @@ def enforce_vram_ceiling(max_vram_gb: float = MAX_ALLOWED_VRAM_GB) -> Dict[str, 
 
 class NativeIQ4NLLinear(nn.Module):
     """
-    Camada Linear Quantizada Nativa em PyTorch puro (`IQ4_NL` / `Q4_0` / `Q8_0` estilo LM Studio / llama.cpp):
-    - Não depende de bibliotecas externas! Funciona nativamente em qualquer GPU CUDA ou CPU.
-    - No modo `IQ4_NL`, comprime pesos FP16/BF16 em blocos de 32 valores usando a tabela não-linear
-      de 16 níveis (`IQ4_NL_LOOKUP_VALUES`), empacotando 2 pesos de 4-bit por byte (`uint8`) + 1 escala FP16 por bloco.
-    - Reduz o uso de RAM/VRAM dos pesos em **71.8%** com qualidade superior à quantização linear uniforme (`Q4_0`).
+    Native Quantized Linear Layer in pure PyTorch (`IQ4_NL` / `Q4_0` / `Q8_0` LM Studio / llama.cpp style):
+    - Independent of external C/C++ libraries. Works natively across any CUDA GPU or CPU.
+    - In `IQ4_NL` mode, compresses FP16/BF16 weights into 32-value blocks using a 16-level non-linear lookup
+      table (`IQ4_NL_LOOKUP_VALUES`), packing two 4-bit weights per `uint8` byte + 1 FP16 scale per block.
+    - Reduces weight RAM/VRAM footprint by **71.8%** with higher precision than uniform linear quantization (`Q4_0`).
     """
     def __init__(
         self,
@@ -78,7 +78,7 @@ class NativeIQ4NLLinear(nn.Module):
                 torch.zeros((out_features, n_blocks, block_size), dtype=torch.int8),
             )
         else:
-            # IQ4_NL ou Q4_0: 2 nibbles por byte uint8
+            # IQ4_NL or Q4_0: 2 nibbles per uint8 byte
             self.register_buffer(
                 "qweight",
                 torch.zeros((out_features, n_blocks, block_size // 2), dtype=torch.uint8),
@@ -128,7 +128,7 @@ class NativeIQ4NLLinear(nn.Module):
                 high = idx[..., 1::2]
                 layer.qweight.copy_((high << 4) | (low & 0x0F))
             else:
-                # IQ4_NL: quantização não-linear de importância por bloco
+                # IQ4_NL: non-linear block-wise importance quantization
                 lut = layer.iq4_lut.float().to(w.device)
                 diffs = (norm_w.unsqueeze(-1) - lut).abs()
                 idx = torch.argmin(diffs, dim=-1).to(torch.uint8)
@@ -173,13 +173,13 @@ class NativeIQ4NLLinear(nn.Module):
 def quantize_mark_model_nf4(
     model: nn.Module,
     compute_dtype: torch.dtype = torch.float16,
-    weight_quant_type: str = "IQ4_NL",  # Suporta "IQ4_NL", "NF4", "Q4_0", "Q8_0"
+    weight_quant_type: str = "IQ4_NL",  # Supports "IQ4_NL", "NF4", "Q4_0", "Q8_0"
 ) -> nn.Module:
     """
-    Converte camadas `nn.Linear` dos blocos Transformer, MLA, MoE e Visão para quantização de ultra-baixa memória:
-    - Suporta `IQ4_NL` nativo (tabela não-linear de 16 níveis inspirada no LM Studio / llama.cpp, sem dependências externas!)
-    - Suporta `NF4` Double Quantization via `bitsandbytes` quando solicitado.
-    - Preserva `tok_embeddings`, `norm`, `lm_head`, `router` e `prosody_head` em FP16 para zero perda de roteamento MoE.
+    Converts `nn.Linear` layers in Transformer, MLA, MoE, and Vision blocks to ultra-low-memory quantization:
+    - Supports native `IQ4_NL` (16-level non-linear table inspired by LM Studio / llama.cpp, zero external dependencies).
+    - Supports `NF4` Double Quantization via `bitsandbytes` when requested.
+    - Preserves `tok_embeddings`, `norm`, `lm_head`, `router`, and `prosody_head` in FP16 for zero MoE routing loss.
     """
     has_bnb = False
     if weight_quant_type.upper() == "NF4":
@@ -232,11 +232,11 @@ def load_mark_for_8gb_vram(
     kv_cache_quant: str = "IQ4_NL",
 ) -> Tuple[MarkForCausalLM, PagedKVCache, Dict[str, float]]:
     """
-    Inicializa o Mark 0.1 com Super-Redução Nativa estilo LM Studio (`IQ4_NL` / `Q8_0` / `Q4_0` / `NF4`):
-    - Pesos em `IQ4_NL` (4-bit Não-Linear em blocos de 32): ~1.58 GB
-    - DeepSeek MLA Latent KV Cache quantizado em `IQ4_NL`:
-      * Em 8.192 tokens: **~62.5 MB** (contra 671 MB de um GQA FP16 tradicional — 90.7% de redução!)
-      * Em 32.768 tokens: **~250.0 MB** (permite 32k de contexto com folga imensa em qualquer GPU de 8GB!)
+    Initializes Mark 0.1 with Native Memory Reduction in LM Studio style (`IQ4_NL` / `Q8_0` / `Q4_0` / `NF4`):
+    - Weights in `IQ4_NL` (4-bit Non-Linear in 32-value blocks): ~1.58 GB
+    - DeepSeek MLA Latent KV Cache quantized in `IQ4_NL`:
+      * At 8,192 tokens: **~62.5 MB** (vs 671 MB in traditional FP16 GQA — 90.7% reduction)
+      * At 32,768 tokens: **~250.0 MB** (enables 32k context with immense headroom on 8GB consumer GPUs)
     """
     vram_info = enforce_vram_ceiling(MAX_ALLOWED_VRAM_GB)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -291,11 +291,11 @@ def load_mark_for_8gb_vram(
 
 class MarkInferenceEngine:
     """
-    Motor de Inferência Autônomo do Mark 0.1 com:
-    - Raciocínio latente `<think> ... </think>`
-    - Interceptação de `[RETRIEVE] query [/RETRIEVE]` para Self-RAG
-    - Suporte a entrada de imagem (`pixel_values`)
-    - Saída formatada para síntese de voz natural no ElevenLabs e Fish Speech
+    Autonomous Inference Engine for Mark 0.1 featuring:
+    - Latent reasoning `<think> ... </think>`
+    - Interception of `[RETRIEVE] query [/RETRIEVE]` for Self-RAG
+    - Image input support (`pixel_values`)
+    - Clean formatted output for natural speech synthesis in ElevenLabs and Fish Speech
     """
     def __init__(
         self,
@@ -366,7 +366,7 @@ class MarkInferenceEngine:
             generated_ids.append(token_id)
             cur_ids = next_token
 
-            # 1. Intercepta Self-RAG Local ([RETRIEVE] ... [/RETRIEVE])
+            # 1. Intercept Local Self-RAG ([RETRIEVE] ... [/RETRIEVE])
             if token_id == self.retrieve_end_id and retrieval_hops < self.rag.max_retrieval_hops:
                 decoded_so_far = self.tokenizer.decode(generated_ids)
                 query = self.rag.extract_retrieve_query(decoded_so_far)
@@ -377,7 +377,7 @@ class MarkInferenceEngine:
                     generated_ids.extend(rag_ids)
                     cur_ids = torch.tensor([rag_ids], dtype=torch.long, device=self.device)
 
-            # 2. Intercepta o Módulo Perplexity ([UNKNOWN]: "Preciso pesquisar sobre isso." ou [/WEB_SEARCH])
+            # 2. Intercept Perplexity Module ([UNKNOWN]: "Need to search web" or [/WEB_SEARCH])
             elif (
                 token_id in (self.unknown_id, self.web_search_end_id)
                 and retrieval_hops < self.rag.max_retrieval_hops
@@ -387,8 +387,8 @@ class MarkInferenceEngine:
                 if web_query:
                     retrieval_hops += 1
                     honest_notice = ""
-                    if token_id == self.unknown_id and "Preciso pesquisar sobre isso" not in decoded_so_far:
-                        honest_notice = ': "Preciso pesquisar sobre isso." '
+                    if token_id == self.unknown_id and "I need to search about this" not in decoded_so_far:
+                        honest_notice = ': "I need to search about this." '
                     web_block = honest_notice + self.rag.format_web_search_injection(web_query)
                     web_ids = self.tokenizer.encode(web_block).ids
                     generated_ids.extend(web_ids)
@@ -400,13 +400,13 @@ class MarkInferenceEngine:
         self,
         prompt: str,
         voice_engine: str = "elevenlabs",
-        language: str = "pt",
+        language: str = "en",
         max_new_tokens: int = 512,
         pixel_values: Optional[torch.Tensor] = None,
     ) -> Dict[str, Any]:
         """
-        Retorna tanto a resposta completa com `<think>` e código quanto o payload acústico limpo
-        otimizado para síntese imediata no ElevenLabs ou Fish Speech.
+        Returns both the complete response with `<think>` and code and the clean acoustic payload
+        optimized for immediate synthesis via ElevenLabs or Fish Speech.
         """
         raw_output = self.generate(
             prompt=prompt,

@@ -55,12 +55,12 @@ def load_model(
     max_context_tokens: int = 4096,
 ) -> Tuple[MarkModel, MarkConfig]:
     """
-    Carrega o modelo Mark com configuracao automatica por variante.
-    Variantes suportadas:
-    - '302m' ou '300m': Mark Engineer 300M (302M parametros)
-    - '1.5b': Mark Engineer 1.5B (1.502B parametros)
-    - 'general': Mark General 1.5B (1.502B parametros com 10 dominios de cognicao)
-    - 'primal': Mark Primal Base (~2.98B parametros)
+    Loads a Mark AI model with automated configuration per variant.
+    Supported variants:
+    - '302m' or '300m': Mark Engineer 300M (302M parameters)
+    - '1.5b': Mark Engineer 1.5B (1.502B parameters)
+    - 'general': Mark General 1.5B (1.502B parameters across 10 cognition domains)
+    - 'primal': Mark Primal Base (~2.98B parameters)
     """
     variant_norm = variant.lower().strip()
     if variant_norm in ("302m", "300m", "engineer_300m"):
@@ -72,11 +72,11 @@ def load_model(
     elif variant_norm in ("primal", "base", "0.1"):
         config = MarkConfig.create_primal()
     else:
-        raise ValueError(f"Variante desconhecida: '{variant}'. Use '302m', '1.5b', 'general' ou 'primal'.")
+        raise ValueError(f"Unknown variant: '{variant}'. Use '302m', '1.5b', 'general', or 'primal'.")
 
     model = MarkModel(config)
 
-    # Localizacao de checkpoint padrao caso nao fornecido
+    # Locate default checkpoint if not explicitly provided
     if checkpoint_path is None:
         candidates = [
             Path(f"checkpoints/mark_{variant_norm}.pt"),
@@ -93,9 +93,9 @@ def load_model(
         import torch
         state_dict = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
         model.load_state_dict(state_dict, strict=False)
-        print(f"[Mark AI] Pesos carregados com sucesso de: {checkpoint_path}")
+        print(f"[Mark AI] Weights loaded successfully from: {checkpoint_path}")
     else:
-        print(f"[Mark AI] Inicializado com pesos estruturais para a variante '{variant_norm}' ({config.count_parameters():,} parametros).")
+        print(f"[Mark AI] Initialized with structural weights for variant '{variant_norm}' ({config.count_parameters():,} parameters).")
 
     if device == "auto":
         import torch

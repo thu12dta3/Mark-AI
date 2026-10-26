@@ -1,46 +1,46 @@
 # Mark Engineer 300M (302M) - LM Studio & Ollama Plug-and-Play
 
-Este modelo esta pronto para execucao direta em plataformas de inferencia local como **LM Studio**, **Ollama**, **llama.cpp** e **vLLM**.
+This model is ready for local execution across platforms such as **LM Studio**, **Ollama**, **llama.cpp**, and **vLLM**.
 
 ---
 
-## 1. Plug-and-Play no LM Studio
+## 1. Plug-and-Play in LM Studio
 
-### Passo 1: Obter o Arquivo GGUF
-Baixe o arquivo GGUF com um comando unico:
+### Step 1: Download the GGUF Asset
+Download the single-file GGUF asset via curl:
 ```bash
-curl -L -O https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-302m/mark_engineer_302m.gguf
+curl -L -O https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-302m/mark_engineer_302m_iq4_nl.gguf
 ```
 
-### Passo 2: Copiar para o Diretorio do LM Studio
-Copie ou crie um link simbolico do arquivo para a pasta de modelos do LM Studio:
+### Step 2: Copy to LM Studio Models Directory
+Copy or symlink the downloaded file into your LM Studio models folder:
 ```bash
 mkdir -p ~/.lmstudio/models/Mark-AI/mark-engineer-302m
-cp mark_engineer_302m.gguf ~/.lmstudio/models/Mark-AI/mark-engineer-302m/
+cp mark_engineer_302m_iq4_nl.gguf ~/.lmstudio/models/Mark-AI/mark-engineer-302m/mark_engineer_302m.gguf
 ```
 
-### Passo 3: Abrir no LM Studio
-1. Abra o **LM Studio**.
-2. No menu superior de selecao de modelo, clique em **Mark-AI / mark-engineer-302m**.
-3. O modelo sera carregado consumindo apenas **~350 MB de VRAM** com suporte a janela de contexto de 4.096 tokens.
+### Step 3: Launch in LM Studio
+1. Open **LM Studio**.
+2. Select **Mark-AI / mark-engineer-302m** from the model picker.
+3. The model loads with only **~350 MB VRAM** and supports a 4,096 token context window.
 
 ---
 
-## 2. Plug-and-Play no Ollama
+## 2. Plug-and-Play in Ollama
 
-No diretorio desta pasta, execute:
+In this directory, run:
 ```bash
 ollama create mark-engineer -f Modelfile
-ollama run mark-engineer "Otimize este algoritmo em Rust com lock-free ringbuffer."
+ollama run mark-engineer "Optimize this concurrent algorithm in Rust with a lock-free ringbuffer."
 ```
 
 ---
 
-## 3. Especificacoes Tecnicas
+## 3. Technical Specifications
 
-- **Parametros Totais:** 302.019.848 (302M)
-- **Parametros Ativos:** ~110M por token
-- **Atencao:** Multi-Head Latent Attention (MLA)
-- **MoE:** 16 Especialistas Roteados + 1 Especialista Compartilhado
-- **Consumo de VRAM:** ~350 MB
-- **Formato:** GGUF (float16 / IQ4_NL compatibilidade universal)
+- **Total Parameters:** 302,019,848 (302M)
+- **Active Parameters:** ~110M per token
+- **Attention:** Multi-Head Latent Attention (MLA)
+- **MoE:** 16 Routed Experts + 1 Shared Expert
+- **VRAM Footprint:** ~350 MB
+- **Format:** GGUF (universal float16 / IQ4_NL runtime support)
