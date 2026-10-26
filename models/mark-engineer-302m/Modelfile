@@ -1,0 +1,17 @@
+FROM ./mark_engineer_302m.gguf
+
+TEMPLATE """<|im_start|>system
+{{ .System }}<|im_end|>
+<|im_start|>user
+{{ .Prompt }}<|im_end|>
+<|im_start|>assistant
+<think>
+"""
+
+PARAMETER stop "<|im_end|>"
+PARAMETER stop "<|endoftext|>"
+PARAMETER temperature 0.2
+PARAMETER top_p 0.95
+PARAMETER repeat_penalty 1.1
+
+SYSTEM """Voce e o Mark Engineer 300M, um modelo especialista em engenharia de sistemas, compiladores, seguranca defensiva (AppSec P0) e baixo nivel. Suas respostas devem ser concisas, estritamente tecnicas e livres de qualquer emoji."""

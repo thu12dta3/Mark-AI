@@ -29,24 +29,30 @@
 
 The 302M trained model is ready for 1-click download as a single file (163 MB IQ4_NL), just like downloading from Hugging Face:
 
-### 1. Download Model Checkpoint (Single File / Direto)
+### 1. LM Studio & Ollama (Plug-and-Play GGUF)
 
 ```bash
-# Opcao A: Download direto via curl (1 arquivo de 163 MB)
-curl -L -O https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-302m/mark_engineer_302m_iq4_nl.pt
-
-# Opcao B: Download direto via wget
-wget https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-302m/mark_engineer_302m_iq4_nl.pt
-
-# Opcao C: Download com verificacao SHA256 automatica via Python
-python download_302m.py
+# Download direto do arquivo GGUF para o LM Studio (576 MB)
+mkdir -p ~/.lmstudio/models/Mark-AI/mark-engineer-302m
+curl -L -o ~/.lmstudio/models/Mark-AI/mark-engineer-302m/mark_engineer_302m.gguf \
+  https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-302m/mark_engineer_302m_iq4_nl.gguf
 ```
 
-### 2. Run Local Inference
+### 2. PyTorch Native Single-File Download (163 MB IQ4_NL)
+
+```bash
+# Opcao A: Download direto via curl (1 unico arquivo)
+curl -L -O https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-302m/mark_engineer_302m_iq4_nl.pt
+
+# Opcao B: Download com verificacao de integridade SHA256 via Python
+python scripts/download_302m.py
+```
+
+### 3. Run Local Inference
 
 ```bash
 # Execucao com prompt customizado
-python inference.py --model 302m --prompt "Escreva um lock-free ring buffer concorrente em C++20."
+python scripts/inference.py --model 302m --prompt "Escreva um lock-free ring buffer concorrente em C++20."
 ```
 
 ### 3. Python API Quickstart
