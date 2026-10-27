@@ -54,9 +54,9 @@ CATALOG = {
         "total_parameters": 1501680656,
         "filename": "mark_general_1_5b_iq4_nl.gguf",
         "url": "https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-general-1.5b/mark_general_1_5b_iq4_nl.gguf",
-        "size_mb": 823.84,
+        "size_mb": 671.69,
         "vram_mb": 1250.0,
-        "sha256": "43cae74164b81c4e97666249ab1a0f90e66c75bc6e9cf94cfafbc8e37d579220",
+        "sha256": "cb573604d2d0990208fc84e47027e4104c870399063b0566121674e5850de124",
         "description": "Mark General 1.5B in GGUF format for LM Studio and Ollama."
     },
     "markvl-2.2b": {
