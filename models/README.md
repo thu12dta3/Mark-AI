@@ -44,6 +44,15 @@ curl -L -o ~/.lmstudio/models/Mark-AI/mark-engineer-302m/mark_engineer_302m.gguf
   https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-302m/mark_engineer_302m_iq4_nl.gguf
 ```
 
+### Option D: MarkVL-2.2B (Multimodal Dense Visual Perception & Micro-OCR)
+```bash
+# 1. Download MarkVL weights and projector
+bash scripts/download_markvl_2_2b.sh
+
+# 2. Or download via Python utility
+python scripts/download_model.py --model markvl-2.2b
+```
+
 ---
 
 ## 2. How to Use in Ollama
@@ -51,6 +60,12 @@ curl -L -o ~/.lmstudio/models/Mark-AI/mark-engineer-302m/mark_engineer_302m.gguf
 Navigate to the target model directory and build the model:
 
 ```bash
+# For MarkVL-2.2B (Dense Visual Perception Engine)
+bash models/mark-vl-2.2b/install_markvl_ollama.sh
+# Or create manually:
+cd models/mark-vl-2.2b && ollama create markvl -f Modelfile
+ollama run markvl "Descreva detalhadamente os componentes visiveis nesta imagem."
+
 # For Mark Engineer 1.5B
 cd models/mark-engineer-1.5b
 ollama create mark-engineer-1.5b -f Modelfile
@@ -77,6 +92,13 @@ ollama run mark-engineer "Optimize this C ringbuffer."
   -m ~/.lmstudio/models/Mark-AI/mark-engineer-1.5b/mark_engineer_1_5b.gguf \
   -p "User: Write an eBPF filter in C.\nAssistant: <think>" \
   -n 512
+
+# Running MarkVL-2.2B with Multimodal Projector
+./llama-minicpmv-cli \
+  -m models/mark-vl-2.2b/mark_vl_2_2b.gguf \
+  --mmproj models/mark-vl-2.2b/mmproj_mark_vl_2_2b.gguf \
+  --image ./schematic.png \
+  -p "Describe the circuit topology and pinouts."
 ```
 
 ---
@@ -85,6 +107,9 @@ ollama run mark-engineer "Optimize this C ringbuffer."
 
 The repository includes a standalone Python downloader script with SHA256 checksum verification:
 ```bash
+# Download MarkVL-2.2B
+python scripts/download_model.py --model markvl-2.2b
+
 # Download Mark Engineer 1.5B
 python scripts/download_model.py --model engineer-1.5b
 

@@ -31,8 +31,7 @@ train_reasoning.py
 tokenizer_setup.py
 
 # Sensitive Datasets, Raw Code & Prompts
-data/synthetic_dpo/
-data/raw/
+data/
 *.jsonl
 *.rs
 *.parquet

@@ -89,13 +89,22 @@ def convert_mark_engineer_to_gguf(
         vocab = tok_data.get("model", {}).get("vocab", {})
         sorted_vocab = sorted(vocab.items(), key=lambda x: x[1])
         tokens = [k.encode("utf-8") for k, v in sorted_vocab]
-        writer.add_tokenizer_model("gpt2")
-        writer.add_token_list(tokens)
         merges = tok_data.get("model", {}).get("merges", [])
         formatted_merges = [" ".join(m).encode("utf-8") if isinstance(m, list) else m.encode("utf-8") for m in merges]
+
+        # CUDA Alignment: Pad vocab to multiple of 64 to avoid GGML_ASSERT(nb10 % sizeof(src1_t) == 0)
+        pad_vocab_size = (len(tokens) + 63) // 64 * 64
+        diff = pad_vocab_size - len(tokens)
+        for k in range(diff):
+            tokens.append(f"<pad_align_{k}>".encode("utf-8"))
+
+        writer.add_tokenizer_model("gpt2")
+        writer.add_token_list(tokens)
         writer.add_token_merges(formatted_merges)
         writer.add_token_scores([0.0] * len(tokens))
         writer.add_token_types([1] * len(tokens))
+    else:
+        pad_vocab_size = config.vocab_size
 
     chat_template = (
         "{% for message in messages %}"
@@ -111,10 +120,20 @@ def convert_mark_engineer_to_gguf(
 
     print("[Mark GGUF Exporter] Dequantizing and mapping tensors to DeepSeek2 format...")
 
-    # Embeddings and output norm
-    writer.add_tensor("token_embd.weight", sd["tok_embeddings.weight"].to(torch.float16).numpy())
+    # Embeddings and output norm with 64-token CUDA alignment padding
+    w_emb = sd["tok_embeddings.weight"].to(torch.float16)
+    if w_emb.shape[0] < pad_vocab_size:
+        pad = torch.zeros((pad_vocab_size - w_emb.shape[0], w_emb.shape[1]), dtype=torch.float16)
+        w_emb = torch.cat([w_emb, pad], dim=0)
+    writer.add_tensor("token_embd.weight", w_emb.numpy())
+
     writer.add_tensor("output_norm.weight", sd["norm.weight"].to(torch.float16).numpy())
-    writer.add_tensor("output.weight", sd["lm_head.weight"].to(torch.float16).numpy())
+
+    w_out = sd["lm_head.weight"].to(torch.float16)
+    if w_out.shape[0] < pad_vocab_size:
+        pad = torch.zeros((pad_vocab_size - w_out.shape[0], w_out.shape[1]), dtype=torch.float16)
+        w_out = torch.cat([w_out, pad], dim=0)
+    writer.add_tensor("output.weight", w_out.numpy())
 
     for i in range(config.n_layers):
         pfx = f"layers.{i}."

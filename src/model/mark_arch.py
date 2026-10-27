@@ -310,6 +310,50 @@ class MarkConfig:
             max_seq_len=8192,
         )
 
+    @classmethod
+    def create_engineer_v2_8b(cls, vocab_size: int = 49152) -> "MarkConfig":
+        """
+        Mark Engineer V2 8B: 8.01 Billion Parameter Architecture (8,005,905,408)
+        Stepping stone before 14B, engineered for High-Density Systems Cognition:
+        - Hidden Dimension: 2560
+        - Depth: 32 canonical Transformer layers (2 initial dense + 30 DeepSeekMoE blocks)
+        - Attention: Multi-Head Latent Attention (MLA) with 32 heads, KV LoRA Rank 512, Q LoRA Rank 1024
+        - DeepSeekMoE: 24 Routed Fine-Grained Experts + 1 Universal Shared Expert
+        - Routing: Top-2 activated experts per token with Aux-Loss-Free Dynamic Load Balancing
+        - Multi-Token Prediction (MTP): Depth 1 predicting t+1 and t+2 simultaneously
+        - Cognitive Gating: Dynamic Reasoning Levels (L0 Direct Execution, L1 Analytical CoT, L2 Deep Architecture)
+        - Total Parameters: 8,005,905,408 (~8.01B)
+        - Active Parameters per Token: ~1.63 Billion (1,626,500,000)
+        - Memory Efficiency: In 4-bit (IQ4_NL), weights occupy only ~4.2 GB of storage/RAM
+        """
+        return cls(
+            vocab_size=vocab_size,
+            dim=2560,
+            n_layers=32,
+            n_heads=32,
+            n_kv_heads=8,
+            use_mla=True,
+            q_lora_rank=1024,
+            kv_lora_rank=512,
+            qk_nope_head_dim=64,
+            qk_rope_head_dim=32,
+            v_head_dim=80,
+            n_dense_layers=2,
+            moe_layer_freq=1,
+            recursive_depth_loops=2,
+            intermediate_size=7680,
+            n_shared_experts=1,
+            n_routed_experts=24,
+            num_experts_per_tok=2,
+            moe_intermediate_size=1254,
+            router_bias_update_rate=1e-3,
+            mtp_depth=1,
+            mtp_loss_weight=0.3,
+            vision_enabled=False,
+            voice_prosody_enabled=False,
+            max_seq_len=8192,
+        )
+
 
 # Non-Linear IQ4_NL Lookup Table (Inspired by llama.cpp / LM Studio kvalues_iq4nl):
 # Focuses the 16 4-bit levels where Gaussian/Laplacian distributions of weights/activations are densest.

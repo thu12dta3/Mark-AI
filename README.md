@@ -21,7 +21,7 @@
 | **Mark Engineer 1.5B** | **1.502B** | **~315M FLOPs** | Systems engineering, eBPF, KMDF, Tokio & Senior Tech Lead dialogue. | **823 MB** | **~1.25 GB** | [Release Assets](https://github.com/thu12dta3/Mark-AI/releases/tag/v1.0.0-engineer-1.5b) |
 | **Mark General 1.5B** | **1.502B** | **~315M FLOPs** | Preserved baseline: 10 Cognition Domains, STEM & Epistemic Self-RAG. | **823 MB** | **~1.25 GB** | [Release Assets](https://github.com/thu12dta3/Mark-AI/releases/tag/v1.0.0-general-1.5b) |
 | **Mark Engineer 300M (302M)** | **302.02M** | **~110M FLOPs** | Preserved ultralight edge production checkpoint. | **163 MB** | **~350 MB** | [Release Assets](https://github.com/thu12dta3/Mark-AI/releases/tag/v1.0.0-302m) |
-| **MarkVL-2.2B** | **2.224B** | **~313M FLOPs** | Dense visual perception, AnyRes 2048x2048, FACS expressions & micro-OCR. | **1.18 GB** | **~1.85 GB** | [`models/mark-vl-2.2b`](./models/mark-vl-2.2b/) |
+| **MarkVL-2.2B** | **2.224B** | **~313M FLOPs** | Dense visual perception, AnyRes 2048x2048, FACS expressions & micro-OCR. | **2.33 GB** | **~1.85 GB** | [Release Assets](https://github.com/thu12dta3/Mark-AI/releases/tag/v1.0.0-markvl-2.2b) |
 
 ---
 
@@ -29,7 +29,20 @@
 
 All models are packaged for single-file download and local execution without internet dependency:
 
-### 1. Mark Engineer 1.5B (Senior Systems & Natural Dialogue)
+### 1. MarkVL-2.2B (Multimodal Dense Visual Perception & Micro-OCR)
+
+```bash
+# 1-Click Automated Download & Reassembly:
+bash scripts/download_markvl_2_2b.sh
+
+# 1-Click Automated Ollama Registration:
+bash models/mark-vl-2.2b/install_markvl_ollama.sh
+
+# Run interactive vision inference immediately:
+ollama run markvl "Descreva os componentes desta imagem."
+```
+
+### 2. Mark Engineer 1.5B (Senior Systems & Natural Dialogue)
 
 ```bash
 # 1. Download compiled GGUF directly to your LM Studio models directory:
@@ -41,7 +54,7 @@ curl -L -o ~/.lmstudio/models/Mark-AI/mark-engineer-1.5b/mark_engineer_1_5b.gguf
 cd models/mark-engineer-1.5b && ollama create mark-engineer-1.5b -f Modelfile
 ```
 
-### 2. Mark General 1.5B (STEM & Knowledge Preserved Baseline)
+### 3. Mark General 1.5B (STEM & Knowledge Preserved Baseline)
 
 ```bash
 # 1. Download compiled GGUF directly to your LM Studio models directory:
@@ -53,7 +66,7 @@ curl -L -o ~/.lmstudio/models/Mark-AI/mark-general-1.5b/mark_general_1_5b.gguf \
 cd models/mark-general-1.5b && ollama create mark-general-1.5b -f Modelfile
 ```
 
-### 3. Mark Engineer 300M (302M Ultralight Embedded)
+### 4. Mark Engineer 300M (302M Ultralight Embedded)
 
 ```bash
 mkdir -p ~/.lmstudio/models/Mark-AI/mark-engineer-302m
@@ -61,10 +74,11 @@ curl -L -o ~/.lmstudio/models/Mark-AI/mark-engineer-302m/mark_engineer_302m.gguf
   https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-302m/mark_engineer_302m_iq4_nl.gguf
 ```
 
-### 4. Automated Python CLI Downloader
+### 5. Automated Python CLI Downloader
 
 ```bash
 # Download any model with SHA256 integrity verification:
+python scripts/download_model.py --model markvl-2.2b
 python scripts/download_model.py --model engineer-1.5b
 python scripts/download_model.py --model general-1.5b
 python scripts/download_model.py --model 302m

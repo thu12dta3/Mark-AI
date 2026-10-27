@@ -58,6 +58,17 @@ CATALOG = {
         "vram_mb": 1250.0,
         "sha256": "43cae74164b81c4e97666249ab1a0f90e66c75bc6e9cf94cfafbc8e37d579220",
         "description": "Mark General 1.5B in GGUF format for LM Studio and Ollama."
+    },
+    "markvl-2.2b": {
+        "model_name": "MarkVL 2.2B (Dense Visual Perception Engine)",
+        "version": "1.0.0",
+        "total_parameters": 2222269696,
+        "filename": "mark_vl_2_2b.gguf",
+        "url": "https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-markvl-2.2b/mark_vl_2_2b_q4_k_m.gguf.part-00",
+        "size_mb": 2380.88,
+        "vram_mb": 1850.0,
+        "sha256": "910b75cfe9c9a1bc418e72c4b0258248f171445d65d044d894fba341f0a69cbf",
+        "description": "MarkVL 2.2B Multimodal Vision-Language Engine in GGUF format for Ollama and llama.cpp."
     }
 }
 
@@ -73,6 +84,8 @@ def compute_sha256(filepath: Path) -> str:
 def resolve_local_storage(filename: str) -> Path | None:
     candidates = [
         Path(f"/mnt/ssd_1/mark ai/checkpoints/{filename}"),
+        Path(f"/mnt/ssd_1/mark ai/checkpoints/mark_vl_2_2b/{filename}"),
+        Path(f"/mnt/ssd_1/mark ai/checkpoints/mark_vl_2_2b/mark_vl_2_2b_q4_k_m.gguf"),
         Path(f"/mnt/ssd_1/mark ai/checkpoints/300m_backup/{filename}"),
         Path(f"/mnt/ssd_1/mark ai/{filename}"),
         Path(f"./checkpoints/{filename}"),
