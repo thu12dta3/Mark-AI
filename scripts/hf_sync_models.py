@@ -77,7 +77,7 @@ def generate_model_card(model_key: str, config: dict, namespace: str) -> str:
 language:
 - en
 - pt
-license: apache-2.0
+license: agpl-3.0
 tags:
 {tags_str}
 pipeline_tag: {config['pipeline_tag']}

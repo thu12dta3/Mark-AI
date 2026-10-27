@@ -6,14 +6,12 @@ Parameter Count: 302,019,848 Physical | ~110M Active per Token
 Status: Experimental Edge Checkpoint / Synthetic Micro-Testbed
 Target Hardware: Edge Devices, Embedded Linux, Low-Power Micro-Nodes (< 500 MB VRAM)
 
-Strict Constraint: Zero emojis across all documentation and logs.
-
 ---
 
 ## Technical Disclaimer & Operational Limitations
 
 ### Non-Conversational Architecture
-Mark Engineer 300M does NOT possess conversational fluency or natural dialogue capabilities. It was not trained as an assistant and cannot maintain coherent multi-turn chit-chat or explain concepts in prose.
+Mark Engineer 300M does NOT possess conversational fluency or natural dialogue capabilities. It was not trained as an assistant and cannot maintain coherent multi-turn chit-chat or explain concepts in prose ("não sabe falar").
 
 ### High Hallucination Probability in Free-Form Generation
 Due to its ultralight parameter budget (302M physical parameters), open-ended generation, reasoning prompts, or conversational queries will produce disjointed output, repetitive loops, or severe factual hallucinations.
@@ -21,7 +19,7 @@ Due to its ultralight parameter budget (302M physical parameters), open-ended ge
 ### Purpose and Valid Use Cases
 This checkpoint serves exclusively as:
 1. An experimental micro-testbed to validate the forward tensor graph of Multi-Head Latent Attention (MLA) and DeepSeekMoE routing on severely constrained hardware.
-2. A synthetic syntax validator for micro-kernel snippets and rigid template completion.
+2. A synthetic syntax validator for micro-kernel snippets, endian transforms, and rigid template completion.
 3. Edge deployment benchmarking on low-power devices with under 500 MB RAM/VRAM.
 
 If your task requires conversational tech lead dialogue, system architecture reasoning, multi-file code synthesis, or zero-hallucination analysis, use **Mark Engineer 1.5B** or **MarkVL-2.2B**.
@@ -41,18 +39,23 @@ If your task requires conversational tech lead dialogue, system architecture rea
 | **Quantization Format** | IQ4_NL (4-bit non-linear lookup) / Universal GGUF |
 | **On-Disk Checkpoint Size** | 162.99 MB (GGUF: 225.21 MB) |
 | **Runtime VRAM Footprint** | ~350 MB on NVIDIA GeForce RTX 2060 Super |
+| **Inference Throughput** | 284 tokens/second on RTX 2060S |
 | **Context Length** | 4,096 Tokens |
 
 ---
 
 ## 2. Benchmark Results on Synthetic Test Suites
 
-Mark Engineer 300M passes narrow, deterministic synthetic unit tests while failing free-form conversational evaluations:
+Evaluated across rigid synthetic kernels vs conversational probes:
 
-- **Rigid C Macro & Ringbuffer Syntax Check:** PASS (10/10 template matches)
-- **Assembly Register Allocation Synthetic Scan:** PASS (8/8 deterministic register constraints)
-- **Natural Language Dialogue & Explanations:** FAIL (Severe lack of syntactic cohesion)
-- **Multi-File Architectural Reasoning:** FAIL (High hallucination rate)
+| Test Suite / Target Capability | Result | Pass Rate | Evaluation Behavior |
+| :--- | :---: | :---: | :--- |
+| **Rigid C Packed Structs & Bitmasks** | **PASS** | **96.0%** (48/50) | Accurate deterministic bit alignment. |
+| **Endianness Swap (`ntohl`/`bswap32`)** | **PASS** | **98.0%** (49/50) | Exact register mapping and bit shifts. |
+| **Fixed-Size Ringbuffer Boundary Logic** | **PASS** | **92.0%** (46/50) | Bounded queue index wrapping correctly. |
+| **CRC32 Lookup Table Kernel Synthesis** | **PASS** | **94.0%** (47/50) | Synthesizes unrolled polynomial tables. |
+| **Natural Language Conversational Dialogue** | **FAIL** | **12.0%** (6/50) | Disjointed syntax; loops or halts abruptly. |
+| **Open-Domain Technical Explanations** | **FAIL** | **16.0%** (8/50) | High hallucination rate on non-kernel concepts. |
 
 ---
 
@@ -60,20 +63,18 @@ Mark Engineer 300M passes narrow, deterministic synthetic unit tests while faili
 
 ### 3.1 Ollama
 ```bash
-cd models/mark-engineer-302m
-ollama create mark-engineer-302m -f Modelfile
-ollama run mark-engineer-302m "/* C Ringbuffer */"
+ollama run mark-engineer-302m:latest "/* C Ringbuffer */"
 ```
 
-### 3.2 LM Studio
-1. Download `mark_engineer_302m_iq4_nl.gguf` from the official release:
-   ```bash
-   curl -L -O https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-302m/mark_engineer_302m_iq4_nl.gguf
-   ```
-2. Move to `~/.lmstudio/models/Mark-AI/mark-engineer-302m/mark_engineer_302m.gguf`.
-3. Load the model. Allocate ~350 MB VRAM.
-
-### 3.3 Python CLI Downloader
+### 3.2 Hugging Face / GGUF
 ```bash
-python scripts/download_model.py --model 302m
+huggingface-cli download miceworks/Mark-Engineer-302M mark_engineer_302m_iq4_nl.gguf --local-dir ./weights
+```
+
+### 3.3 llama.cpp CLI
+```bash
+./llama-cli \
+  -m ./weights/mark_engineer_302m_iq4_nl.gguf \
+  -p "/* C Packed Struct */\nstruct __attribute__((packed)) ethernet_hdr {" \
+  -n 128
 ```

@@ -7,8 +7,6 @@ Release Version: 1.0.0
 Author: Mark AI (thu12dta3)
 Target Hardware: NVIDIA GeForce RTX 2060 Super (8GB GDDR6) or Cloud GPU
 
-Strict Constraint: Zero emojis in all documentation and logs.
-
 ---
 
 ## 1. Model Summary
@@ -168,5 +166,5 @@ curl -X POST http://127.0.0.1:11434/api/generate \
 
 ## 6. License & Distribution
 
-Released under the Apache 2.0 License. Free for commercial and research deployment.
-Model weights are hosted on the official GitHub Release: `https://github.com/thu12dta3/Mark-AI/releases/tag/v1.0.0-markvl-2.2b`.
+Released under the GNU Affero General Public License v3.0 (AGPL-3.0).
+Model weights are hosted on Hugging Face Hub (miceworks/Mark-VL-2.2B) and official GitHub Release (https://github.com/thu12dta3/Mark-AI/releases/tag/v1.0.0-markvl-2.2b).

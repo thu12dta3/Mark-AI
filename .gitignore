@@ -54,3 +54,4 @@ Thumbs.db
 .idea/
 .colab/
 *.log
+.hf_card_*.md
