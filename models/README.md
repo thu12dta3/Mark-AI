@@ -6,12 +6,12 @@ This directory centralizes architectural definitions, configuration files, token
 
 ## Available Models
 
-| Model | Parameters | Format | Local VRAM (RTX 2060S) | Specialization & Operational Status | Directory |
-| :--- | :---: | :---: | :---: | :--- | :--- |
-| **Mark Engineer 1.5B** | **1.50B** | **GGUF / IQ4_NL** | **~1.25 GB** | **Production Flagship:** Systems programming, kernel internals (eBPF, KMDF), Tokio, C++20 & Tech Lead dialogue. | [`mark-engineer-1.5b/`](./mark-engineer-1.5b/) |
-| **Mark General 1.5B** | **1.50B** | **GGUF / IQ4_NL** | **~1.25 GB** | **Preserved Baseline:** 10 STEM & Scientific Cognition Domains, Epistemic Self-RAG (`[UNKNOWN]`). | [`mark-general-1.5b/`](./mark-general-1.5b/) |
-| **MarkVL-2.2B** | **2.22B** | **GGUF / Q4_K_M** | **~1.85 GB** | **Perception Specialist:** AnyRes 2048x2048, PixelShuffle 2x2 C-Abstractor, Micro-OCR, FACS. | [`mark-vl-2.2b/`](./mark-vl-2.2b/) |
-| **Mark Engineer 300M (302M)** | **302M** | **GGUF / IQ4_NL** | **~350 MB** | **Experimental Edge Testbed:** Non-conversational, high hallucination risk in open chat, passes rigid synthetic micro-tests. | [`mark-engineer-302m/`](./mark-engineer-302m/) |
+| Model | Parameters | Format | Local VRAM (RTX 2060S) | Specialization & Focus | Hugging Face Hub | Directory |
+| :--- | :---: | :---: | :---: | :--- | :--- | :--- |
+| **Mark Engineer 1.5B** | **1.50B** | **GGUF / IQ4_NL** | **~1.25 GB** | Low-level systems, kernel mechanics (eBPF, KMDF), Tokio, C++20. | [HF Repo](https://huggingface.co/miceworks/Mark-Engineer-1.5B) | [`mark-engineer-1.5b/`](./mark-engineer-1.5b/) |
+| **Mark General 1.5B** | **1.50B** | **GGUF / IQ4_NL** | **~1.25 GB** | Preserved baseline: 10 STEM Domains, Epistemic Self-RAG. | [HF Repo](https://huggingface.co/miceworks/Mark-General-1.5B) | [`mark-general-1.5b/`](./mark-general-1.5b/) |
+| **MarkVL-2.2B** | **2.22B** | **GGUF / Q4_K_M** | **~1.85 GB** | Dense visual perception, AnyRes, 2D Pixel-Shuffle, Micro-OCR. | [HF Repo](https://huggingface.co/miceworks/Mark-VL-2.2B) | [`mark-vl-2.2b/`](./mark-vl-2.2b/) |
+| **Mark Engineer 300M (302M)** | **302M** | **GGUF / IQ4_NL** | **~350 MB** | Experimental edge testbed: non-conversational, synthetic micro-kernels. | [HF Repo](https://huggingface.co/miceworks/Mark-Engineer-302M) | [`mark-engineer-302m/`](./mark-engineer-302m/) |
 
 ---
 
