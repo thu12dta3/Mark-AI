@@ -16,12 +16,12 @@
 
 ## Model Hierarchy
 
-| Variant | Total Parameters | Active Params / Token | Target & Purpose | Disk (IQ4_NL) | Local VRAM (RTX 2060S) | Download Link |
+| Variant | Total Parameters | Active Params / Token | Target & Purpose | Disk (Quantized) | Local VRAM (RTX 2060S) | Download Link |
 | :--- | :---: | :---: | :--- | :---: | :---: | :--- |
-| **Mark Engineer 1.5B** | **1.502B** | **~315M FLOPs** | Systems engineering, eBPF, KMDF, Tokio & Senior Tech Lead dialogue. | **823 MB** | **~1.25 GB** | [Release Assets](https://github.com/thu12dta3/Mark-AI/releases/tag/v1.0.0-engineer-1.5b) |
-| **Mark General 1.5B** | **1.502B** | **~315M FLOPs** | Preserved baseline: 10 Cognition Domains, STEM & Epistemic Self-RAG. | **823 MB** | **~1.25 GB** | [Release Assets](https://github.com/thu12dta3/Mark-AI/releases/tag/v1.0.0-general-1.5b) |
-| **Mark Engineer 300M (302M)** | **302.02M** | **~110M FLOPs** | Preserved ultralight edge production checkpoint. | **163 MB** | **~350 MB** | [Release Assets](https://github.com/thu12dta3/Mark-AI/releases/tag/v1.0.0-302m) |
-| **MarkVL-2.2B** | **2.224B** | **~313M FLOPs** | Dense visual perception, AnyRes 2048x2048, FACS expressions & micro-OCR. | **2.33 GB** | **~1.85 GB** | [Release Assets](https://github.com/thu12dta3/Mark-AI/releases/tag/v1.0.0-markvl-2.2b) |
+| **Mark Engineer 1.5B** | **1.502B** | **~315M FLOPs** | Systems engineering, eBPF, KMDF, Tokio & Senior Tech Lead dialogue. | **823 MB** (IQ4_NL) | **~1.25 GB** | [Release Assets](https://github.com/thu12dta3/Mark-AI/releases/tag/v1.0.0-engineer-1.5b) |
+| **Mark General 1.5B** | **1.502B** | **~315M FLOPs** | Preserved baseline: 10 Cognition Domains, STEM & Epistemic Self-RAG. | **823 MB** (IQ4_NL) | **~1.25 GB** | [Release Assets](https://github.com/thu12dta3/Mark-AI/releases/tag/v1.0.0-general-1.5b) |
+| **MarkVL-2.2B** | **2.224B** | **~313M FLOPs** | Dense visual perception, AnyRes 2048x2048, FACS expressions & micro-OCR. | **2.33 GB** (Q4_K_M) | **~1.85 GB** | [Release Assets](https://github.com/thu12dta3/Mark-AI/releases/tag/v1.0.0-markvl-2.2b) |
+| **Mark Engineer 300M (302M)** | **302.02M** | **~110M FLOPs** | Experimental edge testbed: non-conversational, high hallucination risk in chat, passes rigid synthetic micro-tests. | **163 MB** (IQ4_NL) | **~350 MB** | [Release Assets](https://github.com/thu12dta3/Mark-AI/releases/tag/v1.0.0-302m) |
 
 ---
 
