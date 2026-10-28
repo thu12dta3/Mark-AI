@@ -110,8 +110,9 @@ def get_cosine_schedule_with_warmup(
 
 
 def train(
-    checkpoint_path: Optional[str] = "/mnt/ssd_1/mark ai/checkpoints/mark_slm_v2_302m_init.pt",
-    output_dir: str = "/mnt/ssd_1/mark ai/checkpoints/mark_slm_v2_302m_leaderboard",
+    checkpoint_path: Optional[str] = None,
+    output_dir: str = "checkpoints/mark_slm_v2_302m",
+    curriculum_file: str = "data/arithmark_synthetic_curriculum.jsonl",
     total_steps: int = 10000,
     batch_size: int = 8,
     seq_len: int = 1024,
@@ -293,11 +294,22 @@ if __name__ == "__main__":
     parser.add_argument("--batch-size", type=int, default=8, help="Batch size per forward step")
     parser.add_argument("--seq-len", type=int, default=1024, help="Sequence length")
     parser.add_argument("--lr", type=float, default=3.0e-4, help="Peak learning rate")
+    parser.add_argument("--checkpoint-path", type=str, default=None, help="Initial checkpoint path")
+    parser.add_argument("--output-dir", type=str, default="checkpoints/mark_slm_v2_302m", help="Directory to save checkpoints")
+    parser.add_argument("--curriculum-file", type=str, default="data/arithmark_synthetic_curriculum.jsonl", help="Curriculum JSONL path")
+    parser.add_argument("--save-interval", type=int, default=1000, help="Steps between checkpoints")
+    parser.add_argument("--log-interval", type=int, default=25, help="Steps between logging")
     args = parser.parse_args()
 
     train(
+        checkpoint_path=args.checkpoint_path,
+        output_dir=args.output_dir,
+        curriculum_file=args.curriculum_file,
         total_steps=args.steps,
         batch_size=args.batch_size,
         seq_len=args.seq_len,
         learning_rate=args.lr,
+        save_interval=args.save_interval,
+        log_interval=args.log_interval,
     )
+
