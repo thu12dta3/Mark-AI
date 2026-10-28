@@ -58,6 +58,20 @@ MODELS_CONFIG = {
         "modelfile": REPO_ROOT / "models" / "mark-vl-2.2b" / "Modelfile",
         "local_readme": REPO_ROOT / "models" / "mark-vl-2.2b" / "README.md",
         "description": "High-Efficiency Multimodal Vision-Language Model featuring 2D Pixel-Shuffle compression, SigLIP ViT visual encoder, and 1.5B MLA+MoE language backbone. Specialized in high-density document OCR, systems diagram parsing, and spatial coordinate grounding.",
+    },
+    "Mark-Engineer-V2-8B": {
+        "repo_name": "Mark-Engineer-V2-8B",
+        "pipeline_tag": "text-generation",
+        "tags": ["mark-ai", "systems-engineering", "linux-kernel", "rust", "cpp", "c", "reverse-engineering", "robotics", "electrical-engineering", "mla", "moe", "mtp", "gguf", "ollama"],
+        "gguf": SSD_CHECKPOINTS / "mark_engineer_v2_8b" / "mark_engineer_v2_8b_iq4_nl.gguf",
+        "pt": SSD_CHECKPOINTS / "mark_engineer_v2_8b" / "mark_engineer_v2_8b_step_15000.pt",
+        "metadata": SSD_CHECKPOINTS / "mark_engineer_v2_8b" / "training_metadata.json",
+        "modelfile": REPO_ROOT / "models" / "mark-engineer-v2-8b" / "Modelfile",
+        "local_readme": REPO_ROOT / "models" / "mark-engineer-v2-8b" / "README.md",
+        "config_json": REPO_ROOT / "models" / "mark-engineer-v2-8b" / "config.json",
+        "tokenizer_json": REPO_ROOT / "models" / "mark-engineer-v2-8b" / "tokenizer.json",
+        "tokenizer_config": REPO_ROOT / "models" / "mark-engineer-v2-8b" / "tokenizer_config.json",
+        "description": "Mark-Engineer-V2-8B: High-Density Systems & Cognitive Architecture (8.01B MoE + MLA + MTP, Converged Loss: 1.9047, Trained but Untested).",
     }
 }
 
@@ -94,7 +108,7 @@ def sync_model(api: HfApi, model_key: str, config: dict, namespace: str, dry_run
     
     # Verify weights on disk
     files_to_upload = []
-    for file_key in ["gguf", "pt", "mmproj", "metadata", "modelfile"]:
+    for file_key in ["gguf", "pt", "mmproj", "metadata", "modelfile", "config_json", "tokenizer_json", "tokenizer_config"]:
         if file_key in config and config[file_key].exists():
             files_to_upload.append((file_key, config[file_key]))
         elif file_key in config:
@@ -152,7 +166,7 @@ def main():
     parser = argparse.ArgumentParser(description="Sync Mark AI Models to Hugging Face Hub")
     parser.add_argument("--token", type=str, default=None, help="Hugging Face API write token")
     parser.add_argument("--org", type=str, default=None, help="Hugging Face organization name (optional)")
-    parser.add_argument("--model", type=str, default="all", choices=["all", "Mark-Engineer-1.5B", "Mark-General-1.5B", "Mark-Engineer-302M", "Mark-VL-2.2B"], help="Specific model to sync")
+    parser.add_argument("--model", type=str, default="all", choices=["all", "Mark-Engineer-1.5B", "Mark-General-1.5B", "Mark-Engineer-302M", "Mark-VL-2.2B", "Mark-Engineer-V2-8B"], help="Specific model to sync")
     parser.add_argument("--dry-run", action="store_true", help="Perform dry run without actual network upload")
     args = parser.parse_args()
 
