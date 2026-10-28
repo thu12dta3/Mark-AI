@@ -114,14 +114,16 @@ def train(
     output_dir: str = "checkpoints/mark_slm_v2_302m",
     curriculum_file: str = "data/arithmark_synthetic_curriculum.jsonl",
     total_steps: int = 10000,
-    batch_size: int = 4,
-    grad_accum_steps: int = 2,
+    batch_size: int = 2,
+    grad_accum_steps: int = 1,
     seq_len: int = 256,
     learning_rate: float = 3.0e-4,
     warmup_steps: int = 500,
     save_interval: int = 1000,
     log_interval: int = 25,
+    **kwargs,
 ):
+
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("=" * 70)
     print("MARK-SLM-V2-302M: OPEN SLM LEADERBOARD TRAINING SESSION")
