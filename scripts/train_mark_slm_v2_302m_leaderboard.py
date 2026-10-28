@@ -262,8 +262,10 @@ def train(
                 f"Step {step:05d}/{total_steps:05d} | "
                 f"Loss: {combined_loss:.4f} (NTP: {avg_ntp:.4f}, MTP: {avg_mtp:.4f}, Z: {avg_z:.4f}) | "
                 f"LR: {current_lr:.2e} | "
-                f"Tok/s: {tps:,.0f}{vram_str}"
+                f"Tok/s: {tps:,.0f}{vram_str}",
+                flush=True,
             )
+
 
             running_ntp_loss = 0.0
             running_mtp_loss = 0.0
