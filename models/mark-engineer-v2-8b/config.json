@@ -35,8 +35,18 @@
   "rope_theta": 500000.0,
   "tie_word_embeddings": true,
   "torch_dtype": "bfloat16",
-  "quantization_formats": ["IQ4_NL", "Q4_K_M", "Q8_0", "F16"],
-  "target_platforms": ["Ollama", "LM Studio", "llama.cpp", "Transformers", "vLLM"],
-  "evaluation_status": "TRAINED_BUT_UNTESTED",
-  "training_convergence_loss": 1.9047
+  "quantization_formats": [
+    "IQ4_NL",
+    "Q4_K_M",
+    "Q8_0",
+    "F16"
+  ],
+  "target_platforms": [
+    "Ollama",
+    "LM Studio",
+    "llama.cpp",
+    "Transformers",
+    "vLLM"
+  ],
+  "evaluation_status": "ARCHITECTURE_ONLY_NO_VERIFIED_WEIGHTS"
 }

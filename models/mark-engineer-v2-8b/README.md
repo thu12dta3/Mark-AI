@@ -28,8 +28,8 @@ Mark-Engineer-V2-8B is a specialized 8.01-billion-parameter Mixture-of-Experts (
 
 Engineered with Multi-Head Latent Attention (MLA), 24 routed experts plus 1 shared expert (Top-2 routing, ~1.63B active compute per token), and Multi-Token Prediction (MTP, Depth 1).
 
-> **IMPORTANT DISCLOSURE: TRAINED BUT UNTESTED**  
-> Mark-Engineer-V2-8B has completed pre-training with mathematical convergence verified (Final Loss: **1.9047** | NTP: 1.2952, MTP: 0.1905). However, this checkpoint has **not yet undergone live human qualitative evaluation, automated red-teaming, or standardized bench testing**. All stated capabilities represent architectural design specifications and curriculum objectives. Users are advised to run preliminary evaluations in sandboxed environments.
+> **IMPORTANT DISCLOSURE: ARCHITECTURE ONLY, NO VERIFIED TRAINED WEIGHTS**  
+> This repository documents the Mark-Engineer-V2-8B architecture. No checkpoint containing verified trained weights exists at this time. Capabilities listed below are design targets, not measured results.
 
 ---
 
@@ -86,14 +86,14 @@ The 24 routed experts are partitioned across specialized computational domains:
 
 ---
 
-## Training Convergence
+## Training Status (unverified)
 
 The model was trained on the consolidated Mark Ultra-Master Curriculum with multi-objective optimization:
 
 $$\mathcal{L}_{\text{Total}} = \mathcal{L}_{\text{NTP}} + 0.3 \cdot \mathcal{L}_{\text{MTP}} + 10^{-4} \cdot \mathcal{L}_{\text{Router\_Z}}$$
 
 - **Initial Loss:** 11.4500
-- **Final Pre-training Loss:** **1.9047**
+- **Reported loss (unverified, no weights available to reproduce):** 1.9047
   - Next-Token Prediction (NTP) Loss: **1.2952**
   - Knowledge Distillation (KD) Loss: **0.4190**
   - Multi-Token Prediction (MTP) Loss: **0.1905**
