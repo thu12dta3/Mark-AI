@@ -114,8 +114,9 @@ def train(
     output_dir: str = "checkpoints/mark_slm_v2_302m",
     curriculum_file: str = "data/arithmark_synthetic_curriculum.jsonl",
     total_steps: int = 10000,
-    batch_size: int = 8,
-    seq_len: int = 1024,
+    batch_size: int = 4,
+    grad_accum_steps: int = 2,
+    seq_len: int = 256,
     learning_rate: float = 3.0e-4,
     warmup_steps: int = 500,
     save_interval: int = 1000,
@@ -150,14 +151,13 @@ def train(
     print(f"Total Physical Parameters: {total_params:,} ({total_params / 1e6:.2f}M)")
     print(f"Active Compute per Token:  ~121.61M FLOPs (MLA + MoE 16+1, Top-2)")
 
+
     # 2. Setup Dataset & Dataloader
-    curriculum_file = "data/arithmark_synthetic_curriculum.jsonl"
     dataset = LeaderboardCurriculumDataset(curriculum_file, seq_len=seq_len, vocab_size=config.vocab_size)
     dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=0)
     data_iter = iter(dataloader)
 
     # 3. Setup Optimizer & Scheduler
-    # Separate weight decay for 2D weights vs 1D norms/biases
     decay_params = []
     no_decay_params = []
     for name, param in model.named_parameters():
@@ -175,15 +175,21 @@ def train(
     optimizer = torch.optim.AdamW(optim_groups, lr=learning_rate, betas=(0.9, 0.95), eps=1e-8)
     scheduler = get_cosine_schedule_with_warmup(optimizer, warmup_steps, total_steps)
 
-    # Use bfloat16 AMP if CUDA supports it
-    use_amp = (device == "cuda" and torch.cuda.is_bf16_supported())
-    amp_dtype = torch.bfloat16 if use_amp else torch.float32
-    scaler = torch.amp.GradScaler("cuda", enabled=(device == "cuda" and not use_amp))
+    # Robust AMP: BF16 on Ampere/Hopper, FP16 with GradScaler on Turing (T4 / RTX 2060)
+    if device == "cuda":
+        amp_dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
+        use_scaler = (amp_dtype == torch.float16)
+        scaler = torch.amp.GradScaler("cuda", enabled=use_scaler)
+        print(f"CUDA Precision:            {amp_dtype} (GradScaler: {use_scaler})")
+    else:
+        amp_dtype = torch.float32
+        scaler = torch.amp.GradScaler("cuda", enabled=False)
 
     out_path = Path(output_dir)
     out_path.mkdir(parents=True, exist_ok=True)
 
-    print(f"\nStarting optimization: {total_steps:,} steps | Batch size: {batch_size} | Seq Len: {seq_len}")
+    effective_batch = batch_size * grad_accum_steps
+    print(f"\nStarting optimization: {total_steps:,} steps | Micro-batch: {batch_size} | Grad Accum: {grad_accum_steps} (Eff. Batch: {effective_batch}) | Seq Len: {seq_len}")
     print(f"Loss formulation: NTP + {config.mtp_loss_weight} * MTP + 1e-4 * Router_Z\n")
 
     start_time = time.time()
@@ -194,53 +200,58 @@ def train(
 
     for step in range(1, total_steps + 1):
         step_start = time.time()
-        batch = next(data_iter)
-        input_ids = batch["input_ids"].to(device)
-        labels = batch["labels"].to(device)
-
         optimizer.zero_grad()
 
-        with torch.amp.autocast(device_type=device, dtype=amp_dtype, enabled=(device == "cuda")):
-            # Forward pass with Multi-Token Prediction (MTP) enabled
-            logits, mtp_logits = model(input_ids, return_mtp=True)
+        step_ntp = 0.0
+        step_mtp = 0.0
+        step_z = 0.0
 
-            # 1. Next-Token Prediction (NTP) Loss
-            shift_logits = logits[:, :-1, :].contiguous()
-            shift_labels = labels[:, 1:].contiguous()
-            loss_ntp = F.cross_entropy(shift_logits.view(-1, config.vocab_size), shift_labels.view(-1), ignore_index=-100)
+        for _ in range(grad_accum_steps):
+            batch = next(data_iter)
+            input_ids = batch["input_ids"].to(device)
+            labels = batch["labels"].to(device)
 
-            # 2. Multi-Token Prediction (MTP Depth 1) Loss
-            loss_mtp = torch.tensor(0.0, device=device)
-            if mtp_logits is not None and input_ids.size(1) > 2:
-                shift_mtp_logits = mtp_logits[:, :-1, :].contiguous()
-                shift_mtp_labels = labels[:, 2:].contiguous()
-                loss_mtp = F.cross_entropy(shift_mtp_logits.view(-1, config.vocab_size), shift_mtp_labels.view(-1), ignore_index=-100)
+            with torch.amp.autocast(device_type=device, dtype=amp_dtype, enabled=(device == "cuda")):
+                logits, mtp_logits = model(input_ids, return_mtp=True)
 
-            # 3. Router Z-Loss
-            loss_z = model.get_router_z_loss()
+                shift_logits = logits[:, :-1, :].contiguous()
+                shift_labels = labels[:, 1:].contiguous()
+                loss_ntp = F.cross_entropy(shift_logits.view(-1, config.vocab_size), shift_labels.view(-1), ignore_index=-100)
 
-            # Total joint loss
-            total_loss = loss_ntp + (config.mtp_loss_weight * loss_mtp) + (1e-4 * loss_z)
+                loss_mtp = torch.tensor(0.0, device=device)
+                if mtp_logits is not None and input_ids.size(1) > 2:
+                    shift_mtp_logits = mtp_logits[:, :-1, :].contiguous()
+                    shift_mtp_labels = labels[:, 2:].contiguous()
+                    loss_mtp = F.cross_entropy(shift_mtp_logits.view(-1, config.vocab_size), shift_mtp_labels.view(-1), ignore_index=-100)
 
-        # Backward pass
+                loss_z = model.get_router_z_loss()
+                sub_loss = (loss_ntp + (config.mtp_loss_weight * loss_mtp) + (1e-4 * loss_z)) / grad_accum_steps
+
+            if scaler.is_enabled():
+                scaler.scale(sub_loss).backward()
+            else:
+                sub_loss.backward()
+
+            step_ntp += loss_ntp.item() / grad_accum_steps
+            step_mtp += loss_mtp.item() / grad_accum_steps
+            step_z += loss_z.item() / grad_accum_steps
+            tokens_processed += input_ids.numel()
+
         if scaler.is_enabled():
-            scaler.scale(total_loss).backward()
             scaler.unscale_(optimizer)
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             scaler.step(optimizer)
             scaler.update()
         else:
-            total_loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
 
         scheduler.step()
 
-        # Telemetry aggregation
-        running_ntp_loss += loss_ntp.item()
-        running_mtp_loss += loss_mtp.item()
-        running_z_loss += loss_z.item()
-        tokens_processed += input_ids.numel()
+        running_ntp_loss += step_ntp
+        running_mtp_loss += step_mtp
+        running_z_loss += step_z
+
 
         if step % log_interval == 0:
             avg_ntp = running_ntp_loss / log_interval
@@ -281,7 +292,7 @@ def train(
                     "optimizer_state_dict": optimizer.state_dict(),
                     "scheduler_state_dict": scheduler.state_dict(),
                     "config": config.__dict__,
-                    "loss": total_loss.item(),
+                    "loss": step_ntp + (config.mtp_loss_weight * step_mtp),
                     "tokens_processed": tokens_processed,
                 },
                 save_file_path,
@@ -293,8 +304,10 @@ def train(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Pre-train Mark-SLM-V2-302M for Open SLM Leaderboard")
     parser.add_argument("--steps", type=int, default=10000, help="Total training steps")
-    parser.add_argument("--batch-size", type=int, default=8, help="Batch size per forward step")
-    parser.add_argument("--seq-len", type=int, default=1024, help="Sequence length")
+    parser.add_argument("--batch-size", type=int, default=4, help="Micro-batch size per forward step")
+    parser.add_argument("--grad-accum-steps", type=int, default=2, help="Gradient accumulation steps")
+    parser.add_argument("--seq-len", type=int, default=256, help="Sequence length")
+
     parser.add_argument("--lr", type=float, default=3.0e-4, help="Peak learning rate")
     parser.add_argument("--checkpoint-path", type=str, default=None, help="Initial checkpoint path")
     parser.add_argument("--output-dir", type=str, default="checkpoints/mark_slm_v2_302m", help="Directory to save checkpoints")
@@ -309,9 +322,11 @@ if __name__ == "__main__":
         curriculum_file=args.curriculum_file,
         total_steps=args.steps,
         batch_size=args.batch_size,
+        grad_accum_steps=args.grad_accum_steps,
         seq_len=args.seq_len,
         learning_rate=args.lr,
         save_interval=args.save_interval,
         log_interval=args.log_interval,
     )
+
 
