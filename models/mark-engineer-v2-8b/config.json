@@ -44,9 +44,9 @@
   "target_platforms": [
     "Ollama",
     "LM Studio",
-    "llama.cpp",
     "Transformers",
     "vLLM"
   ],
-  "evaluation_status": "ARCHITECTURE_ONLY_NO_VERIFIED_WEIGHTS"
+  "evaluation_status": "TRAINED_BUT_UNTESTED",
+  "training_convergence_loss": 1.9047
 }
