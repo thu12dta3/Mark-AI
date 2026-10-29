@@ -69,6 +69,8 @@ MODELS_CONFIG = {
         "modelfile": REPO_ROOT / "models" / "mark-engineer-v2-8b" / "Modelfile",
         "local_readme": REPO_ROOT / "models" / "mark-engineer-v2-8b" / "README.md",
         "config_json": REPO_ROOT / "models" / "mark-engineer-v2-8b" / "config.json",
+        "modeling_py": REPO_ROOT / "models" / "mark-engineer-v2-8b" / "modeling_mark_engineer_v2_8b.py",
+        "configuration_py": REPO_ROOT / "models" / "mark-engineer-v2-8b" / "configuration_mark_engineer_v2_8b.py",
         "tokenizer_json": REPO_ROOT / "models" / "mark-engineer-v2-8b" / "tokenizer.json",
         "tokenizer_config": REPO_ROOT / "models" / "mark-engineer-v2-8b" / "tokenizer_config.json",
         "description": "Mark-Engineer-V2-8B: High-Density Systems & Cognitive Architecture (8.01B MoE + MLA + MTP, Converged Loss: 1.9047, Trained but Untested).",
@@ -108,7 +110,7 @@ def sync_model(api: HfApi, model_key: str, config: dict, namespace: str, dry_run
     
     # Verify weights on disk
     files_to_upload = []
-    for file_key in ["gguf", "pt", "mmproj", "metadata", "modelfile", "config_json", "tokenizer_json", "tokenizer_config"]:
+    for file_key in ["gguf", "pt", "mmproj", "metadata", "modelfile", "config_json", "modeling_py", "configuration_py", "tokenizer_json", "tokenizer_config"]:
         if file_key in config and config[file_key].exists():
             files_to_upload.append((file_key, config[file_key]))
         elif file_key in config:
