@@ -1,14 +1,14 @@
 """
-Mark 0.1 - Self-RAG Control Tokens, Multimodal Vision Tags & ElevenLabs/Fish Speech Prosody Bridge
-Integrates autoregressive generation with:
-- `src/mark/cognition/rag.py` and `src/mark/knowledge/hybrid.py` (Citations, Freshness, Source Tiers)
-- `src/mark/tts.py` + Streaming WebSocket/HTTP for ElevenLabs and Fish Speech
-- `src/mark/vision.py` and `src/mark/vision_focus.py` (Visual analysis superior to Qwen3-VL)
+Mark AI - Self-RAG Control Tokens, Multimodal Vision Tags & Epistemic Grounding Engine
+======================================================================================
 """
 
-from dataclasses import dataclass
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
+import math
+import html
 import re
+from dataclasses import dataclass
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
+from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -37,6 +37,20 @@ class SpecialTokens:
     CITATION_START: str = "<|citation|>"
     CITATION_END: str = "<|/citation|>"
 
+    # Generation v3 Reflective & Epistemic Control Tokens
+    ACT_DIRECT: str = "<|act:direct|>"
+    ACT_MCTX_LOCAL: str = "<|act:mctx_local|>"
+    ACT_WEB_SEARCH: str = "<|act:web_search|>"
+    EPISTEMIC_UNKNOWN: str = "<|epistemic:unknown|>"
+    REL_HIGH: str = "<|rel:high|>"
+    REL_LOW: str = "<|rel:low|>"
+    REL_NONE: str = "<|rel:none|>"
+    SEC_CLEAN: str = "<|sec:clean|>"
+    SEC_INJECT: str = "<|sec:inject|>"
+    SUP_VERIFIED: str = "<|sup:verified|>"
+    SUP_PARTIAL: str = "<|sup:partial|>"
+    SUP_NONE: str = "<|sup:none|>"
+
     @classmethod
     def all_tokens(cls) -> List[str]:
         return [
@@ -63,6 +77,18 @@ class SpecialTokens:
             cls.MCP_RESPONSE,
             cls.CITATION_START,
             cls.CITATION_END,
+            cls.ACT_DIRECT,
+            cls.ACT_MCTX_LOCAL,
+            cls.ACT_WEB_SEARCH,
+            cls.EPISTEMIC_UNKNOWN,
+            cls.REL_HIGH,
+            cls.REL_LOW,
+            cls.REL_NONE,
+            cls.SEC_CLEAN,
+            cls.SEC_INJECT,
+            cls.SUP_VERIFIED,
+            cls.SUP_PARTIAL,
+            cls.SUP_NONE,
         ]
 
     @classmethod
@@ -70,15 +96,124 @@ class SpecialTokens:
         return {tok: idx for idx, tok in enumerate(cls.all_tokens())}
 
 
+class ZimVirtualExtractor:
+    def __init__(self, zim_path: Union[str, Path]):
+        self.zim_path = Path(zim_path)
+        self.has_libzim = False
+        self.archive = None
+        try:
+            import libzim
+            if self.zim_path.exists():
+                self.archive = libzim.Archive(str(self.zim_path))
+                self.has_libzim = True
+        except ImportError:
+            self.has_libzim = False
+
+    def clean_html_to_markdown(self, raw_html: str) -> str:
+        text = raw_html
+        text = re.sub(r"<pre[^>]*>(.*?)</pre>", r"\n```\n\1\n```\n", text, flags=re.DOTALL)
+        text = re.sub(r"<math[^>]*>(.*?)</math>", r" $\1$ ", text, flags=re.DOTALL)
+        text = re.sub(r"<(script|style)[^>]*>.*?</\1>", "", text, flags=re.DOTALL)
+        for h in range(6, 0, -1):
+            text = re.sub(rf"<h{h}[^>]*>(.*?)</h{h}>", "\n" + ("#" * h) + r" \1\n", text, flags=re.DOTALL)
+        text = re.sub(r"<br\s*/?>", "\n", text)
+        text = re.sub(r"</p>", "\n\n", text)
+        text = re.sub(r"<[^>]+>", " ", text)
+        text = html.unescape(text)
+        return re.sub(r"[ \t]+", " ", text).strip()
+
+    def search(self, query: str, max_results: int = 3) -> List[Dict[str, str]]:
+        if not self.has_libzim or self.archive is None:
+            return [{
+                "title": f"Local Zim Index ({self.zim_path.name})",
+                "url": f"zim://{self.zim_path.name}/{query}",
+                "content": f"[ZimFallback: libzim not installed or file not found. Extracted query: '{query}']"
+            }]
+
+        results = []
+        try:
+            import libzim
+            searcher = libzim.Searcher(self.archive)
+            q = searcher.search(libzim.Query(query))
+            count = 0
+            for entry in q.getResults(0, max_results):
+                path = entry.getPath()
+                article = self.archive.get_entry_by_path(path).get_item()
+                raw_data = bytes(article.content).decode("utf-8", errors="ignore")
+                clean_md = self.clean_html_to_markdown(raw_data)
+                results.append({
+                    "title": entry.getTitle(),
+                    "url": f"zim://{self.zim_path.name}/{path}",
+                    "content": clean_md[:2000]
+                })
+                count += 1
+                if count >= max_results:
+                    break
+        except Exception as e:
+            results.append({
+                "title": "Zim Error",
+                "url": f"zim://{self.zim_path.name}",
+                "content": f"Search error in {self.zim_path.name}: {e}"
+            })
+
+        return results
+
+
+def evaluate_epistemic_state(
+    token_logprobs: Optional[List[float]] = None,
+    generation_entropy_bits: Optional[float] = None,
+    web_already_searched: bool = False,
+    prob_inject: float = 0.0,
+    support_score: float = 1.0,
+) -> Dict[str, Any]:
+    if token_logprobs is not None and len(token_logprobs) > 0:
+        probs = [math.exp(lp) for lp in token_logprobs[:10]]
+        total_p = sum(probs)
+        if total_p > 0:
+            probs = [p / total_p for p in probs]
+            entropy = -sum(p * math.log2(p) for p in probs if p > 1e-12)
+        else:
+            entropy = 0.0
+    else:
+        entropy = generation_entropy_bits if generation_entropy_bits is not None else 0.0
+
+    if prob_inject > 0.40:
+        return {
+            "action": "BLOCK_INJECTION",
+            "token": SpecialTokens.SEC_INJECT,
+            "entropy_bits": entropy,
+            "support_score": support_score,
+            "reason": f"Prompt injection probability exceeded threshold: {prob_inject:.2f} > 0.40"
+        }
+
+    if support_score < 0.40 and not web_already_searched:
+        return {
+            "action": "ESCALATE_WEB_SEARCH",
+            "token": SpecialTokens.ACT_WEB_SEARCH,
+            "entropy_bits": entropy,
+            "support_score": support_score,
+            "reason": f"Local support insufficient ({support_score:.2f} < 0.40), escalating to web search."
+        }
+
+    if (support_score < 0.40 and web_already_searched) or (entropy > 2.4 and support_score < 0.70):
+        return {
+            "action": "ABSTAIN_UNKNOWN",
+            "token": SpecialTokens.EPISTEMIC_UNKNOWN,
+            "entropy_bits": entropy,
+            "support_score": support_score,
+            "reason": f"Epistemic uncertainty high (H={entropy:.2f} bits, support={support_score:.2f}). Honest fallback triggered."
+        }
+
+    return {
+        "action": "ACT_DIRECT",
+        "token": SpecialTokens.ACT_DIRECT,
+        "entropy_bits": entropy,
+        "support_score": support_score,
+        "reason": "Sufficient grounding and acceptable entropy."
+    }
+
+
 class ElevenLabsFishVoiceFormatter:
-    """
-    Low-Latency Acoustic and Prosodic Adapter for ElevenLabs (Turbo v2.5 / Flash) and Fish Speech 1.5:
-    1. Filters 100% of `<think>...</think>`, `[RETRIEVE]...[/RETRIEVE]`, `[WEB_SEARCH]...[/WEB_SEARCH]`, and `<|rag_context|>`
-       so the voice engine NEVER vocalizes internal reasoning or JSON/MCP syntax.
-    2. Normalizes technical symbols in English and Portuguese (e.g. `RwLock<T>` -> "R W Lock of T", `18.015 g/mol` -> "18 point 015 grams per mole")
-       for crystal-clear pronunciation in ElevenLabs and Fish Speech.
-    3. Supports native Fish Speech prosodic tags (`(break)`, `(breath)`, `(empathetic)`) and ElevenLabs SSML/rhythmic punctuation.
-    """
     _INTERNAL_BLOCKS_RE = re.compile(
         r"(<think>.*?</think>|\[RETRIEVE\].*?\[/RETRIEVE\]|\[WEB_SEARCH\].*?\[/WEB_SEARCH\]|<\|rag_context\|>.*?<\|/rag_context\|>|<\|mcp_call\|>.*?<\|mcp_response\|>)",
         re.DOTALL,
@@ -93,10 +228,6 @@ class ElevenLabsFishVoiceFormatter:
         target_engine: str = "elevenlabs",
         language: str = "en",
     ) -> Dict[str, Any]:
-        """
-        Separates the complete technical response (for UI/mobile display) from the clean phonetic stream
-        ready for real-time speech synthesis in ElevenLabs or Fish Speech.
-        """
         clean = cls._INTERNAL_BLOCKS_RE.sub("", raw_model_output)
         for tok in SpecialTokens.all_tokens():
             clean = clean.replace(tok, "")
@@ -152,14 +283,6 @@ class ElevenLabsFishVoiceFormatter:
 
 
 class PerplexityWebSearchAgent:
-    """
-    Perplexity-Style Connected Search Agent (Web Search + Scraping + Numbered Citations [1], [2]):
-    - Triggered automatically when Mark 0.1 emits the Honest Failure Token `[UNKNOWN]`
-      or `[WEB_SEARCH] query [/WEB_SEARCH]`.
-    - Integrates first with native MARK ecosystem tools (`src.mark.tools.web_search`)
-      or performs direct HTTP search and scraping (DuckDuckGo HTML / Wikipedia / Technical Documentation),
-      returning dense excerpts with URL, title, 2026 freshness, and `<|citation|>[1]<|/citation|>` tags.
-    """
     def __init__(self, max_results: int = 4, timeout_sec: float = 6.0):
         self.max_results = max_results
         self.timeout_sec = timeout_sec
@@ -169,18 +292,15 @@ class PerplexityWebSearchAgent:
         if not query_clean:
             return "[WebSearch: empty query]"
 
-        # 1. Attempts to use official MARK ecosystem search tool if present
         try:
-            from src.mark.tools.web import search_web_cited  # type: ignore
+            from src.mark.tools.web import search_web_cited
             return search_web_cited(query_clean, max_results=self.max_results)
         except ImportError:
             pass
 
-        # 2. Live Web Search via DuckDuckGo Lite / HTML API + clean text extraction
         try:
             import urllib.parse
             import urllib.request
-            import html
 
             encoded_q = urllib.parse.quote_plus(query_clean)
             url = f"https://html.duckduckgo.com/html/?q={encoded_q}"
@@ -216,7 +336,6 @@ class PerplexityWebSearchAgent:
         except Exception:
             pass
 
-        # 3. Structured deterministic fallback (for offline/isolated environments)
         return (
             f"{SpecialTokens.CITATION_START}[1]{SpecialTokens.CITATION_END} "
             f"Title: Updated Technical Specification (2026) — {query_clean} | "
@@ -228,20 +347,14 @@ class PerplexityWebSearchAgent:
 
 
 class SelfRAGController:
-    """
-    Hybrid Self-RAG Controller + Native Perplexity Web Search:
-    - Intercepts `[RETRIEVE] query [/RETRIEVE]` to query local MARK ecosystem knowledge.
-    - Intercepts Honest Failure Token `[UNKNOWN]` ("Need to research this.") or
-      `[WEB_SEARCH] query [/WEB_SEARCH]` to trigger `PerplexityWebSearchAgent` in real time,
-      injecting scraped web results into the 32k context window with numbered sources `[1]`, `[2]`.
-    - Enforces security isolation: retrieved content can NEVER dispatch tool actions (`MCP_CALL`).
-    """
     def __init__(
         self,
         retriever_fn: Optional[Callable[[str], str]] = None,
         web_search_fn: Optional[Callable[[str], str]] = None,
         max_retrieval_hops: int = 3,
+        zim_path: Optional[Union[str, Path]] = None,
     ):
+        self.zim_extractor = ZimVirtualExtractor(zim_path) if zim_path else None
         self.retriever_fn = retriever_fn or self._default_mark_rag_bridge
         self.web_agent = PerplexityWebSearchAgent()
         self.web_search_fn = web_search_fn or self.web_agent.search_and_scrape
@@ -253,11 +366,16 @@ class SelfRAGController:
             re.DOTALL | re.IGNORECASE,
         )
 
-    @staticmethod
-    def _default_mark_rag_bridge(query: str) -> str:
+    def _default_mark_rag_bridge(self, query: str) -> str:
+        if self.zim_extractor is not None:
+            zim_results = self.zim_extractor.search(query, max_results=2)
+            if zim_results and not zim_results[0]["content"].startswith("[ZimFallback:"):
+                formatted = [f"// Source: {r['title']}\n{r['content']}" for r in zim_results]
+                return "\n\n".join(formatted)
+
         query_clean = query.strip()
         try:
-            from src.mark.cognition.rag import query_project_knowledge  # type: ignore
+            from src.mark.cognition.rag import query_project_knowledge
             return query_project_knowledge(query_clean)
         except ImportError:
             return (
@@ -273,18 +391,14 @@ class SelfRAGController:
         return matches[-1].strip()
 
     def extract_web_search_query(self, generated_text: str, fallback_prompt: str = "") -> Optional[str]:
-        """
-        Extracts web search query both from `[WEB_SEARCH] query [/WEB_SEARCH]` and
-        after Honest Failure Token `[UNKNOWN]: "Need to research this."`.
-        If the model only emits `[UNKNOWN]`, uses the user's original query (`fallback_prompt`).
-        """
         web_matches = self._web_search_pattern.findall(generated_text)
         if web_matches and web_matches[-1].strip():
             return web_matches[-1].strip()
 
-        if SpecialTokens.UNKNOWN in generated_text:
-            tail = generated_text.split(SpecialTokens.UNKNOWN)[-1]
-            m = self._unknown_query_pattern.search(SpecialTokens.UNKNOWN + tail)
+        if SpecialTokens.UNKNOWN in generated_text or SpecialTokens.EPISTEMIC_UNKNOWN in generated_text:
+            tok = SpecialTokens.UNKNOWN if SpecialTokens.UNKNOWN in generated_text else SpecialTokens.EPISTEMIC_UNKNOWN
+            tail = generated_text.split(tok)[-1]
+            m = self._unknown_query_pattern.search(tok + tail)
             candidate = m.group(1).strip() if m else ""
             candidate = re.sub(r"(\[/WEB_SEARCH\]|\[/RETRIEVE\]|</think>)", "", candidate).strip()
             if len(candidate) >= 4:
@@ -299,6 +413,7 @@ class SelfRAGController:
             SpecialTokens.RETRIEVE_START,
             SpecialTokens.WEB_SEARCH_START,
             SpecialTokens.UNKNOWN,
+            SpecialTokens.EPISTEMIC_UNKNOWN,
             SpecialTokens.THINK_END,
         ):
             text = text.replace(forbidden, "[SANITIZED_TOKEN]")
@@ -314,9 +429,6 @@ class SelfRAGController:
         )
 
     def format_web_search_injection(self, query: str) -> str:
-        """
-        Formats Perplexity-style web search results for direct injection into the 32k token context.
-        """
         web_results = self._sanitize_untrusted(self.web_search_fn(query))
         return (
             f"\n{SpecialTokens.CONTEXT_START}\n"

@@ -241,6 +241,17 @@ class MarkEngineerV2ForCausalLM(PreTrainedModel):
 
         self.post_init()
 
+    def load_mark_state_dict(self, state_dict: dict, strict: bool = False):
+        mapped_sd = {}
+        for k, v in state_dict.items():
+            new_k = k
+            if new_k.startswith('tok_embeddings.'):
+                new_k = new_k.replace('tok_embeddings.', 'embed_tokens.')
+            new_k = new_k.replace('.ffn.router.', '.ffn.gate.')
+            new_k = new_k.replace('.ffn.shared_experts.w_', '.ffn.shared_experts.0.w_')
+            mapped_sd[new_k] = v
+        return self.load_state_dict(mapped_sd, strict=strict)
+
     def get_input_embeddings(self):
         return self.embed_tokens
 

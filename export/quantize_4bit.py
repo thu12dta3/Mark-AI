@@ -224,13 +224,20 @@ def quantize_mark_model_nf4(
     return model
 
 
+def _is_quantized_checkpoint(sd: Dict[str, Any]) -> bool:
+    for k, v in sd.items():
+        if k.endswith(".qweight") or (isinstance(v, dict) and "packed" in v):
+            return True
+    return False
+
 def load_mark_for_8gb_vram(
     checkpoint_path: Optional[str] = None,
     config: Optional[MarkConfig] = None,
     max_context_tokens: int = 8192,
     weight_quant_type: str = "IQ4_NL",
     kv_cache_quant: str = "IQ4_NL",
-) -> Tuple[MarkForCausalLM, PagedKVCache, Dict[str, float]]:
+    variant: str = "1.5b",
+) -> Tuple[nn.Module, PagedKVCache, Dict[str, float]]:
     """
     Initializes Mark 0.1 with Native Memory Reduction in LM Studio style (`IQ4_NL` / `Q8_0` / `Q4_0` / `NF4`):
     - Weights in `IQ4_NL` (4-bit Non-Linear in 32-value blocks): ~1.58 GB
@@ -242,22 +249,66 @@ def load_mark_for_8gb_vram(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     compute_dtype = torch.float16 if device.type == "cuda" else torch.float32
 
+    if checkpoint_path is None:
+        from pathlib import Path
+        repo_root = Path(__file__).resolve().parent.parent
+        variant_norm = variant.lower().strip()
+        candidate_names = [
+            f"mark_{variant_norm}.pt",
+            f"mark_engineer_{variant_norm}.pt",
+            f"mark_{variant_norm}_iq4_nl.pt",
+            f"mark_engineer_{variant_norm}_iq4_nl.pt",
+            f"mark_{variant_norm.replace('.', '_')}_iq4_nl.pt",
+            f"mark_engineer_{variant_norm.replace('.', '_')}_iq4_nl.pt",
+            f"mark_general_{variant_norm.replace('.', '_')}_iq4_nl.pt",
+            "mark_engineer_302m_iq4_nl.pt",
+            "mark_engineer_1_5b_iq4_nl.pt",
+            "mark_general_1_5b_iq4_nl.pt",
+        ]
+        search_dirs = [
+            repo_root / "checkpoints",
+            Path("checkpoints"),
+            Path("/mnt/ssd_1/mark ai/checkpoints"),
+        ]
+        for d in search_dirs:
+            for name in candidate_names:
+                p = d / name
+                if p.exists():
+                    checkpoint_path = str(p)
+                    break
+            if checkpoint_path:
+                break
+
+    sd = None
     if checkpoint_path and os.path.exists(checkpoint_path):
         ckpt = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
-        cfg_dict = ckpt.get("config", {})
-        config = MarkConfig(**cfg_dict) if cfg_dict else (config or MarkConfig())
-        model = MarkForCausalLM(config)
-        model.load_state_dict(ckpt["model_state_dict"], strict=False)
-    else:
-        config = config or MarkConfig()
-        model = MarkForCausalLM(config)
+        sd = ckpt.get("model_state_dict", ckpt) if isinstance(ckpt, dict) else ckpt
+        cfg_dict = ckpt.get("config", {}) if isinstance(ckpt, dict) else {}
+        if cfg_dict and config is None:
+            config = MarkConfig(**cfg_dict)
 
+    config = config or MarkConfig.create_engineer_1_5b()
+    if sd is not None:
+        emb_w = sd.get("tok_embeddings.weight")
+        if emb_w is not None and hasattr(emb_w, "shape"):
+            config.vocab_size = emb_w.shape[0]
+
+    model = MarkForCausalLM(config)
     model.eval()
     for p in model.parameters():
         p.requires_grad_(False)
 
     model = model.to(dtype=compute_dtype)
-    model = quantize_mark_model_nf4(model, compute_dtype=compute_dtype, weight_quant_type=weight_quant_type)
+
+    if sd is not None:
+        if _is_quantized_checkpoint(sd):
+            model = quantize_mark_model_nf4(model, compute_dtype=compute_dtype, weight_quant_type=weight_quant_type)
+            model.load_state_dict(sd, strict=False)
+        else:
+            model.load_state_dict(sd, strict=False)
+            model = quantize_mark_model_nf4(model, compute_dtype=compute_dtype, weight_quant_type=weight_quant_type)
+    else:
+        model = quantize_mark_model_nf4(model, compute_dtype=compute_dtype, weight_quant_type=weight_quant_type)
     model = model.to(device)
 
     kv_cache = PagedKVCache(

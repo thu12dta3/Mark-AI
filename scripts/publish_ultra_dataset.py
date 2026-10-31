@@ -198,7 +198,7 @@ Released under the **GNU Affero General Public License v3.0 (AGPL-3.0)** to guar
 
 def main():
     repo_id = "miceworks/Mark-Ultra-Curriculum"
-    output_dir = Path("/home/thu12/.gemini/antigravity/scratch/Mark-AI/datasets/ultra_curriculum")
+    output_dir = Path(__file__).resolve().parent.parent / "datasets" / "ultra_curriculum"
     output_dir.mkdir(parents=True, exist_ok=True)
     data_dir = output_dir / "data"
     data_dir.mkdir(exist_ok=True)

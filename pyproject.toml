@@ -17,8 +17,9 @@ dependencies = [
 ]
 
 [project.scripts]
-mark-inference = "inference:main"
-mark-download-302m = "download_302m:main"
+mark-inference = "scripts.inference:main"
+mark-download-302m = "scripts.download_302m:main"
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["."]
+include = ["src*", "scripts*", "export*"]

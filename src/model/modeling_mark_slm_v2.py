@@ -291,7 +291,7 @@ class MarkSLMV2Model(MarkSLMV2PreTrainedModel):
 
 
 class MarkSLMV2ForCausalLM(MarkSLMV2PreTrainedModel):
-    _tied_weights_keys = ["lm_head.weight"]
+    _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
 
     def __init__(self, config: MarkSLMV2Config):
         super().__init__(config)
@@ -315,6 +315,19 @@ class MarkSLMV2ForCausalLM(MarkSLMV2PreTrainedModel):
 
     def set_output_embeddings(self, new_embeddings):
         self.lm_head = new_embeddings
+
+    def load_mark_state_dict(self, state_dict: dict, strict: bool = False):
+        mapped_sd = {}
+        for k, v in state_dict.items():
+            new_k = k
+            if new_k.startswith('tok_embeddings.'):
+                new_k = new_k.replace('tok_embeddings.', 'model.embed_tokens.')
+            elif not new_k.startswith('model.') and not new_k.startswith('lm_head.') and not new_k.startswith('mtp_'):
+                new_k = 'model.' + new_k
+            new_k = new_k.replace('.ffn.router.', '.ffn.router_gate.')
+            new_k = new_k.replace('.ffn.shared_experts.w_', '.ffn.shared_experts.0.w_')
+            mapped_sd[new_k] = v
+        return self.load_state_dict(mapped_sd, strict=strict)
 
     def forward(
         self,

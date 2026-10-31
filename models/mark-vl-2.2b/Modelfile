@@ -1,5 +1,5 @@
 FROM ./mark_vl_2_2b.gguf
-FROM ./mmproj_mark_vl_2_2b.gguf
+PARAMETER mmproj ./mmproj_mark_vl_2_2b.gguf
 
 TEMPLATE """<|im_start|>system
 {{ .System }}<|im_end|>

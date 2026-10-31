@@ -143,7 +143,24 @@ def download_single_model(model_key: str, dest_dir: Path):
         print(f"[Mark AI] Copied to {target_path} ({target_path.stat().st_size / (1024*1024):.2f} MB).")
     else:
         try:
-            download_with_progress(url, target_path)
+            if "parts" in info:
+                base_url = info["base_url"]
+                parts = info["parts"]
+                part_files = []
+                for p in parts:
+                    p_url = f"{base_url}/{p}"
+                    p_path = target_dir / p
+                    if not p_path.exists():
+                        download_with_progress(p_url, p_path)
+                    part_files.append(p_path)
+                print(f"[Reassembly] Concatenating multipart archives into {target_path}...")
+                with open(target_path, "wb") as out_f:
+                    for pf in part_files:
+                        with open(pf, "rb") as in_f:
+                            shutil.copyfileobj(in_f, out_f)
+                        pf.unlink()
+            else:
+                download_with_progress(url, target_path)
         except Exception as e:
             print(f"[Download Error] {e}")
             return
@@ -160,7 +177,7 @@ def main():
         "--model",
         type=str,
         default="engineer-1.5b",
-        choices=["302m", "1.5b", "engineer-1.5b", "general-1.5b", "all"],
+        choices=["302m", "1.5b", "engineer-1.5b", "general-1.5b", "markvl-2.2b", "all"],
         help="Model checkpoint variant to download (default: engineer-1.5b)."
     )
     parser.add_argument(
@@ -180,6 +197,8 @@ def main():
         download_single_model("general-1.5b", dest_dir)
     elif args.model == "302m":
         download_single_model("302m", dest_dir)
+    elif args.model == "markvl-2.2b":
+        download_single_model("markvl-2.2b", dest_dir)
     elif args.model == "all":
         for k in CATALOG.keys():
             download_single_model(k, dest_dir)
