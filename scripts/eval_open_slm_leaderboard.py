@@ -143,6 +143,10 @@ def main():
     parser = argparse.ArgumentParser(description="Evaluate Open SLM Leaderboard metrics")
     parser.add_argument("--model-path", type=str, default="models/mark-slm-v2-302m")
     parser.add_argument("--samples", type=int, default=50)
+    parser.add_argument("--hellaswag-acc", type=float, default=None, help="Evaluated HellaSwag accuracy (0.0-1.0)")
+    parser.add_argument("--arc-easy-acc", type=float, default=None, help="Evaluated ARC-Easy accuracy (0.0-1.0)")
+    parser.add_argument("--arc-challenge-acc", type=float, default=None, help="Evaluated ARC-Challenge accuracy (0.0-1.0)")
+    parser.add_argument("--piqa-acc", type=float, default=None, help="Evaluated PIQA accuracy (0.0-1.0)")
     args = parser.parse_args()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -158,12 +162,16 @@ def main():
 
     arith_acc = evaluate_arithmark_subset(model, tokenizer, max_samples=args.samples, device=device)
 
-    # Leaderboard projection summary
+    hellaswag_acc = args.hellaswag_acc if args.hellaswag_acc is not None else 0.0
+    arc_easy_acc = args.arc_easy_acc if args.arc_easy_acc is not None else 0.0
+    arc_challenge_acc = args.arc_challenge_acc if args.arc_challenge_acc is not None else 0.0
+    piqa_acc = args.piqa_acc if args.piqa_acc is not None else 0.0
+
     summary = compute_intelligence_index(
-        hellaswag_acc=0.48,      # Estimated post-training
-        arc_easy_acc=0.62,
-        arc_challenge_acc=0.35,
-        piqa_acc=0.73,
+        hellaswag_acc=hellaswag_acc,
+        arc_easy_acc=arc_easy_acc,
+        arc_challenge_acc=arc_challenge_acc,
+        piqa_acc=piqa_acc,
         arithmark_acc=arith_acc,
     )
 

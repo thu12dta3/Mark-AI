@@ -14,7 +14,7 @@ import huggingface_hub
 from huggingface_hub import HfApi
 
 SSD_CHECKPOINTS = Path("/mnt/ssd_1/mark ai/checkpoints")
-REPO_ROOT = Path("/home/thu12/.gemini/antigravity/scratch/Mark-AI")
+REPO_ROOT = Path(__file__).resolve().parent.parent
 
 MODELS_CONFIG = {
     "Mark-Engineer-1.5B": {

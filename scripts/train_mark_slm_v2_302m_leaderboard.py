@@ -75,7 +75,20 @@ class LeaderboardCurriculumDataset(IterableDataset):
             for rec in records:
                 text = rec.get("full_text", "")
                 # Deterministic byte/character encoding fallback mapped to vocab
-                tokens = [ord(c) % (self.vocab_size - 100) + 10 for c in text]
+                if hasattr(self, "tokenizer") and self.tokenizer is not None:
+                    tokens = self.tokenizer.encode(text).ids
+                else:
+                    from tokenizers import Tokenizer
+                    tok_candidates = [
+                        Path("models/mark-engineer-1.5b/tokenizer.json"),
+                        Path("data/tokenizer/mark_bpe_tokenizer.json"),
+                    ]
+                    tok_p = next((p for p in tok_candidates if p.exists()), None)
+                    if tok_p:
+                        self.tokenizer = Tokenizer.from_file(str(tok_p))
+                        tokens = self.tokenizer.encode(text).ids
+                    else:
+                        tokens = [ord(c) % (self.vocab_size - 100) + 10 for c in text]
                 if len(tokens) < self.seq_len:
                     # Pad to seq_len
                     tokens = tokens + [0] * (self.seq_len - len(tokens))

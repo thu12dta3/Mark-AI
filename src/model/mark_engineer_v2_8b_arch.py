@@ -128,7 +128,7 @@ class MarkEngineerV2Model(MarkModel):
             mtp_logits: (bsz, seqlen, vocab_size) or None
             telemetry: execution metadata
         """
-        logits, mtp_logits = self.forward(input_ids, start_pos=start_pos, kv_cache=kv_cache)
+        logits, mtp_logits = self.forward(input_ids, start_pos=start_pos, kv_cache=kv_cache, return_mtp=True)
 
         telemetry = {
             "reasoning_level": reasoning_level.value,

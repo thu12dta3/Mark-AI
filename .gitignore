@@ -44,6 +44,8 @@ checkpoints/
 *.safetensors
 *.gguf
 *.iq4_nl
+*.zim
+.env
 
 # OS & Editor Artifacts
 .DS_Store
