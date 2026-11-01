@@ -33,8 +33,8 @@ def load_model(variant: str='302m', checkpoint_path: Optional[str]=None, device:
             candidate_names.extend(['mark_general_1_5b_iq4_nl.pt', 'mark_general_1.5b_iq4_nl.pt'])
         elif variant_norm in ('v2-8b', 'v2_8b'):
             candidate_names.extend(['mark_engineer_v2_8b_step_15000.pt', 'mark_engineer_v2_8b_iq4_nl.pt'])
-        elif variant_norm in ('v3-1.1b', 'v3', 'v3_1.1b'):
-            candidate_names.extend(['mark_v3_core_1_1b.pt', 'mark_v3_1_1b_iq4_nl.pt'])
+        elif variant_norm in ('v3-1.1b', 'mark-v3-1.1b', 'v3', '3-1.1b', 'v3_1.1b'):
+            candidate_names.extend(['mark_v3_1_1b.pt', 'mark_v3_1_1b_iq4_nl.pt', 'mark_v3_1_1b_inference.pt', 'mark_v3_core_1_1b.pt'])
         elif variant_norm in ('markvl-2.2b', 'markvl', 'markvl_2_2b'):
             candidate_names.extend(['mark_vl_2_2b.pt', 'mark_vl_2_2b_iq4_nl.pt'])
         search_dirs = [root_dir / 'checkpoints', Path('checkpoints'), Path('/mnt/ssd_1/mark ai/checkpoints'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v2_8b')]
@@ -68,7 +68,7 @@ def load_model(variant: str='302m', checkpoint_path: Optional[str]=None, device:
     elif variant_norm in ('v2-8b', 'v2_8b', 'engineer-v2-8b'):
         config = MarkEngineerV2Config()
         model_cls = MarkEngineerV2Model
-    elif variant_norm in ('v3-1.1b', 'v3', 'v3_1.1b', 'core-1.1b'):
+    elif variant_norm in ('v3-1.1b', 'mark-v3-1.1b', 'v3', '3-1.1b', 'v3_1.1b', 'core-1.1b', 'mark-v3-core-1.1b'):
         config = MarkV3Config()
         model_cls = MarkV3ForCausalLM
     elif variant_norm in ('primal', 'base', '0.1'):

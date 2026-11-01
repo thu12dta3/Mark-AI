@@ -1,4 +1,4 @@
-FROM ./mark_v3_core_1_1b.gguf
+FROM ./mark_v3_1_1b.gguf
 
 TEMPLATE """<|im_start|>system
 {{ .System }}<|im_end|>
@@ -14,4 +14,4 @@ PARAMETER temperature 0.2
 PARAMETER top_p 0.90
 PARAMETER repeat_penalty 1.1
 
-SYSTEM """You are Mark-v3-Core-1.1B, an ultra-dense reasoning engine based on deepseek2 graph with H-MLA and Aux-Loss-Free MoE."""
+SYSTEM """You are Mark-V3-1.1B, an ultra-dense reasoning engine based on deepseek2 graph with MLA and Aux-Loss-Free MoE."""

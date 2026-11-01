@@ -99,7 +99,7 @@ def test_mark_v3_gguf_export():
         pt_file = tmp_path / 'v3.pt'
         gguf_file = tmp_path / 'v3.gguf'
         torch.save(sd, pt_file)
-        export_to_deepseek2_gguf('v3-1.1b', pt_file, gguf_file, 'Mark-v3-Core-1.1B')
+        export_to_deepseek2_gguf('v3-1.1b', pt_file, gguf_file, 'Mark-V3-1.1B')
         verify_gguf_integrity(gguf_file)
         reader = gguf.GGUFReader(str(gguf_file))
         tensor_dict = {t.name: t for t in reader.tensors}
