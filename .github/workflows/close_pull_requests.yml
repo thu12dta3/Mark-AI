@@ -9,6 +9,12 @@ on:
 
 jobs:
   close_pr:
+    if: >-
+      github.event.pull_request.head.repo.full_name != github.repository &&
+      github.actor != 'thu12dta3' &&
+      github.actor != 'google-labs-jules[bot]' &&
+      github.event.pull_request.user.login != 'thu12dta3' &&
+      github.event.pull_request.user.login != 'google-labs-jules[bot]'
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
