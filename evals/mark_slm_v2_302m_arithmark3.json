@@ -1,0 +1,157 @@
+{
+  "model": "/home/thu12/.gemini/antigravity/scratch/Mark-AI/models/mark-slm-v2-302m",
+  "tokenizer": "/home/thu12/.gemini/antigravity/scratch/Mark-AI/models/mark-slm-v2-302m",
+  "params": 293449728,
+  "dataset": {
+    "path": "/tmp/arithmark/arithmark-3.jsonl",
+    "sha256": "bf8ab1a5193d52cdf0e05ff0b3ca226bdfcf416cb6e75562dcbe72e7e4559435",
+    "items": 1000
+  },
+  "runtime": {
+    "device": "cuda",
+    "dtype": "torch.float32",
+    "batch_size": 8,
+    "max_context": 1024,
+    "attention_implementation": "auto",
+    "compiled": false,
+    "torch_version": "2.9.1+cu126"
+  },
+  "primary_metric": "acc_norm",
+  "results": {
+    "arithmark-3": {
+      "acc": 24.8,
+      "acc_norm": 24.5,
+      "raw_correct": 248,
+      "norm_correct": 245,
+      "total": 1000,
+      "categories": {
+        "elementary_school_math_continuation::addition::grades_1_2::easy": {
+          "acc": 21.875,
+          "acc_norm": 21.875,
+          "raw_correct": 28,
+          "norm_correct": 28,
+          "total": 128
+        },
+        "elementary_school_math_continuation::comparison::grades_2_3::medium": {
+          "acc": 31.818181818181817,
+          "acc_norm": 31.818181818181817,
+          "raw_correct": 14,
+          "norm_correct": 14,
+          "total": 44
+        },
+        "elementary_school_math_continuation::comparison_difference::grades_2_3::medium": {
+          "acc": 29.166666666666668,
+          "acc_norm": 27.083333333333332,
+          "raw_correct": 14,
+          "norm_correct": 13,
+          "total": 48
+        },
+        "elementary_school_math_continuation::data::grades_2_3::easy": {
+          "acc": 37.2093023255814,
+          "acc_norm": 32.55813953488372,
+          "raw_correct": 16,
+          "norm_correct": 14,
+          "total": 43
+        },
+        "elementary_school_math_continuation::division::grades_3_4::medium": {
+          "acc": 20.37037037037037,
+          "acc_norm": 20.37037037037037,
+          "raw_correct": 11,
+          "norm_correct": 11,
+          "total": 54
+        },
+        "elementary_school_math_continuation::fractions_counting::grades_3_4::medium": {
+          "acc": 24.0,
+          "acc_norm": 20.0,
+          "raw_correct": 12,
+          "norm_correct": 10,
+          "total": 50
+        },
+        "elementary_school_math_continuation::geometry_area::grades_4_5::medium": {
+          "acc": 25.0,
+          "acc_norm": 25.0,
+          "raw_correct": 13,
+          "norm_correct": 13,
+          "total": 52
+        },
+        "elementary_school_math_continuation::geometry_perimeter::grades_4_5::medium": {
+          "acc": 35.55555555555556,
+          "acc_norm": 35.55555555555556,
+          "raw_correct": 16,
+          "norm_correct": 16,
+          "total": 45
+        },
+        "elementary_school_math_continuation::measurement::grades_2_3::easy": {
+          "acc": 31.57894736842105,
+          "acc_norm": 31.57894736842105,
+          "raw_correct": 24,
+          "norm_correct": 24,
+          "total": 76
+        },
+        "elementary_school_math_continuation::money::grades_3_4::medium": {
+          "acc": 23.4375,
+          "acc_norm": 23.4375,
+          "raw_correct": 15,
+          "norm_correct": 15,
+          "total": 64
+        },
+        "elementary_school_math_continuation::multiplication::grades_3_4::medium": {
+          "acc": 27.027027027027028,
+          "acc_norm": 27.027027027027028,
+          "raw_correct": 20,
+          "norm_correct": 20,
+          "total": 74
+        },
+        "elementary_school_math_continuation::patterns::grades_3_4::medium": {
+          "acc": 16.9811320754717,
+          "acc_norm": 16.9811320754717,
+          "raw_correct": 9,
+          "norm_correct": 9,
+          "total": 53
+        },
+        "elementary_school_math_continuation::subtraction::grades_1_2::easy": {
+          "acc": 24.786324786324787,
+          "acc_norm": 24.786324786324787,
+          "raw_correct": 29,
+          "norm_correct": 29,
+          "total": 117
+        },
+        "elementary_school_math_continuation::time::grades_2_3::easy": {
+          "acc": 12.727272727272727,
+          "acc_norm": 14.545454545454545,
+          "raw_correct": 7,
+          "norm_correct": 8,
+          "total": 55
+        },
+        "elementary_school_math_continuation::two_step_add_subtract::grades_2_3::medium": {
+          "acc": 21.73913043478261,
+          "acc_norm": 21.73913043478261,
+          "raw_correct": 10,
+          "norm_correct": 10,
+          "total": 46
+        },
+        "elementary_school_math_continuation::two_step_addition::grades_2_3::medium": {
+          "acc": 15.789473684210526,
+          "acc_norm": 15.789473684210526,
+          "raw_correct": 3,
+          "norm_correct": 3,
+          "total": 19
+        },
+        "elementary_school_math_continuation::two_step_subtraction::grades_2_3::medium": {
+          "acc": 21.875,
+          "acc_norm": 25.0,
+          "raw_correct": 7,
+          "norm_correct": 8,
+          "total": 32
+        }
+      },
+      "timing": {
+        "tokenization_seconds": 0.4971243289983249,
+        "evaluation_seconds": 27.650374949000252,
+        "examples_per_second": 36.165874851406194
+      },
+      "primary_metric": "acc_norm",
+      "primary_acc": 24.5
+    }
+  }
+}

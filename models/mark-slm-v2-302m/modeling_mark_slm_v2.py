@@ -131,10 +131,28 @@ class MarkMLAAttention(nn.Module):
         v_t = v.transpose(1, 2)
 
         # Causal attention via SDPA
-        is_causal = attention_mask is None and seqlen > 1
+        if attention_mask is not None:
+            if attention_mask.dim() == 2:
+                causal_mask = torch.triu(
+                    torch.full((seqlen, seqlen), float("-inf"), device=x.device, dtype=q_t.dtype),
+                    diagonal=1,
+                )
+                pad_mask_4d = (1.0 - attention_mask[:, None, None, :].to(dtype=q_t.dtype, device=x.device)) * -1e9
+                attn_mask = causal_mask + pad_mask_4d
+                is_causal = False
+            elif attention_mask.dim() == 4:
+                attn_mask = attention_mask.to(dtype=q_t.dtype, device=x.device)
+                is_causal = False
+            else:
+                attn_mask = attention_mask.to(device=x.device)
+                is_causal = False
+        else:
+            attn_mask = None
+            is_causal = seqlen > 1
+
         output = F.scaled_dot_product_attention(
             q_t, k_t, v_t,
-            attn_mask=attention_mask,
+            attn_mask=attn_mask,
             dropout_p=0.0,
             is_causal=is_causal,
         )
@@ -285,8 +303,10 @@ class MarkSLMV2Model(MarkSLMV2PreTrainedModel):
         attention_mask: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         h = self.embed_tokens(input_ids)
+        rope_cos = self.rope_cos.to(h.device)
+        rope_sin = self.rope_sin.to(h.device)
         for layer in self.layers:
-            h = layer(h, self.rope_cos, self.rope_sin, attention_mask=attention_mask)
+            h = layer(h, rope_cos, rope_sin, attention_mask=attention_mask)
         return self.norm(h)
 
 

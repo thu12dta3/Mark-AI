@@ -1,0 +1,353 @@
+{
+  "results": {
+    "arc_easy": {
+      "name": "arc_easy",
+      "alias": "arc_easy",
+      "sample_len": 2376,
+      "acc,none": 0.25252525252525254,
+      "acc_stderr,none": 0.008914948991495836,
+      "acc_norm,none": 0.265993265993266,
+      "acc_norm_stderr,none": 0.009066789565615746
+    },
+    "arc_challenge": {
+      "name": "arc_challenge",
+      "alias": "arc_challenge",
+      "sample_len": 1172,
+      "acc,none": 0.2226962457337884,
+      "acc_stderr,none": 0.012158314774829888,
+      "acc_norm,none": 0.26706484641638223,
+      "acc_norm_stderr,none": 0.01292893319649643
+    },
+    "hellaswag": {
+      "name": "hellaswag",
+      "alias": "hellaswag",
+      "sample_len": 10042,
+      "acc,none": 0.25014937263493325,
+      "acc_stderr,none": 0.004322137759696203,
+      "acc_norm,none": 0.2531368253335989,
+      "acc_norm_stderr,none": 0.004339200363454809
+    },
+    "piqa": {
+      "name": "piqa",
+      "alias": "piqa",
+      "sample_len": 1838,
+      "acc,none": 0.5342763873775843,
+      "acc_stderr,none": 0.011638380213532395,
+      "acc_norm,none": 0.5059847660500544,
+      "acc_norm_stderr,none": 0.011664988455853316
+    }
+  },
+  "group_subtasks": {},
+  "configs": {
+    "arc_challenge": {
+      "task": "arc_challenge",
+      "dataset_path": "allenai/ai2_arc",
+      "dataset_name": "ARC-Challenge",
+      "training_split": "train",
+      "validation_split": "validation",
+      "test_split": "test",
+      "doc_to_text": "Question: {{question}}\nAnswer:",
+      "doc_to_target": "{{choices.label.index(answerKey)}}",
+      "unsafe_code": false,
+      "doc_to_choice": "{{choices.text}}",
+      "description": "",
+      "target_delimiter": " ",
+      "fewshot_delimiter": "\n\n",
+      "fewshot_config": {
+        "sampler": "default",
+        "split": null,
+        "process_docs": null,
+        "fewshot_indices": null,
+        "samples": null,
+        "doc_to_text": "Question: {{question}}\nAnswer:",
+        "doc_to_choice": "{{choices.text}}",
+        "doc_to_target": "{{choices.label.index(answerKey)}}",
+        "gen_prefix": null,
+        "fewshot_delimiter": "\n\n",
+        "target_delimiter": " "
+      },
+      "num_fewshot": 0,
+      "metric_list": [
+        {
+          "metric": "acc",
+          "aggregation": "mean",
+          "higher_is_better": true
+        },
+        {
+          "metric": "acc_norm",
+          "aggregation": "mean",
+          "higher_is_better": true
+        }
+      ],
+      "output_type": "multiple_choice",
+      "repeats": 1,
+      "should_decontaminate": true,
+      "doc_to_decontamination_query": "Question: {{question}}\nAnswer:",
+      "metadata": {
+        "version": 1.0,
+        "pretrained": "/home/thu12/.gemini/antigravity/scratch/Mark-AI/models/mark-slm-v2-302m",
+        "trust_remote_code": true,
+        "dtype": "float32",
+        "config_source": "/home/thu12/.local/share/mark/training-env/lib/python3.12/site-packages/lm_eval/tasks/arc/arc_challenge.yaml"
+      }
+    },
+    "arc_easy": {
+      "task": "arc_easy",
+      "dataset_path": "allenai/ai2_arc",
+      "dataset_name": "ARC-Easy",
+      "training_split": "train",
+      "validation_split": "validation",
+      "test_split": "test",
+      "doc_to_text": "Question: {{question}}\nAnswer:",
+      "doc_to_target": "{{choices.label.index(answerKey)}}",
+      "unsafe_code": false,
+      "doc_to_choice": "{{choices.text}}",
+      "description": "",
+      "target_delimiter": " ",
+      "fewshot_delimiter": "\n\n",
+      "fewshot_config": {
+        "sampler": "default",
+        "split": null,
+        "process_docs": null,
+        "fewshot_indices": null,
+        "samples": null,
+        "doc_to_text": "Question: {{question}}\nAnswer:",
+        "doc_to_choice": "{{choices.text}}",
+        "doc_to_target": "{{choices.label.index(answerKey)}}",
+        "gen_prefix": null,
+        "fewshot_delimiter": "\n\n",
+        "target_delimiter": " "
+      },
+      "num_fewshot": 0,
+      "metric_list": [
+        {
+          "metric": "acc",
+          "aggregation": "mean",
+          "higher_is_better": true
+        },
+        {
+          "metric": "acc_norm",
+          "aggregation": "mean",
+          "higher_is_better": true
+        }
+      ],
+      "output_type": "multiple_choice",
+      "repeats": 1,
+      "should_decontaminate": true,
+      "doc_to_decontamination_query": "Question: {{question}}\nAnswer:",
+      "metadata": {
+        "version": 1.0,
+        "pretrained": "/home/thu12/.gemini/antigravity/scratch/Mark-AI/models/mark-slm-v2-302m",
+        "trust_remote_code": true,
+        "dtype": "float32",
+        "config_source": "/home/thu12/.local/share/mark/training-env/lib/python3.12/site-packages/lm_eval/tasks/arc/arc_easy.yaml"
+      }
+    },
+    "hellaswag": {
+      "task": "hellaswag",
+      "dataset_path": "Rowan/hellaswag",
+      "training_split": "train",
+      "validation_split": "validation",
+      "process_docs": "def process_docs(dataset: datasets.Dataset) -> datasets.Dataset:\n    def _process_doc(doc):\n        ctx = doc[\"ctx_a\"] + \" \" + doc[\"ctx_b\"].capitalize()\n        out_doc = {\n            \"query\": preprocess(doc[\"activity_label\"] + \": \" + ctx),\n            \"choices\": [preprocess(ending) for ending in doc[\"endings\"]],\n            \"gold\": int(doc[\"label\"]),\n        }\n        return out_doc\n\n    return dataset.map(_process_doc)\n",
+      "doc_to_text": "{{query}}",
+      "doc_to_target": "{{label}}",
+      "unsafe_code": false,
+      "doc_to_choice": "choices",
+      "description": "",
+      "target_delimiter": " ",
+      "fewshot_delimiter": "\n\n",
+      "fewshot_config": {
+        "sampler": "default",
+        "split": null,
+        "process_docs": "<function process_docs at 0x7f6f342a6c00>",
+        "fewshot_indices": null,
+        "samples": null,
+        "doc_to_text": "{{query}}",
+        "doc_to_choice": "choices",
+        "doc_to_target": "{{label}}",
+        "gen_prefix": null,
+        "fewshot_delimiter": "\n\n",
+        "target_delimiter": " "
+      },
+      "num_fewshot": 0,
+      "metric_list": [
+        {
+          "metric": "acc",
+          "aggregation": "mean",
+          "higher_is_better": true
+        },
+        {
+          "metric": "acc_norm",
+          "aggregation": "mean",
+          "higher_is_better": true
+        }
+      ],
+      "output_type": "multiple_choice",
+      "repeats": 1,
+      "should_decontaminate": false,
+      "metadata": {
+        "version": 1.0,
+        "pretrained": "/home/thu12/.gemini/antigravity/scratch/Mark-AI/models/mark-slm-v2-302m",
+        "trust_remote_code": true,
+        "dtype": "float32",
+        "config_source": "/home/thu12/.local/share/mark/training-env/lib/python3.12/site-packages/lm_eval/tasks/hellaswag/hellaswag.yaml"
+      }
+    },
+    "piqa": {
+      "task": "piqa",
+      "dataset_path": "baber/piqa",
+      "training_split": "train",
+      "validation_split": "validation",
+      "doc_to_text": "Question: {{goal}}\nAnswer:",
+      "doc_to_target": "label",
+      "unsafe_code": false,
+      "doc_to_choice": "{{[sol1, sol2]}}",
+      "description": "",
+      "target_delimiter": " ",
+      "fewshot_delimiter": "\n\n",
+      "fewshot_config": {
+        "sampler": "default",
+        "split": null,
+        "process_docs": null,
+        "fewshot_indices": null,
+        "samples": null,
+        "doc_to_text": "Question: {{goal}}\nAnswer:",
+        "doc_to_choice": "{{[sol1, sol2]}}",
+        "doc_to_target": "label",
+        "gen_prefix": null,
+        "fewshot_delimiter": "\n\n",
+        "target_delimiter": " "
+      },
+      "num_fewshot": 0,
+      "metric_list": [
+        {
+          "metric": "acc",
+          "aggregation": "mean",
+          "higher_is_better": true
+        },
+        {
+          "metric": "acc_norm",
+          "aggregation": "mean",
+          "higher_is_better": true
+        }
+      ],
+      "output_type": "multiple_choice",
+      "repeats": 1,
+      "should_decontaminate": true,
+      "doc_to_decontamination_query": "goal",
+      "metadata": {
+        "version": 1.0,
+        "pretrained": "/home/thu12/.gemini/antigravity/scratch/Mark-AI/models/mark-slm-v2-302m",
+        "trust_remote_code": true,
+        "dtype": "float32",
+        "config_source": "/home/thu12/.local/share/mark/training-env/lib/python3.12/site-packages/lm_eval/tasks/piqa/piqa.yaml"
+      }
+    }
+  },
+  "versions": {
+    "arc_challenge": 1.0,
+    "arc_easy": 1.0,
+    "hellaswag": 1.0,
+    "piqa": 1.0
+  },
+  "n-shot": {
+    "arc_challenge": 0,
+    "arc_easy": 0,
+    "hellaswag": 0,
+    "piqa": 0
+  },
+  "higher_is_better": {
+    "arc_challenge": {
+      "acc": true,
+      "acc_norm": true
+    },
+    "arc_easy": {
+      "acc": true,
+      "acc_norm": true
+    },
+    "hellaswag": {
+      "acc": true,
+      "acc_norm": true
+    },
+    "piqa": {
+      "acc": true,
+      "acc_norm": true
+    }
+  },
+  "n-samples": {
+    "arc_easy": {
+      "original": 2376,
+      "effective": 2376
+    },
+    "arc_challenge": {
+      "original": 1172,
+      "effective": 1172
+    },
+    "hellaswag": {
+      "original": 10042,
+      "effective": 10042
+    },
+    "piqa": {
+      "original": 1838,
+      "effective": 1838
+    }
+  },
+  "config": {
+    "model": "hf",
+    "model_args": {
+      "pretrained": "/home/thu12/.gemini/antigravity/scratch/Mark-AI/models/mark-slm-v2-302m",
+      "trust_remote_code": true,
+      "dtype": "float32"
+    },
+    "model_num_parameters": 293449728,
+    "model_dtype": "torch.float32",
+    "model_revision": "main",
+    "model_sha": "",
+    "batch_size": "16",
+    "batch_sizes": [],
+    "device": "cuda:0",
+    "use_cache": null,
+    "limit": null,
+    "bootstrap_iters": 100000,
+    "gen_kwargs": {},
+    "random_seed": 0,
+    "numpy_seed": 1234,
+    "torch_seed": 1234,
+    "fewshot_seed": 1234
+  },
+  "git_hash": "7c24dc9",
+  "date": 1793572591.8074853,
+  "pretty_env_info": "PyTorch version: 2.9.1+cu126\nIs debug build: False\nCUDA used to build PyTorch: 12.6\nROCM used to build PyTorch: N/A\n\nOS: Garuda Linux Temeraire (x86_64)\nGCC version: (GCC) 16.2.1 20260810\nClang version: 23.1.4\nCMake version: version 4.4.5\nLibc version: glibc-2.44\n\nPython version: 3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ] (64-bit runtime)\nPython platform: Linux-7.2.11-zen1-1-zen-x86_64-with-glibc2.44\nIs CUDA available: True\nCUDA runtime version: 13.4.92\nCUDA_MODULE_LOADING set to: \nGPU models and configuration: GPU 0: NVIDIA GeForce RTX 2060 SUPER\nNvidia driver version: Could not collect\ncuDNN version: Could not collect\nIs XPU available: False\nHIP runtime version: N/A\nMIOpen runtime version: N/A\nIs XNNPACK available: True\n\nCPU:\nArquitetura:                               x86_64\nModo(s) operacional da CPU:                32-bit, 64-bit\nTamanhos de endereço:                      39 bits physical, 48 bits virtual\nOrdem dos bytes:                           Little Endian\nCPU(s):                                    8\nLista de CPU(s) on-line:                   0-7\nID de fornecedor:                          GenuineIntel\nNome do modelo:                            Intel(R) Core(TM) i3-10100 CPU @ 3.60GHz\nFamília da CPU:                            6\nModelo:                                    165\nThread(s) per núcleo:                      2\nNúcleo(s) por soquete:                     4\nSoquete(s):                                1\nStep:                                      3\nVersão do micro-código:                    0x100\nCPU(s) MHz de escala:                      95%\nCPU MHz máx.:                              4300,0000\nCPU MHz mín.:                              800,0000\nBogoMIPS:                                  7200,00\nOpções:                                    fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid mpx rdseed adx smap clflushopt intel_pt xsaveopt xsavec xgetbv1 xsaves dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp vnmi md_clear flush_l1d arch_capabilities\nVirtualização:                             VT-x\ncache de L1d:                              128 KiB (4 instâncias)\ncache de L1i:                              128 KiB (4 instâncias)\ncache de L2:                               1 MiB (4 instâncias)\ncache de L3:                               6 MiB (1 instância)\nNó(s) de NUMA:                             1\nCPU(s) de nó0 NUMA:                        0-7\nVulnerabilidade Gather data sampling:      Mitigation; Microcode\nVulnerabilidade Ghostwrite:                Not affected\nVulnerabilidade Indirect target selection: Mitigation; Aligned branch/return thunks\nVulnerabilidade Itlb multihit:             KVM: Mitigation: Split huge pages\nVulnerabilidade L1tf:                      Not affected\nVulnerabilidade Mds:                       Not affected\nVulnerabilidade Meltdown:                  Not affected\nVulnerabilidade Mmio stale data:           Mitigation; Clear CPU buffers; SMT vulnerable\nVulnerabilidade Old microcode:             Not affected\nVulnerabilidade Reg file data sampling:    Not affected\nVulnerabilidade Retbleed:                  Mitigation; Enhanced IBRS\nVulnerabilidade Spec rstack overflow:      Not affected\nVulnerabilidade Spec store bypass:         Mitigation; Speculative Store Bypass disabled via prctl\nVulnerabilidade Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization\nVulnerabilidade Spectre v2:                Mitigation; Enhanced / Automatic IBRS; IBPB conditional; PBRSB-eIBRS SW sequence; BHI SW loop, KVM SW loop\nVulnerabilidade Srbds:                     Mitigation; Microcode\nVulnerabilidade Tsa:                       Not affected\nVulnerabilidade Tsx async abort:           Not affected\nVulnerabilidade Vmscape:                   Mitigation; IBPB before exit to userspace\n\nVersions of relevant libraries:\n[pip3] numpy==2.5.2\n[pip3] nvidia-cublas-cu12==12.6.4.1\n[pip3] nvidia-cuda-cupti-cu12==12.6.80\n[pip3] nvidia-cuda-nvrtc-cu12==12.6.77\n[pip3] nvidia-cuda-runtime-cu12==12.6.77\n[pip3] nvidia-cudnn-cu12==9.10.2.21\n[pip3] nvidia-cufft-cu12==11.3.0.4\n[pip3] nvidia-curand-cu12==10.3.7.77\n[pip3] nvidia-cusolver-cu12==11.7.1.2\n[pip3] nvidia-cusparse-cu12==12.5.4.2\n[pip3] nvidia-cusparselt-cu12==0.7.1\n[pip3] nvidia-nccl-cu12==2.27.5\n[pip3] nvidia-nvjitlink-cu12==12.6.85\n[pip3] nvidia-nvtx-cu12==12.6.77\n[pip3] torch==2.9.1+cu126\n[pip3] torchvision==0.24.1+cu126\n[pip3] triton==3.5.1\n[conda] Could not collect",
+  "transformers_version": "4.57.1",
+  "lm_eval_version": "0.4.13",
+  "upper_git_hash": null,
+  "tokenizer_pad_token": [
+    "<|pad|>",
+    "0"
+  ],
+  "tokenizer_eos_token": [
+    "<|eos|>",
+    "2"
+  ],
+  "tokenizer_bos_token": [
+    "<|bos|>",
+    "1"
+  ],
+  "eot_token_id": 2,
+  "max_length": 4096,
+  "task_hashes": {
+    "arc_easy": "dce0d9b0f0cecd55bf2ac264042c5e45487df708d13123af3ae9e67bbbefdeb1",
+    "arc_challenge": "09f9ae87a0905d63512cffc4aa91a55e44258fc35160e40fa1eb66fb75473e34",
+    "hellaswag": "edcc7edd27a555d3f7cbca0641152b2c5e4eb6eb79c5e62d7fe5887f47814323",
+    "piqa": "74d5a816572c396ad46edbd386954abe5ddb3db2d7195088387d1d5c1b32fd8b"
+  },
+  "model_source": "hf",
+  "model_name": "/home/thu12/.gemini/antigravity/scratch/Mark-AI/models/mark-slm-v2-302m",
+  "model_name_sanitized": "__home__thu12__.gemini__antigravity__scratch__Mark-AI__models__mark-slm-v2-302m",
+  "system_instruction": null,
+  "system_instruction_sha": null,
+  "fewshot_as_multiturn": null,
+  "chat_template": null,
+  "chat_template_sha": null,
+  "total_evaluation_time_seconds": "960.8883921219967"
+}
