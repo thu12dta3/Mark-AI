@@ -32,7 +32,7 @@ class MarkSLMV2Config(MarkConfig):
     n_shared_experts: int = 1
     n_routed_experts: int = 16
     num_experts_per_tok: int = 2
-    moe_intermediate_size: int = 400
+    moe_intermediate_size: int = 384
     router_bias_update_rate: float = 0.001
     mtp_depth: int = 1
     mtp_loss_weight: float = 0.3

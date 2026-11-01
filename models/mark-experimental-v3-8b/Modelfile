@@ -1,4 +1,4 @@
-FROM ./mark_experimental_v3_8b.gguf
+FROM ./mark_experimental_v3_8b_iq4_nl.gguf
 
 TEMPLATE """<|im_start|>system
 {{ .System }}<|im_end|>
@@ -11,7 +11,7 @@ TEMPLATE """<|im_start|>system
 PARAMETER stop "<|im_end|>"
 PARAMETER stop "<|endoftext|>"
 PARAMETER temperature 0.2
-PARAMETER top_p 0.90
+PARAMETER top_p 0.95
 PARAMETER repeat_penalty 1.1
 
-SYSTEM """You are Mark-Experimental-V3-8B, an 8.01B parameter flagship reasoning engine with extended context window and DeepSeekMoE architecture."""
+SYSTEM """You are Mark-Experimental-V3-8B, a language model built on native DeepSeek2 MoE and MLA architecture."""

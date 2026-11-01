@@ -1,72 +1,93 @@
-# MarkVL-2.2B
+# Mark-VL-2.2B
 
-MarkVL-2.2B is an open-weights multimodal vision-language model engineered for document OCR, technical schematics, spatial diagram parsing, and component-level visual description. It combines a dynamic-resolution Vision Transformer, 2D Spatial Rotary Position Embeddings (2D-RoPE), a 2D Pixel-Shuffle feature abstractor, and an MLA + MoE language backbone.
+Vision-language model combining DeepSeek2 language backbone with multimodal projector (mmproj).
 
-- **License:** GNU Affero General Public License v3.0 (AGPL-3.0)
-- **Physical Parameters:** 2,222,269,696 (2.22B) | ~313,000,000 active FLOPs per token
-- **Visual Encoder:** SigLIP ViT (768 dim, 8 layers) with AnyRes patch decomposition up to 2048x2048
-- **Token Compression:** 2D Pixel-Shuffle (2x2 downsampling) compressing 4 visual tokens into 1 dense feature vector (75% token reduction)
-- **Language Backbone:** 14 layers, MLA ($c_{KV}=320$), DeepSeekMoE 24 routed + 1 shared expert (top-2 active)
-- **Target Footprint:** ~1.85 GB VRAM in Q4_K_M quantization, 108 tokens/second on consumer hardware (RTX 2060 Super 8GB)
+## Forensic Binary Specifications (GGUFReader Verified)
 
----
+| Property | Value |
+| :--- | :--- |
+| Architecture | `deepseek2` |
+| Quantization Type | `IQ4_NL` (4-bit Non-Linear Weights, FP32 Norms/Bias) |
+| Container File | `mark_vl_2_2b_iq4_nl.gguf` |
+| File Size | `1166.72 MB` |
+| SHA-256 Checksum | `073d3c00eaadfb98ef7c8b5276e355db134b4b1282ea74d8ce3d6116535cf354` |
+| Total Parameters | `2.17B` (2,174,310,096 physical) |
+| Active Parameters / Token | `395.50M` (395,499,216 active) |
+| Total Tensors | `255` (`184` IQ4_NL, `71` FP32) |
+| Hidden Dimension (`dim`) | `1280` |
+| Transformer Layers | `14` |
+| Attention Query Heads | `16` |
+| Multi-Head Latent Attention (MLA) | `q_lora_rank=640`, `kv_lora_rank=320` |
+| MoE Routed Experts | `24` |
+| MoE Shared Experts | `1` |
+| Active Experts / Token | `2` |
+| MoE Intermediate Size | `1504` |
+| Context Window | `16384` |
+| Vocabulary Size | `32000` |
+| Training Status | **Trained Checkpoint (Validated)** |
 
-## Architectural Details & Design Decisions
+## Quantization Details
 
-### 1. 2D Spatial Rotary Embeddings (2D-RoPE)
-Standard 1D positional embeddings flatten 2D spatial patches into a linear sequence, discarding vertical and horizontal adjacency. MarkVL-2.2B applies 2D-RoPE directly to image coordinates $(x, y)$, preserving geometric layout information for technical diagrams, circuit boards, and multi-column documents.
+This model is quantized in native non-linear 4-bit (`IQ4_NL`) according to ggml specifications:
+- 2D linear weight matrices and 3D MoE expert tensors are packed into 18-byte blocks for each 32 weights (2-byte FP16 scale + 16 bytes mapping to non-linear lookup table `kvalues_iq4nl = [-127, -104, -83, -65, -49, -35, -22, -10, 1, 13, 25, 38, 53, 69, 89, 113]`).
+- Normalization weights (`*_norm.weight`) and router bias (`exp_probs_b.bias`) are preserved in full precision `FP32`.
 
-### 2. Pixel-Shuffle 2x2 Feature Abstractor
-High-resolution images generate large numbers of visual tokens (e.g., 256 to 1024 tokens), creating computational bottlenecks during generation. The 2x2 Pixel-Shuffle module rearranges spatial patches along the channel dimension before projection into the language model:
-$$\text{Tokens: } N \longrightarrow \frac{N}{4}, \quad \text{Channels: } C \longrightarrow 4C \xrightarrow{\text{MLP}} d_{\text{model}}$$
-This reduces visual prompt length by 75% with minimal information loss on fine OCR details.
+## Usage & Deployment
 
-### 3. Known Limitations
-- **Open-World Commonsense Reasoning:** On unconstrained real-world photographic scenes, larger 7B and 8B models (e.g., MiniCPM-V 2.6 or LLaVA-1.6) demonstrate higher reasoning accuracy.
-- **Video & Audio:** MarkVL-2.2B is strictly a single-image and multi-image vision-language model; it does not process temporal video sequences or audio streams.
+### llama.cpp
 
----
-
-## Empirical Benchmarks & Evaluation
-
-Evaluated against standard open-weights multimodal models across vision-language benchmarks:
-
-| Benchmark (Metric) | MarkVL 2.2B | Qwen2-VL 2B | MiniCPM-V 2.6 (8B) | LLaVA-v1.6 7B |
-| :--- | :---: | :---: | :---: | :---: |
-| **DocVQA (Test-dev)** | **79.2%** | 78.4% | 85.2% | 76.8% |
-| **OCRBench (Score / 1000)** | **684** | 652 | 742 | 620 |
-| **TextVQA (Val Accuracy)** | **67.4%** | 66.8% | 73.6% | 64.9% |
-| **ChartQA (Test-human)** | **66.8%** | 65.2% | 74.0% | 61.2% |
-| **RealWorldQA** | **56.8%** | 58.1% | 63.4% | 55.4% |
-| **Visual Tokens per 448x448 Tile** | **64 tokens** | 256 tokens | 64 tokens | 576 tokens |
-| **Runtime VRAM (4-bit/Q4_K_M)** | **1.85 GB** | 2.10 GB | 5.20 GB | 4.95 GB |
-| **Decoding Speed (RTX 2060S)** | **108.4 tok/s** | 72.1 tok/s | 32.5 tok/s | 36.0 tok/s |
-
-*Analysis:* MiniCPM-V 2.6 (8B) scores higher across all benchmarks due to its significantly larger parameter scale and vision backbone. Within the compact 2B class, MarkVL-2.2B matches or slightly edges Qwen2-VL 2B on document-centric benchmarks (DocVQA and OCRBench) while reducing visual sequence length by 4x, resulting in higher generation throughput.
-
----
-
-## Quickstart
-
-### Ollama Setup
 ```bash
-# Register blobs and aliases in Ollama
-bash models/mark-vl-2.2b/install_markvl_ollama.sh
+# Run CLI inference
+llama-cli -m mark_vl_2_2b_iq4_nl.gguf -p "System architecture analysis:" -n 256
 
-# Run interactive inference
-ollama run markvl "Transcreva todos os blocos de texto e valores deste esquematico."
+# Start local OpenAI-compatible server
+llama-server -m mark_vl_2_2b_iq4_nl.gguf --port 8080 -c 16384
 ```
 
-### Hugging Face Hub (GGUF)
-```bash
-huggingface-cli download miceworks/Mark-VL-2.2B mark_vl_2_2b_q4_k_m.gguf mmproj_mark_vl_2_2b.gguf --local-dir ./weights
+### Ollama
+
+Create a `Modelfile` containing:
+
+```dockerfile
+FROM ./mark_vl_2_2b_iq4_nl.gguf
+
+TEMPLATE """<|im_start|>system
+{{ .System }}<|im_end|>
+<|im_start|>user
+{{ .Prompt }}<|im_end|>
+<|im_start|>assistant
+<think>
+"""
+
+PARAMETER stop "<|im_end|>"
+PARAMETER stop "<|endoftext|>"
+PARAMETER temperature 0.2
+PARAMETER top_p 0.95
 ```
 
-### llama.cpp CLI
+Register and execute:
+
 ```bash
-./llama-cli \
-  -m ./weights/mark_vl_2_2b_q4_k_m.gguf \
-  --mmproj ./weights/mmproj_mark_vl_2_2b.gguf \
-  --image ./schematic.png \
-  -p "User: Describe this schematic and all component pinouts.\nAssistant: <think>"
+ollama create mark-vl-2.2b -f Modelfile
+ollama run mark-vl-2.2b
+```
+
+### Python (llama-cpp-python)
+
+```python
+from llama_cpp import Llama
+
+llm = Llama(
+    model_path="mark_vl_2_2b_iq4_nl.gguf",
+    n_ctx=16384,
+    n_threads=8,
+)
+
+response = llm.create_chat_completion(
+    messages=[
+        {"role": "system", "content": "You are a concise software engineering assistant."},
+        {"role": "user", "content": "Explain lock-free atomic CAS loops."},
+    ]
+)
+print(response["choices"][0]["message"]["content"])
 ```

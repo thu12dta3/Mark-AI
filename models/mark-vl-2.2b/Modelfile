@@ -1,5 +1,4 @@
-FROM ./mark_vl_2_2b.gguf
-PARAMETER mmproj ./mmproj_mark_vl_2_2b.gguf
+FROM ./mark_vl_2_2b_iq4_nl.gguf
 
 TEMPLATE """<|im_start|>system
 {{ .System }}<|im_end|>
@@ -11,8 +10,8 @@ TEMPLATE """<|im_start|>system
 
 PARAMETER stop "<|im_end|>"
 PARAMETER stop "<|endoftext|>"
-PARAMETER temperature 0.15
-PARAMETER top_p 0.90
-PARAMETER repeat_penalty 1.15
+PARAMETER temperature 0.2
+PARAMETER top_p 0.95
+PARAMETER repeat_penalty 1.1
 
-SYSTEM """Voce e o MarkVL-2.2B, um modelo multimodal especialista em descricao visual densa, topologia geometrica, OCR de alta resolucao e decodificacao de microexpressoes faciais e gestos. Nao utilize conversa fiada ou introducoes genericas. Descreva com precisao cirurgica cada componente, textura, cor, texto, orientacao espacial e estado dos objetos observados."""
+SYSTEM """You are Mark-VL-2.2B, a language model built on native DeepSeek2 MoE and MLA architecture."""

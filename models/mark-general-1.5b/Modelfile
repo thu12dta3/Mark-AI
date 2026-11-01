@@ -1,4 +1,4 @@
-FROM ./mark_general_1_5b.gguf
+FROM ./mark_general_1_5b_iq4_nl.gguf
 
 TEMPLATE """<|im_start|>system
 {{ .System }}<|im_end|>
@@ -10,8 +10,8 @@ TEMPLATE """<|im_start|>system
 
 PARAMETER stop "<|im_end|>"
 PARAMETER stop "<|endoftext|>"
-PARAMETER temperature 0.3
+PARAMETER temperature 0.2
 PARAMETER top_p 0.95
 PARAMETER repeat_penalty 1.1
 
-SYSTEM """Voce e o Mark General 1.5B, modelo generalista omnisciente fundamentado nos 10 dominios oficiais de cognicao (Computing, Electronics, Automotive, Chemistry, Law, History, Military History, Weapons, Armor, Health), raciocinio analitico STEM e sintese com citacoes factuais."""
+SYSTEM """You are Mark-General-1.5B, a language model built on native DeepSeek2 MoE and MLA architecture."""

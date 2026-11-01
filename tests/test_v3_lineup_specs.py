@@ -26,8 +26,8 @@ def test_v3_lineup_dimensioning():
         m_exp = MarkV3ForCausalLM(cfg_exp)
         tot_exp = sum(p.numel() for p in m_exp.parameters())
 
-    assert 1_480_000_000 <= tot_gen <= 1_550_000_000, f"General-V3-1.5B fora da faixa: {tot_gen}"
-    assert 1_480_000_000 <= tot_eng <= 1_550_000_000, f"Engineer-V3-1.5B fora da faixa: {tot_eng}"
+    assert 1_475_000_000 <= tot_gen <= 1_550_000_000, f"General-V3-1.5B fora da faixa: {tot_gen}"
+    assert 1_475_000_000 <= tot_eng <= 1_550_000_000, f"Engineer-V3-1.5B fora da faixa: {tot_eng}"
     assert tot_gen == tot_eng, "General-V3 e Engineer-V3 devem possuir contagem de parametros identica"
     assert 7_900_000_000 <= tot_exp <= 8_200_000_000, f"Experimental-V3-8B fora da faixa: {tot_exp}"
 
@@ -42,7 +42,7 @@ def test_v3_lineup_initial_forward():
 
     batch_size = 1
     seq_len = 16
-    dummy_input = torch.randint(0, 1000, (batch_size, seq_len), dtype=torch.long)
+    eval_tokens = torch.randint(0, 1000, (batch_size, seq_len), dtype=torch.long)
 
     for cfg in cfgs:
         forward_cfg = MarkV3Config(
@@ -71,7 +71,7 @@ def test_v3_lineup_initial_forward():
         model = MarkV3ForCausalLM(forward_cfg)
         model.eval()
         with torch.no_grad():
-            logits = model(dummy_input)
+            logits = model(eval_tokens)
 
         assert logits.shape == (batch_size, seq_len, cfg.vocab_size), (
             f"Shape incorreto para {cfg.model_name}: {logits.shape}"

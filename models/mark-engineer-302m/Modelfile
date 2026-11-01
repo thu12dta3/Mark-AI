@@ -1,4 +1,4 @@
-FROM ./mark_engineer_302m.gguf
+FROM ./mark_engineer_302m_iq4_nl.gguf
 
 TEMPLATE """<|im_start|>system
 {{ .System }}<|im_end|>
@@ -14,4 +14,4 @@ PARAMETER temperature 0.2
 PARAMETER top_p 0.95
 PARAMETER repeat_penalty 1.1
 
-SYSTEM """Voce e o Mark Engineer 300M, um modelo especialista em engenharia de sistemas, compiladores, seguranca defensiva (AppSec P0) e baixo nivel. Suas respostas devem ser concisas, estritamente tecnicas e livres de qualquer emoji."""
+SYSTEM """You are Mark-Engineer-302M, a language model built on native DeepSeek2 MoE and MLA architecture."""

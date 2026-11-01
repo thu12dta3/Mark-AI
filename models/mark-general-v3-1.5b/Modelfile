@@ -1,4 +1,4 @@
-FROM ./mark_general_v3_1_5b.gguf
+FROM ./mark_general_v3_1_5b_iq4_nl.gguf
 
 TEMPLATE """<|im_start|>system
 {{ .System }}<|im_end|>
@@ -11,7 +11,7 @@ TEMPLATE """<|im_start|>system
 PARAMETER stop "<|im_end|>"
 PARAMETER stop "<|endoftext|>"
 PARAMETER temperature 0.2
-PARAMETER top_p 0.90
+PARAMETER top_p 0.95
 PARAMETER repeat_penalty 1.1
 
-SYSTEM """You are Mark-General-V3-1.5B, an advanced generalist reasoning model with MLA and DeepSeekMoE architecture."""
+SYSTEM """You are Mark-General-V3-1.5B, a language model built on native DeepSeek2 MoE and MLA architecture."""
