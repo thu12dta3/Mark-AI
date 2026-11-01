@@ -18,27 +18,38 @@ tags:
 
 # Mark-SLM-V3-150M
 
-Mark-SLM-V3-150M is an ultra-dense edge foundation engineered to operate strictly under the 150M parameter ceiling. By leveraging Tied Word Embeddings (reusing token_embd.weight as the language modeling head without storing a redundant output.weight tensor), the physical container contains exactly 272 tensors and 146,899,248 parameters (146.90M physical parameters), with only 54.00M active parameters per token.
+## Overview
 
+Mark-SLM-V3-150M is a compact edge model built to stay under the 150M parameter ceiling. By using tied word embeddings (reusing token_embd.weight as the language model output projection), the GGUF file contains 272 tensors and exactly 146,899,248 parameters (54.00M active per token).
 
-## Section 1 -- Executive Systems Overview & Target Hardware Profile
+Quantized in IQ4_NL, the container occupies 79.97 MiB (83.85 MB / 83,849,984 bytes), making it suitable for low-power edge microcontrollers and embedded devices.
 
-### System Role & Engineering Purpose
-Mark-SLM-V3-150M is an ultra-dense edge foundation engineered to operate strictly under the 150M parameter ceiling. By leveraging Tied Word Embeddings (reusing token_embd.weight as the language modeling head without storing a redundant output.weight tensor), the physical container contains exactly 272 tensors and 146,899,248 parameters (146.90M physical parameters), with only 54.00M active parameters per token.
+## Specifications
 
-### Target Hardware Profile
-Target Hardware: Mobile chips, edge microcontrollers, and low-power IoT hardware. With a total binary footprint of only 79.97 MiB (83.85 MB), it operates comfortably within minimal RAM constraints.
+| Field | Value |
+| :--- | :--- |
+| Architecture | `deepseek2` |
+| Weight State | `UN-TRAINED_ARCHITECTURAL_BASE` |
+| Binary Size | `79.97 MiB (83.85 MB / 83,849,984 bytes)` |
+| Total Parameters | `146,899,248` (146899248 physical) |
+| Active Parameters | `54,001,968` (54001968 active) |
+| Vocabulary Size | `32032` |
+| Layers | `15` |
+| Hidden Dimension | `576` |
+| Attention Heads | `9` |
+| MLA Ranks | `q_lora_rank=256`, `kv_lora_rank=128`, `qk_rope_head_dim=64` |
+| MoE Experts | `16 routed, 1 shared (2 active/token)` |
+| Expert FFN Dim | `256` |
+| Context Length | `8192` tokens |
+| Tensor Count | `272` |
+| Quantization Types | `{'IQ4_NL': 196, 'F32': 76}` |
+| SHA-256 | `6308c8c1529b79e3965131693dbbf46937950b38f88d9791aa6d97a4b87b9a34` |
 
-- **Memory Interface**: Optimized for 256-bit GDDR6 memory controllers delivering ~448 GB/s bandwidth.
-- **Cache Hierarchy**: Fitted to standard 4 MB to 32 MB L2 caches with minimal cache thrashing.
-- **VRAM Constraint**: Strictly designed to reside comfortably within 8 GB consumer GPU boundaries, leaving generous capacity for dynamic operating memory and KV cache expansion.
-
----
-
-## Section 2 -- Mathematical Formulation & Neural Topology
+## Architecture
 
 ### Multi-Head Latent Attention (MLA)
-The model compresses the traditional key-value memory footprint using low-rank latent subspace projections:
+
+The model projects key and value states into a shared low-rank latent representation to reduce KV cache memory:
 
 $$\mathbf{c}_t^{KV} = W^{DKV} \mathbf{h}_t \quad (\mathbf{c}_t^{KV} \in \mathbb{R}^{128})$$
 
@@ -46,115 +57,85 @@ $$\mathbf{c}_t^Q = W^{DQ} \mathbf{h}_t \quad (\mathbf{c}_t^Q \in \mathbb{R}^{256
 
 $$\mathbf{q}_t^C = \text{RMSNorm}(W^{UQ} \mathbf{c}_t^Q), \quad \mathbf{k}_t^C = \text{RMSNorm}(W^{UK} \mathbf{c}_t^{KV})$$
 
-Decoupled rotary position embeddings are concatenated to preserve spatial position awareness without expanding cached state dimensions:
+Decoupled rotary position embeddings are concatenated along a separate dimension to track token positions:
 
 $$\mathbf{k}_t^R = \text{RoPE}(W^{KR} \mathbf{h}_t) \quad (\mathbf{k}_t^R \in \mathbb{R}^{64})$$
 
 $$\mathbf{q}_{t, i} = [\mathbf{q}_{t, i}^C; \mathbf{q}_{t, i}^R], \quad \mathbf{k}_{t, i} = [\mathbf{k}_{t, i}^C; \mathbf{k}_t^R]$$
 
-### Exact KV Cache Memory Sizing
-The exact physical memory consumption of the KV cache per token is calculated as:
+### KV Cache Memory Usage
+
+Physical memory consumption of the KV cache per token:
 
 $$\text{KV}_{\text{bytes/token}} = 15 \times (128 + 64) \times 2 \text{ bytes} = 5,760 \text{ bytes/token}$$
 
-| Context Window | MLA KV Cache Memory | Standard MHA KV Cache Memory | Memory Savings |
+| Context Window | MLA KV Cache | Standard MHA KV Cache | Memory Savings |
 | :--- | :--- | :--- | :--- |
-| 4,096 tokens | 22.50 MiB | 135.00 MiB | 6.0x compression |
-| 8,192 tokens | 45.00 MiB | 270.00 MiB | 6.0x compression |
-| 32,768 tokens | 180.00 MiB | 1080.00 MiB | 6.0x compression |
+| 4,096 tokens | 22.50 MiB | 135.00 MiB | 6.0x |
+| 8,192 tokens | 45.00 MiB | 270.00 MiB | 6.0x |
+| 32,768 tokens | 180.00 MiB | 1080.00 MiB | 6.0x |
 
-### Mixture-of-Experts (MoE) Topology
-- **Leading Dense Layers**: Dense front-end layers ensure foundational feature extraction before routing.
-- **Shared Experts (1S)**: Continuously active shared pathway captures common linguistic and grammatical invariants:
+### Mixture-of-Experts (MoE)
+
+- **Shared Experts (1S)**: Constantly active path for common features:
   $$F_{\text{shared}}(\mathbf{x}) = (\text{SiLU}(\mathbf{x} W_{\text{gate}}^S) \odot (\mathbf{x} W_{\text{up}}^S)) W_{\text{down}}^S$$
-- **Routed Experts (16R, Top-2)**: Aux-Loss-Free dynamic router balances token routing across specialists using learned bias offsets:
+- **Routed Experts (16R, Top-2)**: Routed using learned bias offsets without auxiliary load balancing loss:
   $$s_{t, e} = \text{Softmax}(\mathbf{x}_t W_{\text{router}} + \mathbf{b}_e)$$
 
-### V3 Advanced Structural Innovations
+### V3 Architecture Details
 
 1. **Hadamard-Transformed MLA (H-MLA)**:
-   Suppresses latent activation outliers by absorbing the normalized Walsh-Hadamard transformation matrix:
+   Suppresses latent activation outliers by absorbing the normalized Walsh-Hadamard matrix:
    $$\mathbf{H}_{256} = \frac{1}{16} \mathbf{H}_2^{\otimes 8}$$
-   directly into the key-value projection weights ($W_{wkv_a}$ and $W_{wkv_b}$) during compilation. This mathematical absorption guarantees zero runtime latency overhead while drastically reducing quantization-induced perplexity degradation under 4-bit representation.
+   directly into key-value projection weights ($W_{wkv_a}$ and $W_{wkv_b}$) during compilation. This absorption eliminates activation spikes without adding runtime execution overhead.
 
 2. **Partitioned-Balancing Mixture-of-Experts (PB-MoE)**:
-   The 16 routed experts are partitioned into 4 distinct functional domain clans:
-   - **Clan 0 (Experts 0-7)**: Low-level Systems, Kernel Semantics, and Concurrency.
-   - **Clan 1 (Experts 8-15)**: Mathematical Derivations, Formal Logic, and STEM.
-   - **Clan 2 (Experts 16-23)**: Security Boundaries, Cryptographic Protocols, and Sentinel Auditing.
-   - **Clan 3 (Experts 24-31)**: Multimodal and Spatial-Temporal Reasoning.
-   Routings enforce soft-pinning constraints ensuring balanced domain coverage per token.
+   The 16 routed experts are partitioned into 4 functional clans:
+   - **Clan 0 (Experts 0-7)**: Systems code, kernel semantics, and concurrency.
+   - **Clan 1 (Experts 8-15)**: Mathematics, formal logic, and STEM.
+   - **Clan 2 (Experts 16-23)**: Security boundaries, protocols, and validation.
+   - **Clan 3 (Experts 24-31)**: Multimodal and spatial reasoning.
+   Routing enforces soft-pinning constraints ensuring balanced domain representation per token.
 
 3. **Latent Recursive Depth (LRD) & Tied Embeddings**:
-   Enables recurrent intermediate latent refinements while enforcing weight-tying between input and output representations to minimize physical disk and VRAM footprints.
+   Enables recurrent intermediate latent steps while enforcing weight-tying between input and output representations to minimize physical disk and VRAM footprints.
 
----
+## Quantization
 
-## Section 3 -- Binary Container Architecture & Non-Linear 4-Bit Quantization (GGML_TYPE_IQ4_NL)
+The model is quantized to GGML_TYPE_IQ4_NL (4-bit non-linear) within the native `deepseek2` GGUF container:
+- Linear weights are structured in 18-byte blocks for each group of 32 weights:
+  - 2 bytes: Half-precision (`FP16`) scale factor $d$.
+  - 16 bytes: 32 four-bit nibbles referencing the non-linear lookup table `kvalues_iq4nl`:
+    `[-127, -104, -83, -65, -49, -35, -22, -10, 1, 13, 25, 38, 53, 69, 89, 113]`
+- 1D normalization weights (`*_norm.weight`) and router bias vectors (`exp_probs_b.bias`) remain in full precision `FP32` to preserve numerical accuracy at layer boundaries.
+- Routed MoE weights are serialized as contiguous 3D tensors (`blk.{i}.ffn_gate_exps.weight`, `blk.{i}.ffn_up_exps.weight`, `blk.{i}.ffn_down_exps.weight`), avoiding tensor splitting and kernel overhead.
 
-The model is packaged in the native `deepseek2` GGUF container architecture:
-1. **3D Tensor Packing**: Routed MoE weights are serialized as contiguous 3D tensors (`blk.{i}.ffn_gate_exps.weight`, `blk.{i}.ffn_up_exps.weight`, `blk.{i}.ffn_down_exps.weight`), eliminating kernel dispatch overhead during expert gathering.
-2. **IQ4_NL Block Formatting**: Linear weights are structured into 18-byte super-blocks for every 32 physical parameters:
-   - 2 bytes: Half-precision (`FP16`) scale factor $d$.
-   - 16 bytes: 32 four-bit nibbles indexed into the non-linear quantization lookup table:
-     `[-127, -104, -83, -65, -49, -35, -22, -10, 1, 13, 25, 38, 53, 69, 89, 113]`
-3. **Precision Invariants**: All 1D layer normalization weights (`*_norm.weight`) and router bias parameters (`exp_probs_b.bias`) are strictly preserved in full precision `FP32`.
+## Training Status
 
----
+Untrained architectural base (UN-TRAINED_ARCHITECTURAL_BASE). The GGUF file contains initialized weights for testing binary graph compatibility with llama.cpp, measuring memory usage on target hardware, and serving as a base for downstream pre-training and fine-tuning.
 
-## Section 4 -- Verified GGUF Binary Telemetry & Tensor Breakdown
+All reported metrics represent physical parameter counts and deterministic SHA-256 checksums from the GGUF binary.
 
-The metrics below represent the single source of truth extracted directly from `mark_slm_v3_150m_iq4_nl.gguf` via `gguf.GGUFReader`:
+## Usage
 
-| Parameter Field | Ground-Truth Audit Value |
-| :--- | :--- |
-| **Model Identifier** | `mark-slm-v3-150m` |
-| **Hugging Face Repository** | [miceworks/Mark-SLM-V3-150M](https://huggingface.co/miceworks/Mark-SLM-V3-150M) |
-| **GGUF Architecture Tag** | `deepseek2` |
-| **Container File Name** | `mark_slm_v3_150m_iq4_nl.gguf` |
-| **Exact Binary Size** | `79.97 MiB (83.85 MB / 83,849,984 bytes)` |
-| **Full SHA-256 Checksum** | `6308c8c1529b79e3965131693dbbf46937950b38f88d9791aa6d97a4b87b9a34` |
-| **Weight State** | `UN-TRAINED_ARCHITECTURAL_BASE` |
-| **Total Physical Parameters** | `146,899,248` parameters (146899248 physical) |
-| **Active Parameters per Token** | `54,001,968` parameters (54001968 active) |
-| **Total Tensor Count** | `272` tensors |
-| **Quantization Breakdown** | `{'IQ4_NL': 196, 'F32': 76}` |
-| **1D RMSNorm Precision** | `100% FP32` (Zero degradation on normalization boundaries) |
-| **Transformer Layers (num_hidden_layers)** | `15` |
-| **Hidden Dimension (hidden_size)** | `576` |
-| **Attention Heads (num_attention_heads)** | `9` |
-| **MLA Dimensioning** | `q_lora_rank=256`, `kv_lora_rank=128`, `v_head_dim=64` |
-| **Decoupled RoPE Dimensions** | `qk_nope_head_dim=64`, `qk_rope_head_dim=64` |
-| **MoE Topology** | `16 Routed Experts, 1 Shared Expert (2 active/token)` |
-| **MoE Intermediate Size** | `256` |
-| **Vocabulary Size (vocab_size)** | `32032` |
-| **Maximum Context Window** | `8192` tokens |
-
----
-
-## Section 5 -- Weight Provenance, Training Curriculum & Scientific Scope
-
-### Weight State & Provenance
-- **Status**: `UN-TRAINED_ARCHITECTURAL_BASE`
-- **Provenance Overview**: Exported as an architectural base foundation (UN-TRAINED_ARCHITECTURAL_BASE) with verified tied embedding behavior for edge deployment exploration and targeted fine-tuning.
-
-### Scientific Boundary & Transparency
-All reported metrics represent physical parameter counts and deterministic SHA-256 checksums. No synthetic benchmarks, unverified FLOPS claims, or unverified hardware compatibility flags (such as vLLM without native DeepSeek2 3D tensor support) are declared.
-
----
-
-## Section 6 -- Deployment, Inference & Cryptographic Audit Guide
-
-### Cryptographic Verification
-Verify the binary integrity against the single source of truth:
+### Download
 
 ```bash
-# Verify cryptographic hash
+# Using huggingface-cli
+huggingface-cli download miceworks/Mark-SLM-V3-150M mark_slm_v3_150m_iq4_nl.gguf --local-dir .
+
+# Using Python
+from huggingface_hub import hf_hub_download
+hf_hub_download(repo_id="miceworks/Mark-SLM-V3-150M", filename="mark_slm_v3_150m_iq4_nl.gguf")
+```
+
+### Cryptographic Verification
+
+```bash
 echo "6308c8c1529b79e3965131693dbbf46937950b38f88d9791aa6d97a4b87b9a34  mark_slm_v3_150m_iq4_nl.gguf" | sha256sum -c -
 ```
 
-### Ollama Deployment
-Register and serve the model via Ollama using the canonical token delimiters:
+### Ollama
 
 ```dockerfile
 # Modelfile
@@ -170,7 +151,7 @@ PARAMETER temperature 0.3
 PARAMETER top_p 0.95
 PARAMETER repeat_penalty 1.1
 
-SYSTEM """You are Mark-SLM-V3-150M, a sparse systems neural architecture."""
+SYSTEM """You are Mark-SLM-V3-150M, a systems-focused neural model."""
 ```
 
 ```bash
@@ -178,27 +159,26 @@ ollama create mark-slm-v3-150m -f Modelfile
 ollama run mark-slm-v3-150m
 ```
 
-### llama.cpp Execution
+### llama.cpp
 
 ```bash
-# Direct CLI inference
+# CLI generation
 llama-cli -m mark_slm_v3_150m_iq4_nl.gguf \
-  -p "<|bos|>System: Systems engineering mode active.<|eos|>\n<|bos|>User: Analyze kernel synchronization primitives.<|eos|>\n<|bos|>Assistant:\n<think>\n" \
+  -p "<|bos|>System: Systems mode active.<|eos|>\n<|bos|>User: Explain Linux memory barriers.<|eos|>\n<|bos|>Assistant:\n<think>\n" \
   -n 512 --temp 0.2
 
-# Launch OpenAI-compatible HTTP inference daemon
+# HTTP server
 llama-server -m mark_slm_v3_150m_iq4_nl.gguf --port 8080 -c 8192
 ```
 
-### Forensic Audit Script
-Execute local inspection using the official `gguf` library:
+### Python Inspection
 
 ```python
 import gguf
 
 reader = gguf.GGUFReader("mark_slm_v3_150m_iq4_nl.gguf")
-print(f"Architecture: {reader.get_field('general.architecture')}")
-print(f"Total Tensors: {len(reader.tensors)}")
+print("Architecture:", reader.get_field("general.architecture"))
+print("Total Tensors:", len(reader.tensors))
 total_params = sum(int(t.shape.prod()) for t in reader.tensors)
-print(f"Audited Total Parameters: {total_params:,}")
+print(f"Total Parameters: {total_params:,}")
 ```

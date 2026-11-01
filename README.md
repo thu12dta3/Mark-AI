@@ -1,12 +1,8 @@
-# Mark AI -- Foundational Sparse Neural Architectures & Systems Engine
+# Mark-AI
 
-The central cognitive, polyglot systems engineering, and multimodal engine of the MARK ecosystem. Architected from first principles on native DeepSeek2 sparse topologies, Multi-Head Latent Attention (MLA), and 3D Mixture-of-Experts (MoE) in non-linear 4-bit quantization (IQ4_NL), engineered specifically to achieve industrial-grade inference within an 8 GB consumer GPU memory boundary.
+Sparse Transformer architectures (Multi-Head Latent Attention + fine-grained Mixture-of-Experts) exported to native `deepseek2` GGUF containers in 4-bit non-linear quantization (`IQ4_NL`). Designed for local inference on 8 GB consumer GPUs.
 
----
-
-## 1. Ecosystem Ground-Truth Matrix (11 Models - GGUF Binary Truth)
-
-The matrix below documents all 11 models across the Mark ecosystem. All metrics are derived from physical binaries via `gguf.GGUFReader`:
+## Models
 
 | Model Name | Weight State | Binary Size | Total Parameters | Active Parameters | Vocab Size | SHA-256 | Hugging Face Repository |
 | :--- | :--- | :--- | :---: | :---: | :---: | :--- | :--- |
@@ -22,12 +18,11 @@ The matrix below documents all 11 models across the Mark ecosystem. All metrics 
 | **Mark-Engineer-V3-1.5B** | Untrained Architectural Base | 816.03 MiB (855.67 MB / 855,669,248 bytes) | 1,520,496,960 | 405,729,600 | 32032 | `62b8bd003a...` | [miceworks/Mark-Engineer-V3-1.5B](https://huggingface.co/miceworks/Mark-Engineer-V3-1.5B) |
 | **Mark-Experimental-V3-8B** | Untrained Architectural Base | 4382.55 MiB (4595.44 MB / 4,595,438,848 bytes) | 8,168,001,024 | 2,002,374,144 | 32032 | `792e127a71...` | [miceworks/Mark-Experimental-V3-8B](https://huggingface.co/miceworks/Mark-Experimental-V3-8B) |
 
----
+## Architecture
 
-## 2. Mathematical Architecture & Core Innovations
+### Multi-Head Latent Attention (MLA & H-MLA)
 
-### 2.1 Multi-Head Latent Attention (MLA) & Hadamard-MLA (H-MLA)
-Standard Multi-Head Attention (MHA) creates an unsustainable memory bottleneck during long-context autoregressive generation due to linear expansion of stored Key-Value caches. Mark AI implements Multi-Head Latent Attention (MLA), projecting keys and values into a shared low-rank latent representation:
+Standard Multi-Head Attention (MHA) creates a memory bottleneck during long-context generation due to linear expansion of stored Key-Value caches. Mark AI implements Multi-Head Latent Attention (MLA), projecting keys and values into a shared low-rank latent representation:
 
 $$\mathbf{c}_t^{KV} = W^{DKV} \mathbf{h}_t \quad (\mathbf{c}_t^{KV} \in \mathbb{R}^{d_{cKV}})$$
 
@@ -43,46 +38,46 @@ In the V3 series, **Hadamard-MLA (H-MLA)** suppresses latent activation outliers
 
 $$\mathbf{H}_{256} = \frac{1}{16} \mathbf{H}_2^{\otimes 8}$$
 
-directly into the offline projection weights ($W_{wkv_a}$ and $W_{wkv_b}$), eliminating activation kurtosis without adding runtime execution overhead.
+directly into the offline projection weights ($W_{wkv_a}$ and $W_{wkv_b}$), eliminating activation spikes without adding runtime execution overhead.
 
-### 2.2 DeepSeekMoE & Partitioned-Balancing MoE (PB-MoE)
-To decouple parameter scale from inference compute costs, Mark models partition feed-forward layers into fine-grained specialists:
-- **Shared Experts**: Fixed shared pathways capture cross-domain foundational invariants.
+### Mixture-of-Experts (DeepSeekMoE & PB-MoE)
+
+To decouple parameter scale from inference compute costs, feed-forward layers are partitioned into fine-grained specialists:
+- **Shared Experts**: Fixed shared pathways capture common language representations across tokens.
 - **Routed Experts**: Activated dynamically via top-$K$ gating with learned Aux-Loss-Free router biases ($s_{t, e} = \text{Softmax}(\mathbf{x}_t W_{\text{router}} + \mathbf{b}_e)$).
 - **Domain Clan Partitioning (V3)**: Experts are partitioned into 4 distinct functional clans (Systems/Code, STEM/Logic, Security/Sentinel, Multimodal) with soft-pinning constraints ensuring balanced domain representation per token.
 
-### 2.3 Epistemic Self-RAG & Shannon Entropy Routing
-The ecosystem incorporates an adaptive epistemic evaluation framework (`src/model/self_rag.py`). By monitoring token-level prediction entropy:
+### Epistemic Self-RAG
+
+The architecture incorporates an epistemic evaluation module (`src/model/self_rag.py`). By monitoring token-level prediction entropy:
 
 $$H(X) = -\sum_{i=1}^{V} P(x_i) \log_2 P(x_i)$$
 
-the model autonomously detects uncertainty spikes, triggering structured `<think>` reasoning paths or external knowledge retrieval phases before finalizing output tokens.
+the model detects uncertainty spikes, triggering structured `<think>` reasoning paths before finalizing output tokens.
 
----
-
-## 3. Binary Engineering & Non-Linear 4-Bit Quantization (IQ4_NL)
+## Quantization (IQ4_NL)
 
 ### Native DeepSeek2 GGUF Graph
-Mark AI preserves native 3D tensor layouts (`blk.{i}.ffn_gate_exps.weight`, `blk.{i}.ffn_up_exps.weight`, `blk.{i}.ffn_down_exps.weight`) within the `deepseek2` GGUF container, bypassing the memory fragmentation associated with 2D dense flattening.
+
+The models preserve native 3D tensor layouts (`blk.{i}.ffn_gate_exps.weight`, `blk.{i}.ffn_up_exps.weight`, `blk.{i}.ffn_down_exps.weight`) within the `deepseek2` GGUF container, bypassing the memory fragmentation associated with 2D tensor flattening.
 
 ### Super-Block Structure (GGML_TYPE_IQ4_NL)
+
 - Linear weight matrices are compressed into 18-byte blocks per 32 weights:
   - 2 bytes: Half-precision scale factor $d$.
   - 16 bytes: 32 four-bit nibbles mapped onto the non-linear 16-level quantization grid:
     `[-127, -104, -83, -65, -49, -35, -22, -10, 1, 13, 25, 38, 53, 69, 89, 113]`
 - 1D RMSNorm tensors and router bias vectors remain in full precision `FP32`, ensuring numerical stability at layer boundaries.
 
----
-
-## 4. Repository Structure
+## Repository Structure
 
 ```
 Mark-AI/
-├── artifacts/              # Forensic binary audits and verification reports
+├── artifacts/              # Binary audits and verification reports
 │   └── gguf_forensic_audit.json
 ├── export/                 # DeepSeek2 GGUF export and quantization pipelines
 │   └── convert_to_deepseek2_gguf.py
-├── models/                 # Model specifications, configs, tokenizers and Modelfiles
+├── models/                 # Model configs, tokenizers and Modelfiles
 │   ├── mark-engineer-1.5b/
 │   ├── mark-engineer-302m/
 │   ├── mark-engineer-v2-8b/
@@ -94,7 +89,7 @@ Mark-AI/
 │   ├── mark-slm-v3-150m/
 │   ├── mark-v3-1.1b/
 │   └── mark-vl-2.2b/
-├── scripts/                # Ecosystem synchronization and verification utilities
+├── scripts/                # Verification and synchronization utilities
 │   ├── generate_verification_manifests.py
 │   ├── gguf_forensic_xray.py
 │   ├── sanitize_all_models_metadata.py
@@ -103,18 +98,17 @@ Mark-AI/
 ├── spaces/                 # Interactive inference spaces and deployment code
 │   └── mark-engineer-1.5b/
 │       ├── app.py
+│       ├── index.html
 │       ├── requirements.txt
 │       └── README.md
 ├── src/                    # PyTorch reference neural architectures
 │   └── model/
-└── tests/                  # Automated metadata and architectural test suite (70 tests)
+└── tests/                  # Automated verification test suite (70 tests)
 ```
 
----
+## Testing & Verification
 
-## 5. Automated Verification & Test Suite
-
-The entire Mark AI repository is continuously validated against physical GGUF binaries via an auditable test suite:
+The repository is validated against physical GGUF binaries using pytest:
 
 ```bash
 # 1. Validate Python syntax across all modules
@@ -124,7 +118,7 @@ python3 -m compileall -q src/ export/ scripts/ models/ tests/ spaces/
 pytest tests/ -v
 ```
 
-All 70 tests must pass with 100% success, verifying:
+All 70 tests must pass, verifying:
 - Cross-consistency between `config.json`, `tokenizer_config.json`, `tokenizer.json`, `Modelfile`, and GGUF headers.
 - Integer parity for total and active parameter counts.
 - Dual unit size verification (`MiB` and `MB`).

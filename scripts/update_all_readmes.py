@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
 """
 scripts/update_all_readmes.py
-Stage 4 Execution:
-Generates Whitepaper-grade Model Cards (150-250 lines per model) across all 11 models
-and the comprehensive industrial root README.md for the Mark-AI repository.
+Generates clean, direct systems engineering Model Cards across all 11 models
+and the root README.md for the Mark-AI repository.
 
-Enforces:
-- Full Hugging Face YAML Frontmatter (pipeline_tag, library_name, datasets, tags)
+Follows concise technical documentation style (llama.cpp / Arch Wiki):
 - Exact dual size units: "X.XX MiB (Y.YY MB / Z,ZZZ,ZZZ bytes)"
-- Exact integer counts for total and active parameters
-- Mathematical formulation in LaTeX (MLA, H-MLA, PB-MoE, LRD)
-- Dynamic KV Cache consumption tables and compression factors
-- Zero emojis, zero checkboxes, zero unproven claims
+- Exact parameter integers for total and active parameters
+- Strict prohibition of AI buzzwords, double hyphens in headings, and section numbering
+- Complete Hugging Face YAML Frontmatter
+- Full verification against gguf_verification_manifest.json and config.json
 """
 
 import json
@@ -29,23 +27,16 @@ MODELS_METADATA = [
         "is_v3": False,
         "pipeline_tag": "text-generation",
         "overview": (
-            "Mark-Engineer-302M is an ultra-lightweight systems engineering model engineered specifically "
-            "as a bare-metal kernel syntax testbed, embedded runtime parser, and low-resource edge verification "
-            "engine. Built upon a native DeepSeek2 sparse Mixture-of-Experts (MoE) backbone with Multi-Head "
-            "Latent Attention (MLA), it packs 251.45M physical parameters with only 119.33M active parameters "
-            "per token into an extraordinarily compact 135.12 MiB non-linear 4-bit (IQ4_NL) container."
-        ),
-        "target_profile": (
-            "Target Hardware: Edge compute units, Raspberry Pi 5 (8GB), and entry-level workstations equipped "
-            "with consumer GPUs (such as NVIDIA GeForce RTX 2060/3060/4060 8GB, 256-bit GDDR6 memory bus, "
-            "448 GB/s bandwidth, 4 MB L2 cache). The entire model binary occupies less than 2% of an 8GB VRAM "
-            "allocation, leaving over 7.8 GB of headroom for extreme context lengths or multi-agent co-location."
+            "Mark-Engineer-302M is a compact systems engineering model with 251.45M total parameters "
+            "and 119.33M active parameters per token. It uses a native DeepSeek2 Mixture-of-Experts (MoE) "
+            "topology with Multi-Head Latent Attention (MLA), quantized to 4-bit non-linear GGUF (IQ4_NL).\n\n"
+            "The container occupies 135.12 MiB (141.69 MB / 141,686,432 bytes) of storage and runs on low-power "
+            "edge devices, Raspberry Pi 5 (8 GB), or entry-level consumer GPUs (such as NVIDIA RTX 2060/3060 8 GB, "
+            "256-bit GDDR6, 448 GB/s bandwidth), consuming less than 2% of an 8 GB VRAM allocation."
         ),
         "training_scope": (
             "Trained on miceworks/Mark-Ultra-Curriculum across 4,821 deduplicated samples covering POSIX C "
-            "interfaces, Linux system call stubs, memory barrier semantics, and bare-metal linker scripts. "
-            "Serving as an experimental validation checkpoint for sparse architectural behavior under "
-            "severe parameter ceilings."
+            "interfaces, Linux system call stubs, memory barrier semantics, and bare-metal linker scripts."
         ),
     },
     {
@@ -57,23 +48,17 @@ MODELS_METADATA = [
         "is_v3": False,
         "pipeline_tag": "text-generation",
         "overview": (
-            "Mark-SLM-V2-302M is an advanced compact small language model combining an expansive 49,152 token "
-            "vocabulary with a 16-layer DeepSeek2 MoE/MLA topology. The model features 16 routed experts and "
-            "1 shared expert (2 active routed experts per token), delivering high linguistic fidelity and "
-            "reasoning capacity across both English and Portuguese while maintaining an active parameter footprint "
-            "of only 155.72M parameters."
-        ),
-        "target_profile": (
-            "Target Hardware: Consumer workstations and gaming laptops with 8GB VRAM (256-bit GDDR6 bus, "
-            "448 GB/s bandwidth). With a binary footprint of 177.76 MiB (186.39 MB), it requires minimal VRAM, "
-            "allowing ultra-fast memory bus streaming and zero swap latency during interactive local execution."
+            "Mark-SLM-V2-302M is a compact language model with 329.13M total parameters and 155.72M active "
+            "parameters per token across 16 layers. It uses a 49,152 token vocabulary, 16 routed experts, "
+            "and 1 shared expert (2 active routed experts per token).\n\n"
+            "Quantized in IQ4_NL, the binary occupies 177.76 MiB (186.39 MB / 186,394,944 bytes) and runs on 8 GB "
+            "consumer GPUs with low latency and minimal VRAM consumption."
         ),
         "training_scope": (
-            "Trained for 10,000 steps on miceworks/Mark-Ultra-Curriculum, achieving a converged validation "
-            "loss of 0.263975. The expert dimensions were projected from 400 to 384 via truncated Singular Value "
-            "Decomposition (SVD), preserving the 384 principal singular components to maintain strict divisibility "
-            "by 32 for the IQ4_NL quantization super-blocks while keeping 100% of the trained MLA attention, "
-            "embedding, and RMSNorm weights intact."
+            "Trained for 10,000 steps on miceworks/Mark-Ultra-Curriculum, achieving a validation loss of 0.263975. "
+            "The expert dimensions were projected from 400 to 384 via truncated Singular Value Decomposition (SVD), "
+            "preserving the 384 principal singular components to maintain divisibility by 32 for the IQ4_NL "
+            "super-blocks while keeping 100% of the trained MLA attention, embedding, and RMSNorm weights intact."
         ),
     },
     {
@@ -85,21 +70,18 @@ MODELS_METADATA = [
         "is_v3": False,
         "pipeline_tag": "text-generation",
         "overview": (
-            "Mark-Engineer-1.5B is the foundational systems engineering and code intelligence engine of the "
-            "Mark ecosystem. Designed for deep low-level systems programming, it specializes in Linux kernel "
-            "modules, eBPF bytecode verifier constraints, Windows KMDF driver architectures, Tokio asynchronous "
-            "runtimes in Rust, lock-free concurrency primitives, and cache-coherent ring buffers. It operates "
-            "with 1.50B total physical parameters and 364.15M active parameters per token (24.34% active sparsity ratio)."
-        ),
-        "target_profile": (
-            "Target Hardware: Single 8GB consumer GPU (NVIDIA RTX 2070/3070/4060 Ti). At 802.94 MiB (841.94 MB) "
-            "for weights and 44.00 MiB for a 4K KV cache, it leaves over 7.0 GB of VRAM free for high-throughput "
-            "batch decoding or concurrent local compilation tooling."
+            "Mark-Engineer-1.5B is a 1.5B-parameter sparse Transformer exported to the native deepseek2 GGUF "
+            "format. It combines Multi-Head Latent Attention (MLA) with a 16-routed and 1-shared SwiGLU "
+            "Mixture-of-Experts (MoE) topology to keep active parameters at 364.15M per token (24.34% active) "
+            "out of 1,496,121,824 total parameters.\n\n"
+            "Quantized in IQ4_NL, the binary occupies 802.94 MiB (841.94 MB / 841,941,664 bytes), leaving over 7 GB "
+            "of VRAM free on an 8 GB GPU (tested on NVIDIA RTX 2060 Super 8 GB) for large context windows and "
+            "fast local decoding."
         ),
         "training_scope": (
             "Trained on miceworks/Mark-Ultra-Curriculum using low-level kernel sources, systems manuals, RFCs, "
-            "and concurrency benchmarks. Verified as a converged checkpoint (TRAINED_CHECKPOINT_VALIDATED) for "
-            "technical reasoning and code synthesis."
+            "and concurrency benchmarks. Verified checkpoint (TRAINED_CHECKPOINT_VALIDATED) for code synthesis "
+            "and systems programming."
         ),
     },
     {
@@ -111,19 +93,15 @@ MODELS_METADATA = [
         "is_v3": False,
         "pipeline_tag": "text-generation",
         "overview": (
-            "Mark-General-1.5B is a versatile multi-domain reasoning model engineered for mathematics, "
-            "algorithmic problem solving, and analytical STEM workflows. Featuring an extended 4,377 token "
-            "vocabulary and balanced DeepSeek2 MoE/MLA topology (16 layers, 16 routed experts, 1 shared expert), "
-            "it balances high generative fluency with low computational latency, activating only 364.22M parameters "
-            "per token out of 1.50B physical parameters."
-        ),
-        "target_profile": (
-            "Target Hardware: Designed for 8GB GPU memory limits (256-bit GDDR6, 448 GB/s). Requiring only "
-            "802.97 MiB (841.98 MB) of storage in IQ4_NL format, it fits easily in system RAM or GPU memory."
+            "Mark-General-1.5B is a general reasoning and STEM-oriented sparse Transformer with 1,496,185,824 "
+            "total parameters and 364.22M active parameters per token across 16 layers. It features an extended "
+            "4,377 token vocabulary and a 16-routed, 1-shared MoE structure.\n\n"
+            "Quantized in IQ4_NL, the container takes 802.97 MiB (841.98 MB / 841,977,664 bytes) and runs locally "
+            "within standard 8 GB VRAM budgets."
         ),
         "training_scope": (
             "Trained on miceworks/Mark-Ultra-Curriculum with curated STEM data, formal proofs, algorithmic logic, "
-            "and analytical Portuguese/English dialogues. Fully validated against the GGUF binary ground truth."
+            "and technical Portuguese and English texts."
         ),
     },
     {
@@ -135,15 +113,12 @@ MODELS_METADATA = [
         "is_v3": False,
         "pipeline_tag": "image-text-to-text",
         "overview": (
-            "Mark-VL-2.2B is a native multimodal vision-language model pairing an AnyRes SigLIP vision backbone "
-            "with a 14-layer DeepSeek2 MoE language model backbone. Utilizing 2D Rotary Position Embeddings (2D-RoPE) "
-            "and a 2x2 PixelShuffle spatial projection adapter, it enables high-resolution visual comprehension "
-            "of technical schematics, UI wireframes, architectural diagrams, and dense system telemetry."
-        ),
-        "target_profile": (
-            "Target Hardware: Consumer 8GB GPUs. The language backbone occupies 1166.72 MiB (1223.40 MB) and the "
-            "vision projector mmproj occupies ~800 MiB, totaling under 2.0 GiB of VRAM and allowing seamless "
-            "multimodal interaction on commodity desktop graphics cards."
+            "Mark-VL-2.2B is a vision-language model pairing an AnyRes SigLIP vision encoder with a 14-layer "
+            "DeepSeek2 MoE language model backbone. It uses 2D Rotary Position Embeddings (2D-RoPE) and a 2x2 "
+            "PixelShuffle projection adapter to process images alongside text.\n\n"
+            "The model contains 2,174,310,096 total parameters and 395.50M active parameters per token. The language "
+            "model binary occupies 1166.72 MiB (1223.40 MB / 1,223,397,152 bytes) in IQ4_NL, operating within 8 GB "
+            "VRAM limits alongside the mmproj visual adapter."
         ),
         "training_scope": (
             "Trained on multimodal diagrammatic pairs, technical schematics, and structured documents from "
@@ -160,21 +135,16 @@ MODELS_METADATA = [
         "is_v3": False,
         "pipeline_tag": "text-generation",
         "overview": (
-            "Mark-Engineer-V2-8B is the flagship 8B architectural foundation of the Mark V2 generation. "
-            "Boasting 32 physical layers, 24 routed experts, 1 shared expert, and a 49,152 token vocabulary, "
-            "it establishes a high-capacity sparse backbone of 8.26B total parameters that activates only "
-            "1.77B parameters per token. It is specifically dimensioned for extreme engineering workflows and "
-            "deep context parsing."
-        ),
-        "target_profile": (
-            "Target Hardware: Strict 8GB consumer GPU boundary. In native IQ4_NL quantization, the entire 8.26B "
-            "parameter model occupies exactly 4431.26 MiB (4646.52 MB / 4.65 GB), leaving ~3.35 GB of VRAM "
-            "strictly dedicated to KV cache and CUDA operational buffers."
+            "Mark-Engineer-V2-8B is an 8B-class sparse Transformer featuring 32 layers, 24 routed experts, and "
+            "1 shared expert with a 49,152 token vocabulary. It has 8,258,809,040 total parameters and activates "
+            "1,770,745,040 parameters per token (21.44% active).\n\n"
+            "In native IQ4_NL quantization, the container occupies 4431.26 MiB (4646.52 MB / 4,646,516,576 bytes), "
+            "fitting inside a single 8 GB consumer GPU with over 3.3 GB of VRAM remaining for KV cache and scratch space."
         ),
         "training_scope": (
-            "Exported as an architectural foundation (UN-TRAINED_ARCHITECTURAL_BASE) with clean tensor initialization "
-            "in native DeepSeek2 IQ4_NL GGUF. Published for binary graph verification, memory profiling, and "
-            "pre-training / sparse upcycling pipelines. No synthetic benchmarks are reported."
+            "Untrained architectural base (UN-TRAINED_ARCHITECTURAL_BASE). The GGUF file contains initialized weights "
+            "for testing binary graph compatibility with llama.cpp, measuring memory usage on target hardware, and "
+            "serving as a base for downstream pre-training and fine-tuning."
         ),
     },
     {
@@ -186,18 +156,16 @@ MODELS_METADATA = [
         "is_v3": True,
         "pipeline_tag": "text-generation",
         "overview": (
-            "Mark-SLM-V3-150M is an ultra-dense edge foundation engineered to operate strictly under the 150M "
-            "parameter ceiling. By leveraging Tied Word Embeddings (reusing token_embd.weight as the language modeling "
-            "head without storing a redundant output.weight tensor), the physical container contains exactly 272 tensors "
-            "and 146,899,248 parameters (146.90M physical parameters), with only 54.00M active parameters per token."
-        ),
-        "target_profile": (
-            "Target Hardware: Mobile chips, edge microcontrollers, and low-power IoT hardware. With a total "
-            "binary footprint of only 79.97 MiB (83.85 MB), it operates comfortably within minimal RAM constraints."
+            "Mark-SLM-V3-150M is a compact edge model built to stay under the 150M parameter ceiling. By using tied "
+            "word embeddings (reusing token_embd.weight as the language model output projection), the GGUF file contains "
+            "272 tensors and exactly 146,899,248 parameters (54.00M active per token).\n\n"
+            "Quantized in IQ4_NL, the container occupies 79.97 MiB (83.85 MB / 83,849,984 bytes), making it suitable "
+            "for low-power edge microcontrollers and embedded devices."
         ),
         "training_scope": (
-            "Exported as an architectural base foundation (UN-TRAINED_ARCHITECTURAL_BASE) with verified tied "
-            "embedding behavior for edge deployment exploration and targeted fine-tuning."
+            "Untrained architectural base (UN-TRAINED_ARCHITECTURAL_BASE). The GGUF file contains initialized weights "
+            "for testing binary graph compatibility with llama.cpp, measuring memory usage on target hardware, and "
+            "serving as a base for downstream pre-training and fine-tuning."
         ),
     },
     {
@@ -209,18 +177,16 @@ MODELS_METADATA = [
         "is_v3": True,
         "pipeline_tag": "text-generation",
         "overview": (
-            "Mark-V3-1.1B introduces the third-generation Mark architecture featuring Hadamard-transformed Multi-Head "
-            "Latent Attention (H-MLA) and Partitioned-Balancing Mixture-of-Experts (PB-MoE). Equipped with 18 layers, "
-            "32 routed experts (4 active per token), and 2 shared experts, it provides an exact physical parameter "
-            "count of 1,222,464,960 parameters (330.65M active parameters per token)."
-        ),
-        "target_profile": (
-            "Target Hardware: 8GB GPUs. Binary size of 656.13 MiB (688.00 MB / 688,002,048 bytes) in IQ4_NL "
-            "ensures near-instant loading and leaves maximum VRAM available for context scaling up to 32,768 tokens."
+            "Mark-V3-1.1B is a third-generation sparse Transformer with 1,222,464,960 total physical parameters and "
+            "330,651,072 active parameters per token across 18 layers. It introduces Hadamard-transformed Multi-Head "
+            "Latent Attention (H-MLA) and Partitioned-Balancing MoE (PB-MoE) with 32 routed experts and 2 shared experts.\n\n"
+            "Quantized in IQ4_NL, the binary occupies 656.13 MiB (688.00 MB / 688,002,048 bytes), loading rapidly and "
+            "leaving generous memory headroom on 8 GB GPUs."
         ),
         "training_scope": (
-            "Published as an architectural foundation (UN-TRAINED_ARCHITECTURAL_BASE) demonstrating offline "
-            "Walsh-Hadamard absorption and 4-clan domain routing."
+            "Untrained architectural base (UN-TRAINED_ARCHITECTURAL_BASE). The GGUF file contains initialized weights "
+            "for testing binary graph compatibility with llama.cpp, measuring memory usage on target hardware, and "
+            "serving as a base for downstream pre-training and fine-tuning."
         ),
     },
     {
@@ -232,17 +198,16 @@ MODELS_METADATA = [
         "is_v3": True,
         "pipeline_tag": "text-generation",
         "overview": (
-            "Mark-General-V3-1.5B combines the high capacity of a 1.52B physical parameter model with the efficiency "
-            "of 32 routed experts and 2 shared experts in a V3 PB-MoE configuration. Activating only 405.73M parameters "
-            "per token, it integrates Latent Recursive Depth (LRD) loops and H-MLA attention for general analytical tasks."
-        ),
-        "target_profile": (
-            "Target Hardware: Consumer 8GB GPUs (256-bit GDDR6). Requiring 816.03 MiB (855.67 MB) of VRAM for "
-            "weights, it allows massive batch concurrency or multi-turn dialogues."
+            "Mark-General-V3-1.5B is a 1.52B-parameter model with 1,520,496,960 total parameters and 405.73M active "
+            "parameters per token across 18 layers. It features 32 routed experts, 2 shared experts, Latent Recursive "
+            "Depth (LRD), and H-MLA.\n\n"
+            "Quantized in IQ4_NL, the container occupies 816.03 MiB (855.67 MB / 855,669,248 bytes) and operates "
+            "comfortably within 8 GB VRAM budgets."
         ),
         "training_scope": (
-            "Architectural foundation (UN-TRAINED_ARCHITECTURAL_BASE) in native IQ4_NL format for research into "
-            "fine-grained clan-based expert partitioning."
+            "Untrained architectural base (UN-TRAINED_ARCHITECTURAL_BASE). The GGUF file contains initialized weights "
+            "for testing binary graph compatibility with llama.cpp, measuring memory usage on target hardware, and "
+            "serving as a base for downstream pre-training and fine-tuning."
         ),
     },
     {
@@ -254,17 +219,16 @@ MODELS_METADATA = [
         "is_v3": True,
         "pipeline_tag": "text-generation",
         "overview": (
-            "Mark-Engineer-V3-1.5B is the third-generation systems engineering variant featuring 32 routed experts, "
-            "2 shared experts, and domain soft-pinning configured for low-level systems logic, compiler design, "
-            "and kernel mechanics. It packages 1.52B physical parameters (405.73M active per token) into an 816.03 MiB "
-            "container."
-        ),
-        "target_profile": (
-            "Target Hardware: 8GB consumer GPUs. Memory footprint of 816.03 MiB (855.67 MB) provides ample room "
-            "for deep technical code generation and symbolic analysis."
+            "Mark-Engineer-V3-1.5B is a systems engineering variant with 1,520,496,960 total physical parameters and "
+            "405.73M active parameters per token. It uses 32 routed experts, 2 shared experts, and domain soft-pinning "
+            "configured for code generation, compilers, and kernel internals.\n\n"
+            "Quantized in IQ4_NL, the container occupies 816.03 MiB (855.67 MB / 855,669,248 bytes), leaving ample "
+            "VRAM on 8 GB GPUs for large source code files."
         ),
         "training_scope": (
-            "Architectural foundation (UN-TRAINED_ARCHITECTURAL_BASE) intended for large-scale engineering pre-training."
+            "Untrained architectural base (UN-TRAINED_ARCHITECTURAL_BASE). The GGUF file contains initialized weights "
+            "for testing binary graph compatibility with llama.cpp, measuring memory usage on target hardware, and "
+            "serving as a base for downstream pre-training and fine-tuning."
         ),
     },
     {
@@ -276,18 +240,15 @@ MODELS_METADATA = [
         "is_v3": True,
         "pipeline_tag": "text-generation",
         "overview": (
-            "Mark-Experimental-V3-8B is the apex experimental model of the Mark V3 lineup. Packing 32 physical layers, "
-            "32 routed experts, 2 shared experts, and full H-MLA attention into an 8.17B physical parameter graph, "
-            "it activates 2.00B parameters per token. It pushes the absolute boundary of what can be executed locally "
-            "on an 8GB VRAM consumer GPU."
-        ),
-        "target_profile": (
-            "Target Hardware: Strict 8GB consumer GPU limit. Occupying 4382.55 MiB (4595.44 MB / 4.60 GB), it leaves "
-            "over 3.4 GB of VRAM for KV cache and decoding operations."
+            "Mark-Experimental-V3-8B is an 8B-class sparse model packing 32 layers, 32 routed experts, 2 shared "
+            "experts, and full H-MLA attention into 8,168,001,024 total parameters (2,002,374,144 active per token).\n\n"
+            "Quantized in IQ4_NL, the binary occupies 4382.55 MiB (4595.44 MB / 4,595,438,848 bytes), fitting within "
+            "an 8 GB consumer GPU while leaving over 3.4 GB of VRAM for KV cache."
         ),
         "training_scope": (
-            "Published as an open research foundation (UN-TRAINED_ARCHITECTURAL_BASE) for exploring 32-expert clan "
-            "routing and Hadamard latent suppression at the 8B scale."
+            "Untrained architectural base (UN-TRAINED_ARCHITECTURAL_BASE). The GGUF file contains initialized weights "
+            "for testing binary graph compatibility with llama.cpp, measuring memory usage on target hardware, and "
+            "serving as a base for downstream pre-training and fine-tuning."
         ),
     },
 ]
@@ -362,7 +323,7 @@ tags:
     bytes_per_tok, comp_ratio, kv_table = compute_kv_cache_metrics(layers, kv_lora, qk_rope, heads, head_dim)
 
     kv_rows = "\n".join(
-        f"| {ctx:,} tokens | {mla_mib:.2f} MiB | {mha_mib:.2f} MiB | {comp_ratio:.1f}x compression |"
+        f"| {ctx:,} tokens | {mla_mib:.2f} MiB | {mha_mib:.2f} MiB | {comp_ratio:.1f}x |"
         for ctx, mla_mib, mha_mib in kv_table
     )
 
@@ -370,42 +331,34 @@ tags:
     v3_detail = ""
     if spec["is_v3"]:
         v3_detail = f"""
-### V3 Advanced Structural Innovations
+### V3 Architecture Details
 
 1. **Hadamard-Transformed MLA (H-MLA)**:
-   Suppresses latent activation outliers by absorbing the normalized Walsh-Hadamard transformation matrix:
+   Suppresses latent activation outliers by absorbing the normalized Walsh-Hadamard matrix:
    $$\\mathbf{{H}}_{{256}} = \\frac{{1}}{{16}} \\mathbf{{H}}_2^{{\\otimes 8}}$$
-   directly into the key-value projection weights ($W_{{wkv_a}}$ and $W_{{wkv_b}}$) during compilation. This mathematical absorption guarantees zero runtime latency overhead while drastically reducing quantization-induced perplexity degradation under 4-bit representation.
+   directly into key-value projection weights ($W_{{wkv_a}}$ and $W_{{wkv_b}}$) during compilation. This absorption eliminates activation spikes without adding runtime execution overhead.
 
 2. **Partitioned-Balancing Mixture-of-Experts (PB-MoE)**:
-   The {n_routed} routed experts are partitioned into 4 distinct functional domain clans:
-   - **Clan 0 (Experts 0-7)**: Low-level Systems, Kernel Semantics, and Concurrency.
-   - **Clan 1 (Experts 8-15)**: Mathematical Derivations, Formal Logic, and STEM.
-   - **Clan 2 (Experts 16-23)**: Security Boundaries, Cryptographic Protocols, and Sentinel Auditing.
-   - **Clan 3 (Experts 24-31)**: Multimodal and Spatial-Temporal Reasoning.
-   Routings enforce soft-pinning constraints ensuring balanced domain coverage per token.
+   The {n_routed} routed experts are partitioned into 4 functional clans:
+   - **Clan 0 (Experts 0-7)**: Systems code, kernel semantics, and concurrency.
+   - **Clan 1 (Experts 8-15)**: Mathematics, formal logic, and STEM.
+   - **Clan 2 (Experts 16-23)**: Security boundaries, protocols, and validation.
+   - **Clan 3 (Experts 24-31)**: Multimodal and spatial reasoning.
+   Routing enforces soft-pinning constraints ensuring balanced domain representation per token.
 
 3. **Latent Recursive Depth (LRD) & Tied Embeddings**:
-   Enables recurrent intermediate latent refinements while enforcing weight-tying between input and output representations to minimize physical disk and VRAM footprints.
-"""
-
-    designation_note = ""
-    if spec["id"] == "mark-v3-1.1b":
-        designation_note = """
-> [!NOTE]
-> **Architectural Nomenclature Note**:
-> The designation "1.1B" is the series designator. The exact physical parameter count exported in `mark_v3_1_1b_iq4_nl.gguf` with 32 routed experts is exactly **1,222,464,960** physical parameters (330,651,072 active per token), requiring **656.13 MiB (688.00 MB / 688,002,048 bytes)** in IQ4_NL format.
+   Enables recurrent intermediate latent steps while enforcing weight-tying between input and output representations to minimize physical disk and VRAM footprints.
 """
 
     vl_note = ""
     if spec["is_vl"]:
         vl_note = """
-### Multimodal Architecture & Artifact Breakdown
+### Vision-Language Projector (SigLIP & PixelShuffle)
 
-Mark-VL-2.2B provides a decoupled vision-language architecture distributed across three distinct artifacts:
-1. `mark_vl_2_2b_iq4_nl.gguf`: Primary language backbone container (DeepSeek2 MoE + MLA, 14 physical layers, 24 routed experts, 1 shared expert).
+Mark-VL-2.2B provides a vision-language setup across three files:
+1. `mark_vl_2_2b_iq4_nl.gguf`: Language backbone (DeepSeek2 MoE + MLA, 14 layers, 24 routed experts, 1 shared expert).
 2. `mmproj_mark_vl_2_2b.gguf`: Vision projector module embedding the AnyRes SigLIP visual feature encoder with 2D-RoPE and 2x2 PixelShuffle projection.
-3. `mark_vl_2_2b_q4_k_m.gguf`: Legacy quantization artifact retained for compatibility with earlier runtimes.
+3. `mark_vl_2_2b_q4_k_m.gguf`: Legacy quantization file retained for compatibility.
 """
 
     adapter_decl = "ADAPTER ./mmproj_mark_vl_2_2b.gguf\n" if spec["is_vl"] else ""
@@ -414,27 +367,36 @@ Mark-VL-2.2B provides a decoupled vision-language architecture distributed acros
 
 # {spec['name']}
 
+## Overview
+
 {spec['overview']}
 
-{designation_note}{vl_note}
-## Section 1 -- Executive Systems Overview & Target Hardware Profile
+## Specifications
 
-### System Role & Engineering Purpose
-{spec['overview']}
+| Field | Value |
+| :--- | :--- |
+| Architecture | `deepseek2` |
+| Weight State | `{manifest['weight_state']}` |
+| Binary Size | `{prov['size_formatted']}` |
+| Total Parameters | `{t_arch['total_parameters_formatted']}` ({t_arch['physical_total_parameters']} physical) |
+| Active Parameters | `{t_arch['active_parameters_formatted']}` ({t_arch['physical_active_parameters']} active) |
+| Vocabulary Size | `{vocab_size}` |
+| Layers | `{layers}` |
+| Hidden Dimension | `{dim}` |
+| Attention Heads | `{heads}` |
+| MLA Ranks | `q_lora_rank={q_lora}`, `kv_lora_rank={kv_lora}`, `qk_rope_head_dim={qk_rope}` |
+| MoE Experts | `{n_routed} routed, {n_shared} shared ({k_active} active/token)` |
+| Expert FFN Dim | `{moe_inter}` |
+| Context Length | `{ctx_len}` tokens |
+| Tensor Count | `{t_arch['total_tensors']}` |
+| Quantization Types | `{t_arch['tensor_types']}` |
+| SHA-256 | `{prov['sha256']}` |
 
-### Target Hardware Profile
-{spec['target_profile']}
-
-- **Memory Interface**: Optimized for 256-bit GDDR6 memory controllers delivering ~448 GB/s bandwidth.
-- **Cache Hierarchy**: Fitted to standard 4 MB to 32 MB L2 caches with minimal cache thrashing.
-- **VRAM Constraint**: Strictly designed to reside comfortably within 8 GB consumer GPU boundaries, leaving generous capacity for dynamic operating memory and KV cache expansion.
-
----
-
-## Section 2 -- Mathematical Formulation & Neural Topology
+## Architecture
 
 ### Multi-Head Latent Attention (MLA)
-The model compresses the traditional key-value memory footprint using low-rank latent subspace projections:
+
+The model projects key and value states into a shared low-rank latent representation to reduce KV cache memory:
 
 $$\\mathbf{{c}}_t^{{KV}} = W^{{DKV}} \\mathbf{{h}}_t \\quad (\\mathbf{{c}}_t^{{KV}} \\in \\mathbb{{R}}^{{{kv_lora}}})$$
 
@@ -442,95 +404,65 @@ $$\\mathbf{{c}}_t^Q = W^{{DQ}} \\mathbf{{h}}_t \\quad (\\mathbf{{c}}_t^Q \\in \\
 
 $$\\mathbf{{q}}_t^C = \\text{{RMSNorm}}(W^{{UQ}} \\mathbf{{c}}_t^Q), \\quad \\mathbf{{k}}_t^C = \\text{{RMSNorm}}(W^{{UK}} \\mathbf{{c}}_t^{{KV}})$$
 
-Decoupled rotary position embeddings are concatenated to preserve spatial position awareness without expanding cached state dimensions:
+Decoupled rotary position embeddings are concatenated along a separate dimension to track token positions:
 
 $$\\mathbf{{k}}_t^R = \\text{{RoPE}}(W^{{KR}} \\mathbf{{h}}_t) \\quad (\\mathbf{{k}}_t^R \\in \\mathbb{{R}}^{{{qk_rope}}})$$
 
 $$\\mathbf{{q}}_{{t, i}} = [\\mathbf{{q}}_{{t, i}}^C; \\mathbf{{q}}_{{t, i}}^R], \\quad \\mathbf{{k}}_{{t, i}} = [\\mathbf{{k}}_{{t, i}}^C; \\mathbf{{k}}_t^R]$$
 
-### Exact KV Cache Memory Sizing
-The exact physical memory consumption of the KV cache per token is calculated as:
+### KV Cache Memory Usage
+
+Physical memory consumption of the KV cache per token:
 
 $$\\text{{KV}}_{{\\text{{bytes/token}}}} = {layers} \\times ({kv_lora} + {qk_rope}) \\times 2 \\text{{ bytes}} = {bytes_per_tok:,} \\text{{ bytes/token}}$$
 
-| Context Window | MLA KV Cache Memory | Standard MHA KV Cache Memory | Memory Savings |
+| Context Window | MLA KV Cache | Standard MHA KV Cache | Memory Savings |
 | :--- | :--- | :--- | :--- |
 {kv_rows}
 
-### Mixture-of-Experts (MoE) Topology
-- **Leading Dense Layers**: Dense front-end layers ensure foundational feature extraction before routing.
-- **Shared Experts ({n_shared}S)**: Continuously active shared pathway captures common linguistic and grammatical invariants:
+### Mixture-of-Experts (MoE)
+
+- **Shared Experts ({n_shared}S)**: Constantly active path for common features:
   $$F_{{\\text{{shared}}}}(\\mathbf{{x}}) = (\\text{{SiLU}}(\\mathbf{{x}} W_{{\\text{{gate}}}}^S) \\odot (\\mathbf{{x}} W_{{\\text{{up}}}}^S)) W_{{\\text{{down}}}}^S$$
-- **Routed Experts ({n_routed}R, Top-{k_active})**: Aux-Loss-Free dynamic router balances token routing across specialists using learned bias offsets:
+- **Routed Experts ({n_routed}R, Top-{k_active})**: Routed using learned bias offsets without auxiliary load balancing loss:
   $$s_{{t, e}} = \\text{{Softmax}}(\\mathbf{{x}}_t W_{{\\text{{router}}}} + \\mathbf{{b}}_e)$$
-{v3_detail}
----
+{v3_detail}{vl_note}
+## Quantization
 
-## Section 3 -- Binary Container Architecture & Non-Linear 4-Bit Quantization (GGML_TYPE_IQ4_NL)
+The model is quantized to GGML_TYPE_IQ4_NL (4-bit non-linear) within the native `deepseek2` GGUF container:
+- Linear weights are structured in 18-byte blocks for each group of 32 weights:
+  - 2 bytes: Half-precision (`FP16`) scale factor $d$.
+  - 16 bytes: 32 four-bit nibbles referencing the non-linear lookup table `kvalues_iq4nl`:
+    `[-127, -104, -83, -65, -49, -35, -22, -10, 1, 13, 25, 38, 53, 69, 89, 113]`
+- 1D normalization weights (`*_norm.weight`) and router bias vectors (`exp_probs_b.bias`) remain in full precision `FP32` to preserve numerical accuracy at layer boundaries.
+- Routed MoE weights are serialized as contiguous 3D tensors (`blk.{{i}}.ffn_gate_exps.weight`, `blk.{{i}}.ffn_up_exps.weight`, `blk.{{i}}.ffn_down_exps.weight`), avoiding tensor splitting and kernel overhead.
 
-The model is packaged in the native `deepseek2` GGUF container architecture:
-1. **3D Tensor Packing**: Routed MoE weights are serialized as contiguous 3D tensors (`blk.{{i}}.ffn_gate_exps.weight`, `blk.{{i}}.ffn_up_exps.weight`, `blk.{{i}}.ffn_down_exps.weight`), eliminating kernel dispatch overhead during expert gathering.
-2. **IQ4_NL Block Formatting**: Linear weights are structured into 18-byte super-blocks for every 32 physical parameters:
-   - 2 bytes: Half-precision (`FP16`) scale factor $d$.
-   - 16 bytes: 32 four-bit nibbles indexed into the non-linear quantization lookup table:
-     `[-127, -104, -83, -65, -49, -35, -22, -10, 1, 13, 25, 38, 53, 69, 89, 113]`
-3. **Precision Invariants**: All 1D layer normalization weights (`*_norm.weight`) and router bias parameters (`exp_probs_b.bias`) are strictly preserved in full precision `FP32`.
+## Training Status
 
----
+{spec['training_scope']}
 
-## Section 4 -- Verified GGUF Binary Telemetry & Tensor Breakdown
+All reported metrics represent physical parameter counts and deterministic SHA-256 checksums from the GGUF binary.
 
-The metrics below represent the single source of truth extracted directly from `{prov['gguf_file']}` via `gguf.GGUFReader`:
+## Usage
 
-| Parameter Field | Ground-Truth Audit Value |
-| :--- | :--- |
-| **Model Identifier** | `{spec['id']}` |
-| **Hugging Face Repository** | [{spec['hf_repo']}](https://huggingface.co/{spec['hf_repo']}) |
-| **GGUF Architecture Tag** | `deepseek2` |
-| **Container File Name** | `{prov['gguf_file']}` |
-| **Exact Binary Size** | `{prov['size_formatted']}` |
-| **Full SHA-256 Checksum** | `{prov['sha256']}` |
-| **Weight State** | `{manifest['weight_state']}` |
-| **Total Physical Parameters** | `{t_arch['total_parameters_formatted']}` parameters ({t_arch['physical_total_parameters']} physical) |
-| **Active Parameters per Token** | `{t_arch['active_parameters_formatted']}` parameters ({t_arch['physical_active_parameters']} active) |
-| **Total Tensor Count** | `{t_arch['total_tensors']}` tensors |
-| **Quantization Breakdown** | `{t_arch['tensor_types']}` |
-| **1D RMSNorm Precision** | `100% FP32` (Zero degradation on normalization boundaries) |
-| **Transformer Layers (num_hidden_layers)** | `{layers}` |
-| **Hidden Dimension (hidden_size)** | `{dim}` |
-| **Attention Heads (num_attention_heads)** | `{heads}` |
-| **MLA Dimensioning** | `q_lora_rank={q_lora}`, `kv_lora_rank={kv_lora}`, `v_head_dim={v_head}` |
-| **Decoupled RoPE Dimensions** | `qk_nope_head_dim={qk_nope}`, `qk_rope_head_dim={qk_rope}` |
-| **MoE Topology** | `{n_routed} Routed Experts, {n_shared} Shared Expert ({k_active} active/token)` |
-| **MoE Intermediate Size** | `{moe_inter}` |
-| **Vocabulary Size (vocab_size)** | `{vocab_size}` |
-| **Maximum Context Window** | `{ctx_len}` tokens |
-
----
-
-## Section 5 -- Weight Provenance, Training Curriculum & Scientific Scope
-
-### Weight State & Provenance
-- **Status**: `{manifest['weight_state']}`
-- **Provenance Overview**: {spec['training_scope']}
-
-### Scientific Boundary & Transparency
-All reported metrics represent physical parameter counts and deterministic SHA-256 checksums. No synthetic benchmarks, unverified FLOPS claims, or unverified hardware compatibility flags (such as vLLM without native DeepSeek2 3D tensor support) are declared.
-
----
-
-## Section 6 -- Deployment, Inference & Cryptographic Audit Guide
-
-### Cryptographic Verification
-Verify the binary integrity against the single source of truth:
+### Download
 
 ```bash
-# Verify cryptographic hash
+# Using huggingface-cli
+huggingface-cli download {spec['hf_repo']} {prov['gguf_file']} --local-dir .
+
+# Using Python
+from huggingface_hub import hf_hub_download
+hf_hub_download(repo_id="{spec['hf_repo']}", filename="{prov['gguf_file']}")
+```
+
+### Cryptographic Verification
+
+```bash
 echo "{prov['sha256']}  {prov['gguf_file']}" | sha256sum -c -
 ```
 
-### Ollama Deployment
-Register and serve the model via Ollama using the canonical token delimiters:
+### Ollama
 
 ```dockerfile
 # Modelfile
@@ -546,7 +478,7 @@ PARAMETER temperature 0.3
 PARAMETER top_p 0.95
 PARAMETER repeat_penalty 1.1
 
-SYSTEM \"\"\"You are {spec['name']}, a sparse systems neural architecture.\"\"\"
+SYSTEM \"\"\"You are {spec['name']}, a systems-focused neural model.\"\"\"
 ```
 
 ```bash
@@ -554,29 +486,28 @@ ollama create {spec['id']} -f Modelfile
 ollama run {spec['id']}
 ```
 
-### llama.cpp Execution
+### llama.cpp
 
 ```bash
-# Direct CLI inference
+# CLI generation
 llama-cli -m {prov['gguf_file']} \\
-  -p "<|bos|>System: Systems engineering mode active.<|eos|>\\n<|bos|>User: Analyze kernel synchronization primitives.<|eos|>\\n<|bos|>Assistant:\\n<think>\\n" \\
+  -p "<|bos|>System: Systems mode active.<|eos|>\\n<|bos|>User: Explain Linux memory barriers.<|eos|>\\n<|bos|>Assistant:\\n<think>\\n" \\
   -n 512 --temp 0.2
 
-# Launch OpenAI-compatible HTTP inference daemon
+# HTTP server
 llama-server -m {prov['gguf_file']} --port 8080 -c {ctx_len}
 ```
 
-### Forensic Audit Script
-Execute local inspection using the official `gguf` library:
+### Python Inspection
 
 ```python
 import gguf
 
 reader = gguf.GGUFReader("{prov['gguf_file']}")
-print(f"Architecture: {{reader.get_field('general.architecture')}}")
-print(f"Total Tensors: {{len(reader.tensors)}}")
+print("Architecture:", reader.get_field("general.architecture"))
+print("Total Tensors:", len(reader.tensors))
 total_params = sum(int(t.shape.prod()) for t in reader.tensors)
-print(f"Audited Total Parameters: {{total_params:,}}")
+print(f"Total Parameters: {{total_params:,}}")
 ```
 """
     return content
@@ -604,26 +535,21 @@ def update_root_readme(manifests: dict):
 
     table_content = "\n".join(rows)
 
-    root_readme = f"""# Mark AI -- Foundational Sparse Neural Architectures & Systems Engine
+    root_readme = f"""# Mark-AI
 
-The central cognitive, polyglot systems engineering, and multimodal engine of the MARK ecosystem. Architected from first principles on native DeepSeek2 sparse topologies, Multi-Head Latent Attention (MLA), and 3D Mixture-of-Experts (MoE) in non-linear 4-bit quantization (IQ4_NL), engineered specifically to achieve industrial-grade inference within an 8 GB consumer GPU memory boundary.
+Sparse Transformer architectures (Multi-Head Latent Attention + fine-grained Mixture-of-Experts) exported to native `deepseek2` GGUF containers in 4-bit non-linear quantization (`IQ4_NL`). Designed for local inference on 8 GB consumer GPUs.
 
----
-
-## 1. Ecosystem Ground-Truth Matrix (11 Models - GGUF Binary Truth)
-
-The matrix below documents all 11 models across the Mark ecosystem. All metrics are derived from physical binaries via `gguf.GGUFReader`:
+## Models
 
 | Model Name | Weight State | Binary Size | Total Parameters | Active Parameters | Vocab Size | SHA-256 | Hugging Face Repository |
 | :--- | :--- | :--- | :---: | :---: | :---: | :--- | :--- |
 {table_content}
 
----
+## Architecture
 
-## 2. Mathematical Architecture & Core Innovations
+### Multi-Head Latent Attention (MLA & H-MLA)
 
-### 2.1 Multi-Head Latent Attention (MLA) & Hadamard-MLA (H-MLA)
-Standard Multi-Head Attention (MHA) creates an unsustainable memory bottleneck during long-context autoregressive generation due to linear expansion of stored Key-Value caches. Mark AI implements Multi-Head Latent Attention (MLA), projecting keys and values into a shared low-rank latent representation:
+Standard Multi-Head Attention (MHA) creates a memory bottleneck during long-context generation due to linear expansion of stored Key-Value caches. Mark AI implements Multi-Head Latent Attention (MLA), projecting keys and values into a shared low-rank latent representation:
 
 $$\\mathbf{{c}}_t^{{KV}} = W^{{DKV}} \\mathbf{{h}}_t \\quad (\\mathbf{{c}}_t^{{KV}} \\in \\mathbb{{R}}^{{d_{{cKV}}}})$$
 
@@ -639,46 +565,46 @@ In the V3 series, **Hadamard-MLA (H-MLA)** suppresses latent activation outliers
 
 $$\\mathbf{{H}}_{{256}} = \\frac{{1}}{{16}} \\mathbf{{H}}_2^{{\\otimes 8}}$$
 
-directly into the offline projection weights ($W_{{wkv_a}}$ and $W_{{wkv_b}}$), eliminating activation kurtosis without adding runtime execution overhead.
+directly into the offline projection weights ($W_{{wkv_a}}$ and $W_{{wkv_b}}$), eliminating activation spikes without adding runtime execution overhead.
 
-### 2.2 DeepSeekMoE & Partitioned-Balancing MoE (PB-MoE)
-To decouple parameter scale from inference compute costs, Mark models partition feed-forward layers into fine-grained specialists:
-- **Shared Experts**: Fixed shared pathways capture cross-domain foundational invariants.
+### Mixture-of-Experts (DeepSeekMoE & PB-MoE)
+
+To decouple parameter scale from inference compute costs, feed-forward layers are partitioned into fine-grained specialists:
+- **Shared Experts**: Fixed shared pathways capture common language representations across tokens.
 - **Routed Experts**: Activated dynamically via top-$K$ gating with learned Aux-Loss-Free router biases ($s_{{t, e}} = \\text{{Softmax}}(\\mathbf{{x}}_t W_{{\\text{{router}}}} + \\mathbf{{b}}_e)$).
 - **Domain Clan Partitioning (V3)**: Experts are partitioned into 4 distinct functional clans (Systems/Code, STEM/Logic, Security/Sentinel, Multimodal) with soft-pinning constraints ensuring balanced domain representation per token.
 
-### 2.3 Epistemic Self-RAG & Shannon Entropy Routing
-The ecosystem incorporates an adaptive epistemic evaluation framework (`src/model/self_rag.py`). By monitoring token-level prediction entropy:
+### Epistemic Self-RAG
+
+The architecture incorporates an epistemic evaluation module (`src/model/self_rag.py`). By monitoring token-level prediction entropy:
 
 $$H(X) = -\\sum_{{i=1}}^{{V}} P(x_i) \\log_2 P(x_i)$$
 
-the model autonomously detects uncertainty spikes, triggering structured `<think>` reasoning paths or external knowledge retrieval phases before finalizing output tokens.
+the model detects uncertainty spikes, triggering structured `<think>` reasoning paths before finalizing output tokens.
 
----
-
-## 3. Binary Engineering & Non-Linear 4-Bit Quantization (IQ4_NL)
+## Quantization (IQ4_NL)
 
 ### Native DeepSeek2 GGUF Graph
-Mark AI preserves native 3D tensor layouts (`blk.{{i}}.ffn_gate_exps.weight`, `blk.{{i}}.ffn_up_exps.weight`, `blk.{{i}}.ffn_down_exps.weight`) within the `deepseek2` GGUF container, bypassing the memory fragmentation associated with 2D dense flattening.
+
+The models preserve native 3D tensor layouts (`blk.{{i}}.ffn_gate_exps.weight`, `blk.{{i}}.ffn_up_exps.weight`, `blk.{{i}}.ffn_down_exps.weight`) within the `deepseek2` GGUF container, bypassing the memory fragmentation associated with 2D tensor flattening.
 
 ### Super-Block Structure (GGML_TYPE_IQ4_NL)
+
 - Linear weight matrices are compressed into 18-byte blocks per 32 weights:
   - 2 bytes: Half-precision scale factor $d$.
   - 16 bytes: 32 four-bit nibbles mapped onto the non-linear 16-level quantization grid:
     `[-127, -104, -83, -65, -49, -35, -22, -10, 1, 13, 25, 38, 53, 69, 89, 113]`
 - 1D RMSNorm tensors and router bias vectors remain in full precision `FP32`, ensuring numerical stability at layer boundaries.
 
----
-
-## 4. Repository Structure
+## Repository Structure
 
 ```
 Mark-AI/
-├── artifacts/              # Forensic binary audits and verification reports
+├── artifacts/              # Binary audits and verification reports
 │   └── gguf_forensic_audit.json
 ├── export/                 # DeepSeek2 GGUF export and quantization pipelines
 │   └── convert_to_deepseek2_gguf.py
-├── models/                 # Model specifications, configs, tokenizers and Modelfiles
+├── models/                 # Model configs, tokenizers and Modelfiles
 │   ├── mark-engineer-1.5b/
 │   ├── mark-engineer-302m/
 │   ├── mark-engineer-v2-8b/
@@ -690,7 +616,7 @@ Mark-AI/
 │   ├── mark-slm-v3-150m/
 │   ├── mark-v3-1.1b/
 │   └── mark-vl-2.2b/
-├── scripts/                # Ecosystem synchronization and verification utilities
+├── scripts/                # Verification and synchronization utilities
 │   ├── generate_verification_manifests.py
 │   ├── gguf_forensic_xray.py
 │   ├── sanitize_all_models_metadata.py
@@ -699,18 +625,17 @@ Mark-AI/
 ├── spaces/                 # Interactive inference spaces and deployment code
 │   └── mark-engineer-1.5b/
 │       ├── app.py
+│       ├── index.html
 │       ├── requirements.txt
 │       └── README.md
 ├── src/                    # PyTorch reference neural architectures
 │   └── model/
-└── tests/                  # Automated metadata and architectural test suite (70 tests)
+└── tests/                  # Automated verification test suite (70 tests)
 ```
 
----
+## Testing & Verification
 
-## 5. Automated Verification & Test Suite
-
-The entire Mark AI repository is continuously validated against physical GGUF binaries via an auditable test suite:
+The repository is validated against physical GGUF binaries using pytest:
 
 ```bash
 # 1. Validate Python syntax across all modules
@@ -720,7 +645,7 @@ python3 -m compileall -q src/ export/ scripts/ models/ tests/ spaces/
 pytest tests/ -v
 ```
 
-All 70 tests must pass with 100% success, verifying:
+All 70 tests must pass, verifying:
 - Cross-consistency between `config.json`, `tokenizer_config.json`, `tokenizer.json`, `Modelfile`, and GGUF headers.
 - Integer parity for total and active parameter counts.
 - Dual unit size verification (`MiB` and `MB`).
@@ -733,7 +658,7 @@ All 70 tests must pass with 100% success, verifying:
 
 def update_all():
     print("=" * 80)
-    print("STAGE 4: UPDATING ALL README.MD FILES (WHITEPAPER GRADE MODEL CARDS)")
+    print("UPDATING ALL README.MD FILES (CONCISE HUMAN TECHNICAL STYLE)")
     print("=" * 80)
 
     manifests = {}
@@ -755,7 +680,7 @@ def update_all():
         print(f"  [OK] Generated {spec['id']}/README.md ({lines} lines)")
 
     print("\n" + "=" * 80)
-    print("STAGE 4 README UPDATE COMPLETE!")
+    print("README UPDATE COMPLETE!")
     print("=" * 80)
 
 
