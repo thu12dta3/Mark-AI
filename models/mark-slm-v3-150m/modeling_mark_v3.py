@@ -26,8 +26,10 @@ class RMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(dim))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        var = torch.mean(x.pow(2), dim=-1, keepdim=True)
-        return x * torch.rsqrt(var + self.eps) * self.weight
+        orig_dtype = x.dtype
+        x_f = x.float()
+        var = torch.mean(x_f.pow(2), dim=-1, keepdim=True)
+        return (x_f * torch.rsqrt(var + self.eps) * self.weight.float()).to(orig_dtype)
 
 
 class MarkV3YaRNRotaryEmbedding(nn.Module):
@@ -198,14 +200,13 @@ class MarkV3MoE(nn.Module):
         topk_weights = (topk_weights / topk_weights.sum(dim=-1, keepdim=True).clamp(min=1e-6)).to(x.dtype)
 
         routed_out = torch.zeros_like(x_flat)
-        for k in range(self.top_k):
-            expert_indices = topk_idx[:, k]
-            weights = topk_weights[:, k].unsqueeze(-1)
-            for e_idx in range(self.n_routed_experts):
-                mask = expert_indices == e_idx
-                if mask.any():
-                    selected = x_flat[mask]
-                    routed_out[mask] += weights[mask] * self.routed_experts[e_idx](selected)
+        for e_idx in range(self.n_routed_experts):
+            token_idx, k_idx = torch.where(topk_idx == e_idx)
+            if token_idx.numel() > 0:
+                selected = x_flat[token_idx]
+                w = topk_weights[token_idx, k_idx].unsqueeze(-1)
+                exp_out = (w * self.routed_experts[e_idx](selected)).to(routed_out.dtype)
+                routed_out.index_add_(0, token_idx, exp_out)
 
         return (shared_out + routed_out).view(bsz, seqlen, dim)
 
@@ -271,7 +272,7 @@ class MarkV3Model(MarkV3PreTrainedModel):
 
 
 class MarkV3ForCausalLM(MarkV3PreTrainedModel):
-    _tied_weights_keys = ["lm_head.weight"]
+    _tied_weights_keys = {"lm_head.weight": "model.embed_tokens.weight"}
 
     def __init__(self, config: MarkV3Config):
         super().__init__(config)
@@ -281,7 +282,15 @@ class MarkV3ForCausalLM(MarkV3PreTrainedModel):
         if config.tie_word_embeddings:
             self.lm_head.weight = self.model.embed_tokens.weight
 
-        self.post_init()
+        try:
+            self.post_init()
+        except (AttributeError, TypeError, Exception):
+            self.apply(self._init_weights)
+            self.tie_weights()
+
+    def tie_weights(self):
+        if getattr(self.config, "tie_word_embeddings", True) and hasattr(self, "model") and hasattr(self.model, "embed_tokens"):
+            self.lm_head.weight = self.model.embed_tokens.weight
 
     def get_input_embeddings(self):
         return self.model.embed_tokens
