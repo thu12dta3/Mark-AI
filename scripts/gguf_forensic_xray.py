@@ -11,7 +11,7 @@ import gguf
 
 MODELS_LIST = [
     ("Mark-Engineer-302M", Path("/mnt/ssd_1/mark ai/checkpoints/mark_engineer_302m_iq4_nl.gguf"), True),
-    ("Mark-SLM-V2-302M", Path("/mnt/ssd_1/mark ai/checkpoints/mark_slm_v2_302m_iq4_nl.gguf"), False),
+    ("Mark-SLM-V2-302M", Path("/mnt/ssd_1/mark ai/checkpoints/mark_slm_v2_302m_iq4_nl.gguf"), True),
     ("Mark-Engineer-1.5B", Path("/mnt/ssd_1/mark ai/checkpoints/mark_engineer_1_5b_iq4_nl.gguf"), True),
     ("Mark-General-1.5B", Path("/mnt/ssd_1/mark ai/checkpoints/mark_general_1_5b_iq4_nl.gguf"), True),
     ("Mark-VL-2.2B", Path("/mnt/ssd_1/mark ai/checkpoints/mark_vl_2_2b_iq4_nl.gguf"), True),
@@ -117,8 +117,9 @@ def analyze_gguf(name: str, path: Path, has_pt: bool) -> Dict[str, Any]:
         "blk.0.attn_kv_a_mqa.weight",
         "blk.0.attn_q_a.weight",
         "output_norm.weight",
-        "output.weight",
     ]
+    if name != "Mark-SLM-V3-150M":
+        crit_nodes.append("output.weight")
     has_crit_nodes = all(node in tensor_dict for node in crit_nodes)
     has_moe_nodes = any("ffn_gate_exps.weight" in k for k in tensor_dict) or any("ffn_gate.weight" in k for k in tensor_dict)
 

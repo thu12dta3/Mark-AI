@@ -37,7 +37,7 @@
   "total_parameters": 329132000,
   "active_parameters_per_token": 155723744,
   "weight_state": "TRAINED_CHECKPOINT_VALIDATED",
-  "sha256": "388237d49ea776c955851e575bb15e30a63b3e8218fda3d23cd690188bbb6b3a",
+  "sha256": "34a3e0e39cd02cd6a12345b9558ea094877530ef3bde52e64552f20ca48ce38e",
   "quantization": "IQ4_NL",
   "target_platforms": [
     "Ollama",

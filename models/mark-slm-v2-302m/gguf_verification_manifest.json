@@ -5,12 +5,12 @@
   "provenance": {
     "gguf_file": "mark_slm_v2_302m_iq4_nl.gguf",
     "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_slm_v2_302m_iq4_nl.gguf",
-    "sha256": "388237d49ea776c955851e575bb15e30a63b3e8218fda3d23cd690188bbb6b3a",
+    "sha256": "34a3e0e39cd02cd6a12345b9558ea094877530ef3bde52e64552f20ca48ce38e",
     "sha256_match_config": true,
-    "size_bytes": 185430656,
-    "size_mib": 176.84,
-    "size_mb": 185.43,
-    "size_formatted": "176.84 MiB (185.43 MB / 185,430,656 bytes)",
+    "size_bytes": 186394944,
+    "size_mib": 177.76,
+    "size_mb": 186.39,
+    "size_formatted": "177.76 MiB (186.39 MB / 186,394,944 bytes)",
     "quantization": "IQ4_NL"
   },
   "tensor_architecture": {

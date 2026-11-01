@@ -9,11 +9,11 @@ Sub-200M parameter edge model built on native DeepSeek2 MoE and MLA architecture
 | Architecture | `deepseek2` |
 | Quantization Type | `IQ4_NL` (4-bit Non-Linear Weights, FP32 Norms/Bias) |
 | Container File | `mark_slm_v3_150m_iq4_nl.gguf` |
-| File Size | `88.94 MiB (93.27 MB / 93,265,088 bytes)` |
-| SHA-256 Checksum | `c10b0cb0e1bdb22c9178da7211fc47cbf485f54f29bf06bcd0c0ec23a535b6c6` |
-| Total Parameters | `165,349,680` physical |
-| Active Parameters / Token | `72,452,400` active |
-| Total Tensors | `273` ({'IQ4_NL': 197, 'F32': 76}) |
+| File Size | `79.97 MiB (83.85 MB / 83,849,984 bytes)` |
+| SHA-256 Checksum | `6308c8c1529b79e3965131693dbbf46937950b38f88d9791aa6d97a4b87b9a34` |
+| Total Parameters | `146,899,248` physical |
+| Active Parameters / Token | `54,001,968` active |
+| Total Tensors | `272` ({'IQ4_NL': 196, 'F32': 76}) |
 | 1D RMSNorm Precision | `100% FP32` |
 | Hidden Dimension (`hidden_size`) | `576` |
 | Transformer Layers | `15` |

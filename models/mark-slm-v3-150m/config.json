@@ -29,10 +29,10 @@
   "tie_word_embeddings": true,
   "torch_dtype": "bfloat16",
   "quantization": "IQ4_NL",
-  "total_parameters": 165349680,
-  "active_parameters_per_token": 72452400,
+  "total_parameters": 146899248,
+  "active_parameters_per_token": 54001968,
   "weight_state": "UN-TRAINED_ARCHITECTURAL_BASE",
-  "sha256": "c10b0cb0e1bdb22c9178da7211fc47cbf485f54f29bf06bcd0c0ec23a535b6c6",
+  "sha256": "6308c8c1529b79e3965131693dbbf46937950b38f88d9791aa6d97a4b87b9a34",
   "target_platforms": [
     "Ollama",
     "LM Studio",

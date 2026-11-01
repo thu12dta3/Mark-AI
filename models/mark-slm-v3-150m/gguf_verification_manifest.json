@@ -5,25 +5,25 @@
   "provenance": {
     "gguf_file": "mark_slm_v3_150m_iq4_nl.gguf",
     "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_slm_v3_150m_iq4_nl.gguf",
-    "sha256": "c10b0cb0e1bdb22c9178da7211fc47cbf485f54f29bf06bcd0c0ec23a535b6c6",
+    "sha256": "6308c8c1529b79e3965131693dbbf46937950b38f88d9791aa6d97a4b87b9a34",
     "sha256_match_config": true,
-    "size_bytes": 93265088,
-    "size_mib": 88.94,
-    "size_mb": 93.27,
-    "size_formatted": "88.94 MiB (93.27 MB / 93,265,088 bytes)",
+    "size_bytes": 83849984,
+    "size_mib": 79.97,
+    "size_mb": 83.85,
+    "size_formatted": "79.97 MiB (83.85 MB / 83,849,984 bytes)",
     "quantization": "IQ4_NL"
   },
   "tensor_architecture": {
-    "total_tensors": 273,
+    "total_tensors": 272,
     "tensor_types": {
-      "IQ4_NL": 197,
+      "IQ4_NL": 196,
       "F32": 76
     },
     "all_1d_norms_fp32": true,
-    "physical_total_parameters": 165349680,
-    "physical_active_parameters": 72452400,
-    "total_parameters_formatted": "165,349,680",
-    "active_parameters_formatted": "72,452,400"
+    "physical_total_parameters": 146899248,
+    "physical_active_parameters": 54001968,
+    "total_parameters_formatted": "146,899,248",
+    "active_parameters_formatted": "54,001,968"
   },
   "vocabulary_alignment": {
     "gguf_vocab_size": 32032,

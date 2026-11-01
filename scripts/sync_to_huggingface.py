@@ -144,105 +144,37 @@ def sync_space(api: HfApi):
     space_id = "miceworks/Mark-Engineer-1.5B-Space"
     print(f"\n--- Syncing Space {space_id} ---")
 
-    space_readme = """---
-title: Mark Engineer 1.5B
-emoji: 💻
-colorFrom: blue
-colorTo: indigo
-sdk: static
-pinned: false
----
+    space_dir = REPO_ROOT / "spaces" / "mark-engineer-1.5b"
 
-# Mark Engineer 1.5B Space
+    # Remove obsolete static files from remote Space if present
+    remote_space_files = api.list_repo_files(repo_id=space_id, repo_type="space")
+    for obsolete_file in ["index.html", "style.css"]:
+        if obsolete_file in remote_space_files:
+            print(f"  Deleting obsolete static file from Space: {obsolete_file}...")
+            try:
+                api.delete_file(
+                    path_in_repo=obsolete_file,
+                    repo_id=space_id,
+                    repo_type="space",
+                    commit_message=f"Remove obsolete static file {obsolete_file} in favor of Gradio app",
+                )
+                print(f"  [DELETED] {obsolete_file}")
+            except Exception as e:
+                print(f"  [WARNING] Could not delete {obsolete_file}: {e}")
 
-Interactive deployment and technical specifications testbed for Mark Engineer 1.5B using native DeepSeek2 architecture (MoE + MLA) quantized with IQ4_NL.
-"""
-
-    space_index_html = """<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mark Engineer 1.5B - Systems Engineering Model</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 2rem; display: flex; justify-content: center; }
-        .container { max-width: 800px; width: 100%; }
-        h1 { color: #38bdf8; font-size: 2rem; margin-bottom: 0.5rem; }
-        .badge { background: #1e293b; color: #94a3b8; border: 1px solid #334155; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem; display: inline-block; margin-bottom: 1.5rem; }
-        .card { background: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; }
-        h2 { font-size: 1.25rem; color: #f1f5f9; margin-top: 0; }
-        pre { background: #090d16; border: 1px solid #1e293b; border-radius: 0.5rem; padding: 1rem; overflow-x: auto; color: #38bdf8; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.9rem; }
-        table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.9rem; }
-        th, td { border: 1px solid #334155; padding: 0.5rem 0.75rem; text-align: left; }
-        th { background: #0f172a; color: #94a3b8; }
-        a { color: #38bdf8; text-decoration: none; }
-        a:hover { text-decoration: underline; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Mark Engineer 1.5B</h1>
-        <div class="badge">Native DeepSeek2 MoE + MLA | IQ4_NL Quantization</div>
-        
-        <div class="card">
-            <h2>Model Overview</h2>
-            <p>Mark Engineer 1.5B is a lightweight systems engineering model optimized for low-level operating system mechanics, Linux kernel modules, eBPF verifiers, Windows KMDF drivers, and Tokio concurrency primitives.</p>
-            <table>
-                <tr><th>Architecture</th><td>DeepSeek2 (MLA + MoE)</td></tr>
-                <tr><th>Quantization</th><td>IQ4_NL (4-bit non-linear weights, FP32 Norms/Bias)</td></tr>
-                <tr><th>Binary Size</th><td>802.94 MiB (841.94 MB / 841,941,664 bytes)</td></tr>
-                <tr><th>SHA-256 Checksum</th><td><code>fa7d3061f33a20beaae5c2b85aceaf720c75b811efd8bceae0c57c57037e838e</code></td></tr>
-                <tr><th>Physical Parameters</th><td>1,496,121,824 physical (364,151,264 active per token)</td></tr>
-                <tr><th>Context Window</th><td>4,096 tokens</td></tr>
-                <tr><th>Vocabulary Size</th><td>4,311 tokens</td></tr>
-                <tr><th>Weight State</th><td>TRAINED_CHECKPOINT_VALIDATED</td></tr>
-                <tr><th>Hugging Face Weights</th><td><a href="https://huggingface.co/miceworks/Mark-Engineer-1.5B" target="_blank">miceworks/Mark-Engineer-1.5B</a></td></tr>
-            </table>
-        </div>
-
-        <div class="card">
-            <h2>Quick Execution with Ollama</h2>
-            <pre><code># 1. Download Modelfile and weights from Hugging Face
-huggingface-cli download miceworks/Mark-Engineer-1.5B mark_engineer_1_5b_iq4_nl.gguf Modelfile --local-dir ./mark-1.5b
-
-# 2. Register with Ollama
-cd ./mark-1.5b
-ollama create mark-engineer-1.5b -f Modelfile
-
-# 3. Run interactive systems dialogue
-ollama run mark-engineer-1.5b "Explain Tokio pin projections in asynchronous Rust"</code></pre>
-        </div>
-
-        <div class="card">
-            <h2>Local llama.cpp Execution</h2>
-            <pre><code># Run local CLI inference
-llama-cli -m mark_engineer_1_5b_iq4_nl.gguf -p "&lt;|bos|&gt;System: You are an expert system.&lt;|eos|&gt;\\n&lt;|bos|&gt;User: Systems architecture:&lt;|eos|&gt;\\n&lt;|bos|&gt;Assistant:\\n&lt;think&gt;\\n" -n 256
-
-# Start OpenAI-compatible HTTP server
-llama-server -m mark_engineer_1_5b_iq4_nl.gguf --port 8080 -c 4096</code></pre>
-        </div>
-    </div>
-</body>
-</html>
-"""
-
-    api.upload_file(
-        path_or_fileobj=space_readme.encode("utf-8"),
-        path_in_repo="README.md",
-        repo_id=space_id,
-        repo_type="space",
-        commit_message="Synchronize Space README with forensic GGUF metrics",
-    )
-    print("  [OK] Uploaded Space README.md")
-
-    api.upload_file(
-        path_or_fileobj=space_index_html.encode("utf-8"),
-        path_in_repo="index.html",
-        repo_id=space_id,
-        repo_type="space",
-        commit_message="Synchronize Space index.html with forensic GGUF metrics",
-    )
-    print("  [OK] Uploaded Space index.html")
+    # Upload app.py, requirements.txt, and README.md
+    for fname in ["README.md", "requirements.txt", "app.py"]:
+        fpath = space_dir / fname
+        if fpath.exists():
+            print(f"  Uploading {fname} to Space...")
+            api.upload_file(
+                path_or_fileobj=str(fpath),
+                path_in_repo=fname,
+                repo_id=space_id,
+                repo_type="space",
+                commit_message=f"Deploy interactive Gradio application ({fname})",
+            )
+            print(f"  [OK] Uploaded {fname}")
 
 
 if __name__ == "__main__":

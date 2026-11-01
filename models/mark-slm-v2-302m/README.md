@@ -9,8 +9,8 @@ Compact small language model with an expanded 49,152 token vocabulary and DeepSe
 | Architecture | `deepseek2` |
 | Quantization Type | `IQ4_NL` (4-bit Non-Linear Weights, FP32 Norms/Bias) |
 | Container File | `mark_slm_v2_302m_iq4_nl.gguf` |
-| File Size | `176.84 MiB (185.43 MB / 185,430,656 bytes)` |
-| SHA-256 Checksum | `388237d49ea776c955851e575bb15e30a63b3e8218fda3d23cd690188bbb6b3a` |
+| File Size | `177.76 MiB (186.39 MB / 186,394,944 bytes)` |
+| SHA-256 Checksum | `34a3e0e39cd02cd6a12345b9558ea094877530ef3bde52e64552f20ca48ce38e` |
 | Total Parameters | `329,132,000` physical |
 | Active Parameters / Token | `155,723,744` active |
 | Total Tensors | `281` ({'IQ4_NL': 202, 'F32': 79}) |

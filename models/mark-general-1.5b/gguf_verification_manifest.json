@@ -63,7 +63,7 @@
       4377
     ],
     "finite_logits": true,
-    "greedy_token_id": 1726,
+    "greedy_token_id": 97,
     "eos_token_id": 2,
     "eos_handling_verified": true,
     "status": "PASS"

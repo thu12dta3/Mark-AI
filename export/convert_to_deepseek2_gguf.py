@@ -98,12 +98,40 @@ def unpack_tensor(val, lut=lut) -> Optional[torch.Tensor]:
         return val
     return None
 
+def project_weight_svd(w: torch.Tensor, in_features: int, out_features: int) -> torch.Tensor:
+    if w.shape == (out_features, in_features):
+        return w
+    cur_out, cur_in = w.shape
+    if cur_out != out_features and cur_in == in_features:
+        # e.g., cur_out = 400, out_features = 384, cur_in = 768 (w_gate, w_up)
+        U, S, Vh = torch.linalg.svd(w.float(), full_matrices=False)
+        k = min(out_features, cur_out)
+        w_proj = torch.diag(S[:k]) @ Vh[:k, :]
+        if k < out_features:
+            pad = torch.zeros((out_features - k, in_features), dtype=torch.float32, device=w.device)
+            w_proj = torch.cat([w_proj, pad], dim=0)
+        return w_proj
+    elif cur_out == out_features and cur_in != in_features:
+        # e.g., cur_out = 768, cur_in = 400, in_features = 384 (w_down)
+        U, S, Vh = torch.linalg.svd(w.float(), full_matrices=False)
+        k = min(in_features, cur_in)
+        w_proj = U[:, :k] @ torch.diag(S[:k])
+        if k < in_features:
+            pad = torch.zeros((out_features, in_features - k), dtype=torch.float32, device=w.device)
+            w_proj = torch.cat([w_proj, pad], dim=1)
+        return w_proj
+    else:
+        return w[:out_features, :in_features]
+
 def extract_linear_weight(sd: Dict[str, Any], prefix: str, in_features: int, out_features: int, block_size: int = 32) -> torch.Tensor:
     for k in (f'{prefix}.weight', prefix):
         if k in sd:
             res = unpack_tensor(sd[k])
             if res is not None:
-                return res.float()
+                w = res.float()
+                if w.shape != (out_features, in_features):
+                    w = project_weight_svd(w, in_features, out_features)
+                return w
     qw_key = f'{prefix}.qweight'
     sc_key = f'{prefix}.scales'
     if qw_key in sd and sc_key in sd:
@@ -116,7 +144,10 @@ def extract_linear_weight(sd: Dict[str, Any], prefix: str, in_features: int, out
         idx[..., 1::2] = high
         norm_w = lut[idx]
         w_blocks = norm_w * sc.float()
-        return w_blocks.view(out_features, -1)[:, :in_features].float()
+        w = w_blocks.view(out_features, -1)[:, :in_features].float()
+        if w.shape != (out_features, in_features):
+            w = project_weight_svd(w, in_features, out_features)
+        return w
     raise KeyError(f'Unable to find tensor for prefix: {prefix}')
 
 def verify_gguf_integrity(gguf_path: Path):
@@ -271,8 +302,8 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
     writer.add_pad_token_id(config.pad_token_id)
 
     tok_candidates = [
-        REPO_ROOT / 'models' / 'mark-v3-1.1b' / 'tokenizer.json',
         REPO_ROOT / 'models' / f'mark-{model_type}' / 'tokenizer.json',
+        REPO_ROOT / 'models' / 'mark-v3-1.1b' / 'tokenizer.json',
         REPO_ROOT / 'models' / 'mark-engineer-1.5b' / 'tokenizer.json',
         REPO_ROOT / 'models' / 'mark-vl-2.2b' / 'tokenizer.json',
         REPO_ROOT / 'tokenizer' / 'tokenizer.json'
@@ -286,8 +317,8 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
         tokens = [k.encode('utf-8') for k, v in sorted_vocab]
         merges = tok_data.get('model', {}).get('merges', [])
         formatted_merges = [' '.join(m).encode('utf-8') if isinstance(m, list) else m.encode('utf-8') for m in merges]
-        pad_vocab_size = (len(tokens) + 63) // 64 * 64
-        diff = pad_vocab_size - len(tokens)
+        pad_vocab_size = config.vocab_size
+        diff = max(0, pad_vocab_size - len(tokens))
         for k in range(diff):
             tokens.append(f'<pad_align_{k}>'.encode('utf-8'))
         writer.add_tokenizer_model('gpt2')
@@ -345,10 +376,14 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
     del norm_raw
     gc.collect()
 
-    if w_out.shape[0] < pad_vocab_size:
-        pad = torch.zeros((pad_vocab_size - w_out.shape[0], w_out.shape[1]), dtype=torch.float32)
-        w_out = torch.cat([w_out, pad], dim=0)
-    add_linear(writer, 'output.weight', w_out)
+    should_skip_output = getattr(config, 'tie_word_embeddings', False) and ('150m' in model_type.lower() or 'slm-v3' in model_type.lower())
+    if not should_skip_output:
+        if w_out.shape[0] < pad_vocab_size:
+            pad = torch.zeros((pad_vocab_size - w_out.shape[0], w_out.shape[1]), dtype=torch.float32)
+            w_out = torch.cat([w_out, pad], dim=0)
+        add_linear(writer, 'output.weight', w_out)
+    else:
+        print(f'[Mark GGUF Exporter] Skipping output.weight for tied model {model_type} (llama.cpp deepseek2 reuses token_embd.weight)')
     del w_out
     gc.collect()
 
@@ -478,7 +513,7 @@ def main():
 
     default_paths = {
         '302m': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_302m_iq4_nl.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_302m_iq4_nl.gguf')),
-        'slm-v2-302m': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_slm_v2_302m.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_slm_v2_302m_iq4_nl.gguf')),
+        'slm-v2-302m': (Path('/mnt/ssd_1/mark ai/checkpoints/colab_302m/mark_slm_v2_302m_step_10000.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_slm_v2_302m_iq4_nl.gguf')),
         'engineer-1.5b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_1_5b_iq4_nl.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_1_5b_iq4_nl.gguf')),
         'general-1.5b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_general_1_5b_iq4_nl.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_general_1_5b_iq4_nl.gguf')),
         'vl-2.2b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_vl_2_2b/mark_vl_2_2b.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_vl_2_2b_iq4_nl.gguf')),
