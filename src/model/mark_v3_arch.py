@@ -15,7 +15,7 @@ def get_walsh_hadamard_matrix(n: int) -> torch.Tensor:
 @dataclass
 class MarkV3Config:
     model_type: str = 'deepseek2'
-    model_name: str = 'Mark-v3-Core-1.1B'
+    model_name: str = 'Mark-V3-1.1B'
     vocab_size: int = 32032
     hidden_size: int = 1152
     num_hidden_layers: int = 18
