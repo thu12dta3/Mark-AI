@@ -35,6 +35,14 @@ def load_model(variant: str='302m', checkpoint_path: Optional[str]=None, device:
             candidate_names.extend(['mark_engineer_v2_8b_step_15000.pt', 'mark_engineer_v2_8b_iq4_nl.pt'])
         elif variant_norm in ('v3-1.1b', 'v3', 'v3_1.1b'):
             candidate_names.extend(['mark_v3_core_1_1b.pt', 'mark_v3_1_1b_iq4_nl.pt'])
+        elif variant_norm in ('slm-v3-150m', 'mark-slm-v3-150m', 'slm_v3_150m'):
+            candidate_names.extend(['mark_slm_v3_150m.pt', 'mark_slm_v3_150m_iq4_nl.pt'])
+        elif variant_norm in ('general-v3-1.5b', 'mark-general-v3-1.5b', 'general_v3_1_5b', 'general-v3-1_5b'):
+            candidate_names.extend(['mark_general_v3_1_5b.pt', 'mark_general_v3_1_5b_iq4_nl.pt', 'mark_general_v3_1.5b.pt'])
+        elif variant_norm in ('engineer-v3-1.5b', 'mark-engineer-v3-1.5b', 'engineer_v3_1_5b', 'engineer-v3-1_5b'):
+            candidate_names.extend(['mark_engineer_v3_1_5b.pt', 'mark_engineer_v3_1_5b_iq4_nl.pt', 'mark_engineer_v3_1.5b.pt'])
+        elif variant_norm in ('experimental-v3-8b', 'mark-experimental-v3-8b', 'experimental_v3_8b'):
+            candidate_names.extend(['mark_experimental_v3_8b.pt', 'mark_experimental_v3_8b_iq4_nl.pt'])
         elif variant_norm in ('markvl-2.2b', 'markvl', 'markvl_2_2b'):
             candidate_names.extend(['mark_vl_2_2b.pt', 'mark_vl_2_2b_iq4_nl.pt'])
         search_dirs = [root_dir / 'checkpoints', Path('checkpoints'), Path('/mnt/ssd_1/mark ai/checkpoints'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v2_8b')]
@@ -68,6 +76,18 @@ def load_model(variant: str='302m', checkpoint_path: Optional[str]=None, device:
     elif variant_norm in ('v2-8b', 'v2_8b', 'engineer-v2-8b'):
         config = MarkEngineerV2Config()
         model_cls = MarkEngineerV2Model
+    elif variant_norm in ('slm-v3-150m', 'mark-slm-v3-150m', 'slm_v3_150m'):
+        config = MarkV3Config.create_slm_v3_150m()
+        model_cls = MarkV3ForCausalLM
+    elif variant_norm in ('general-v3-1.5b', 'mark-general-v3-1.5b', 'general_v3_1_5b', 'general-v3-1_5b'):
+        config = MarkV3Config.create_general_v3_1_5b()
+        model_cls = MarkV3ForCausalLM
+    elif variant_norm in ('engineer-v3-1.5b', 'mark-engineer-v3-1.5b', 'engineer_v3_1_5b', 'engineer-v3-1_5b'):
+        config = MarkV3Config.create_engineer_v3_1_5b()
+        model_cls = MarkV3ForCausalLM
+    elif variant_norm in ('experimental-v3-8b', 'mark-experimental-v3-8b', 'experimental_v3_8b'):
+        config = MarkV3Config.create_experimental_v3_8b()
+        model_cls = MarkV3ForCausalLM
     elif variant_norm in ('v3-1.1b', 'v3', 'v3_1.1b', 'core-1.1b'):
         config = MarkV3Config()
         model_cls = MarkV3ForCausalLM

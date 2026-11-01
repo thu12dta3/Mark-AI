@@ -1,0 +1,17 @@
+FROM ./mark_engineer_v3_1_5b.gguf
+
+TEMPLATE """<|im_start|>system
+{{ .System }}<|im_end|>
+<|im_start|>user
+{{ .Prompt }}<|im_end|>
+<|im_start|>assistant
+<think>
+"""
+
+PARAMETER stop "<|im_end|>"
+PARAMETER stop "<|endoftext|>"
+PARAMETER temperature 0.2
+PARAMETER top_p 0.90
+PARAMETER repeat_penalty 1.1
+
+SYSTEM """You are Mark-Engineer-V3-1.5B, specialized in low-level systems programming, Linux internals, C++, Rust, kernel development, and Assembly."""
