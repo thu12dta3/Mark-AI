@@ -77,7 +77,15 @@ def get_model_config(model_type: str) -> Any:
         return MarkConfig.create_general_1_5b()
     elif m in ('v2-8b', 'engineer-v2-8b'):
         return MarkEngineerV2Config()
-    elif m in ('v3-1.1b', 'v3', 'mark-v3-core-1.1b', 'mark-v3'):
+    elif m in ('slm-v3-150m', 'mark-slm-v3-150m'):
+        return MarkV3Config.create_slm_v3_150m()
+    elif m in ('general-v3-1.5b', 'mark-general-v3-1.5b'):
+        return MarkV3Config.create_general_v3_1_5b()
+    elif m in ('engineer-v3-1.5b', 'mark-engineer-v3-1.5b'):
+        return MarkV3Config.create_engineer_v3_1_5b()
+    elif m in ('experimental-v3-8b', 'mark-experimental-v3-8b'):
+        return MarkV3Config.create_experimental_v3_8b()
+    elif m in ('v3-1.1b', 'v3', 'mark-v3-1.1b', 'mark-v3', 'mark-v3-core-1.1b'):
         return MarkV3Config()
     else:
         raise ValueError(f'Unsupported model type: {model_type}')
@@ -85,13 +93,13 @@ def get_model_config(model_type: str) -> Any:
 def export_to_deepseek2_gguf(model_type: str, ckpt_path: Path, output_gguf: Path, model_name: Optional[str]=None):
     if not ckpt_path.exists():
         raise FileNotFoundError(f'Source checkpoint does not exist: {ckpt_path}')
+    config = get_model_config(model_type)
+    is_v3 = isinstance(config, MarkV3Config) or model_type.lower().strip() in ('v3-1.1b', 'v3', 'mark-v3-1.1b', 'mark-v3', 'mark-v3-core-1.1b')
     if model_name is None:
-        model_name = f'mark-{model_type}'
+        model_name = 'Mark-V3-1.1B' if is_v3 else f'mark-{model_type}'
     print(f'[Mark GGUF Exporter] Loading state_dict from {ckpt_path}...')
     raw_ckpt = torch.load(ckpt_path, map_location='cpu', weights_only=False)
     sd = raw_ckpt.get('model_state_dict', raw_ckpt) if isinstance(raw_ckpt, dict) else raw_ckpt
-    config = get_model_config(model_type)
-    is_v3 = isinstance(config, MarkV3Config) or model_type.lower().strip() in ('v3-1.1b', 'v3', 'mark-v3-core-1.1b', 'mark-v3')
     emb_w = sd.get('tok_embeddings.weight') if 'tok_embeddings.weight' in sd else sd.get('model.embed_tokens.weight')
     if emb_w is not None and hasattr(emb_w, 'shape'):
         if hasattr(config, 'vocab_size'):
@@ -128,7 +136,7 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Path, output_gguf: Path
     writer.add_bos_token_id(config.bos_token_id)
     writer.add_eos_token_id(config.eos_token_id)
     writer.add_pad_token_id(config.pad_token_id)
-    tok_candidates = [REPO_ROOT / 'models' / f'mark-{model_type}' / 'tokenizer.json', REPO_ROOT / 'models' / 'mark-v3-core-1.1b' / 'tokenizer.json', REPO_ROOT / 'models' / 'mark-engineer-1.5b' / 'tokenizer.json', REPO_ROOT / 'models' / 'mark-vl-2.2b' / 'tokenizer.json']
+    tok_candidates = [REPO_ROOT / 'models' / 'mark-v3-1.1b' / 'tokenizer.json', REPO_ROOT / 'models' / f'mark-{model_type}' / 'tokenizer.json', REPO_ROOT / 'models' / 'mark-engineer-1.5b' / 'tokenizer.json', REPO_ROOT / 'models' / 'mark-vl-2.2b' / 'tokenizer.json']
     tok_path = next((p for p in tok_candidates if p.exists()), None)
     if tok_path:
         with open(tok_path, 'r', encoding='utf-8') as f:
@@ -259,11 +267,22 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Path, output_gguf: Path
 
 def main():
     parser = argparse.ArgumentParser(description='Universal DeepSeek2 GGUF Exporter for Mark Models')
-    parser.add_argument('--model', type=str, default='1.5b', choices=['302m', 'slm-v2-302m', 'engineer-1.5b', '1.5b', 'general-1.5b', 'v2-8b', 'v3-1.1b', 'all'])
+    parser.add_argument('--model', type=str, default='1.5b', choices=['302m', 'slm-v2-302m', 'engineer-1.5b', '1.5b', 'general-1.5b', 'v2-8b', 'v3-1.1b', 'slm-v3-150m', 'general-v3-1.5b', 'engineer-v3-1.5b', 'experimental-v3-8b', 'all'])
     parser.add_argument('--ckpt', type=str, default='', help='Path to source .pt checkpoint')
     parser.add_argument('--out', type=str, default='', help='Path to destination .gguf container')
     args = parser.parse_args()
-    default_paths = {'302m': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_302m_iq4_nl.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_302m.gguf')), 'slm-v2-302m': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_slm_v2_302m.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_slm_v2_302m.gguf')), 'engineer-1.5b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_1_5b_iq4_nl.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_1_5b.gguf')), 'general-1.5b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_general_1_5b_iq4_nl.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_general_1_5b.gguf')), 'v2-8b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v2_8b/mark_engineer_v2_8b_step_15000.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v2_8b/mark_engineer_v2_8b.gguf')), 'v3-1.1b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_v3_core_1_1b.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_v3_core_1_1b.gguf'))}
+    default_paths = {
+        '302m': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_302m_iq4_nl.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_302m.gguf')),
+        'slm-v2-302m': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_slm_v2_302m.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_slm_v2_302m.gguf')),
+        'engineer-1.5b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_1_5b_iq4_nl.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_1_5b.gguf')),
+        'general-1.5b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_general_1_5b_iq4_nl.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_general_1_5b.gguf')),
+        'v2-8b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v2_8b/mark_engineer_v2_8b_step_15000.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v2_8b/mark_engineer_v2_8b.gguf')),
+        'v3-1.1b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_v3_1_1b.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_v3_1_1b.gguf')),
+        'slm-v3-150m': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_slm_v3_150m.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_slm_v3_150m.gguf')),
+        'general-v3-1.5b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_general_v3_1_5b.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_general_v3_1_5b.gguf')),
+        'engineer-v3-1.5b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v3_1_5b.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v3_1_5b.gguf')),
+        'experimental-v3-8b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_experimental_v3_8b.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_experimental_v3_8b.gguf')),
+    }
     models_to_export = list(default_paths.keys()) if args.model == 'all' else ['engineer-1.5b' if args.model == '1.5b' else args.model]
     for m in models_to_export:
         def_src, def_dst = default_paths.get(m, (Path('checkpoints/dummy.pt'), Path('checkpoints/dummy.gguf')))

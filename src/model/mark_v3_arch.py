@@ -15,7 +15,7 @@ def get_walsh_hadamard_matrix(n: int) -> torch.Tensor:
 @dataclass
 class MarkV3Config:
     model_type: str = 'deepseek2'
-    model_name: str = 'Mark-v3-Core-1.1B'
+    model_name: str = 'Mark-V3-1.1B'
     vocab_size: int = 32032
     hidden_size: int = 1152
     num_hidden_layers: int = 18
@@ -57,6 +57,110 @@ class MarkV3Config:
     @property
     def qk_head_dim(self) -> int:
         return self.qk_nope_head_dim + self.qk_rope_head_dim
+
+    @classmethod
+    def create_slm_v3_150m(cls) -> 'MarkV3Config':
+        return cls(
+            model_name='Mark-SLM-V3-150M',
+            vocab_size=32032,
+            hidden_size=576,
+            num_hidden_layers=14,
+            num_attention_heads=9,
+            num_key_value_heads=9,
+            intermediate_size=1536,
+            q_lora_rank=256,
+            kv_lora_rank=128,
+            qk_nope_head_dim=64,
+            qk_rope_head_dim=64,
+            v_head_dim=64,
+            n_routed_experts=16,
+            num_experts_per_tok=2,
+            n_shared_experts=1,
+            moe_intermediate_size=276,
+            tie_word_embeddings=True,
+            max_position_embeddings=8192,
+            original_max_position_embeddings=4096,
+            rope_theta=10000.0,
+            rope_scaling_factor=2.0,
+        )
+
+    @classmethod
+    def create_general_v3_1_5b(cls) -> 'MarkV3Config':
+        return cls(
+            model_name='Mark-General-V3-1.5B',
+            vocab_size=32032,
+            hidden_size=1280,
+            num_hidden_layers=18,
+            num_attention_heads=20,
+            num_key_value_heads=20,
+            intermediate_size=3413,
+            q_lora_rank=512,
+            kv_lora_rank=256,
+            qk_nope_head_dim=64,
+            qk_rope_head_dim=64,
+            v_head_dim=64,
+            n_routed_experts=32,
+            num_experts_per_tok=4,
+            n_shared_experts=2,
+            moe_intermediate_size=584,
+            tie_word_embeddings=True,
+            max_position_embeddings=32768,
+            original_max_position_embeddings=4096,
+            rope_theta=10000.0,
+            rope_scaling_factor=8.0,
+        )
+
+    @classmethod
+    def create_engineer_v3_1_5b(cls) -> 'MarkV3Config':
+        return cls(
+            model_name='Mark-Engineer-V3-1.5B',
+            vocab_size=32032,
+            hidden_size=1280,
+            num_hidden_layers=18,
+            num_attention_heads=20,
+            num_key_value_heads=20,
+            intermediate_size=3413,
+            q_lora_rank=512,
+            kv_lora_rank=256,
+            qk_nope_head_dim=64,
+            qk_rope_head_dim=64,
+            v_head_dim=64,
+            n_routed_experts=32,
+            num_experts_per_tok=4,
+            n_shared_experts=2,
+            moe_intermediate_size=584,
+            tie_word_embeddings=True,
+            max_position_embeddings=32768,
+            original_max_position_embeddings=4096,
+            rope_theta=10000.0,
+            rope_scaling_factor=8.0,
+        )
+
+    @classmethod
+    def create_experimental_v3_8b(cls) -> 'MarkV3Config':
+        return cls(
+            model_name='Mark-Experimental-V3-8B',
+            vocab_size=32032,
+            hidden_size=2560,
+            num_hidden_layers=32,
+            num_attention_heads=32,
+            num_key_value_heads=32,
+            intermediate_size=6826,
+            q_lora_rank=1024,
+            kv_lora_rank=512,
+            qk_nope_head_dim=64,
+            qk_rope_head_dim=32,
+            v_head_dim=80,
+            n_routed_experts=32,
+            num_experts_per_tok=4,
+            n_shared_experts=2,
+            moe_intermediate_size=896,
+            tie_word_embeddings=True,
+            max_position_embeddings=32768,
+            original_max_position_embeddings=4096,
+            rope_theta=10000.0,
+            rope_scaling_factor=8.0,
+        )
 
 class MarkV3YaRNRotaryEmbedding(nn.Module):
 
@@ -140,10 +244,11 @@ class MarkV3MLA(nn.Module):
         k_pe_expanded = k_pe.expand(bsz, seqlen, self.num_heads, self.qk_rope_head_dim)
         k_full = torch.cat([k_nope, k_pe_expanded], dim=-1).transpose(1, 2)
         v_trans = v.transpose(1, 2)
-        v_pad = F.pad(v_trans, (0, 64))
+        pad_len = max(0, self.qk_head_dim - self.v_head_dim)
+        v_pad = F.pad(v_trans, (0, pad_len)) if pad_len > 0 else v_trans
         is_causal = mask is None and seqlen > 1
         attn_out = F.scaled_dot_product_attention(q_full, k_full, v_pad, attn_mask=mask, dropout_p=0.0, is_causal=is_causal, scale=self.softmax_scale)
-        attn_out = attn_out[..., :64].transpose(1, 2).contiguous().view(bsz, seqlen, -1)
+        attn_out = attn_out[..., :self.v_head_dim].transpose(1, 2).contiguous().view(bsz, seqlen, -1)
         return self.w_o(attn_out)
 
 class MarkV3SwiGLU(nn.Module):
@@ -158,7 +263,6 @@ class MarkV3SwiGLU(nn.Module):
         return self.w_down(F.silu(self.w_gate(x)) * self.w_up(x))
 
 class MarkV3MoE(nn.Module):
-    DOMAIN_CLANS: Dict[int, Tuple[int, ...]] = {1: tuple(range(0, 10)), 2: tuple(range(10, 20)), 3: tuple(range(20, 28)), 4: tuple(range(28, 32))}
 
     def __init__(self, config: MarkV3Config):
         super().__init__()
@@ -171,7 +275,31 @@ class MarkV3MoE(nn.Module):
         self.routed_experts = nn.ModuleList([MarkV3SwiGLU(self.hidden_size, self.moe_intermediate_size) for _ in range(self.n_routed_experts)])
         self.router = nn.Linear(self.hidden_size, self.n_routed_experts, bias=False)
         self.register_buffer('exp_probs_b', torch.zeros(self.n_routed_experts))
-        for clan_id, indices in self.DOMAIN_CLANS.items():
+
+        if self.n_routed_experts == 16:
+            clans: Dict[int, Tuple[int, ...]] = {
+                1: tuple(range(0, 4)),
+                2: tuple(range(4, 8)),
+                3: tuple(range(8, 12)),
+                4: tuple(range(12, 16)),
+            }
+        elif self.n_routed_experts == 32:
+            clans = {
+                1: tuple(range(0, 8)),
+                2: tuple(range(8, 16)),
+                3: tuple(range(16, 24)),
+                4: tuple(range(24, 32)),
+            }
+        else:
+            clan_size = max(1, self.n_routed_experts // 4)
+            clans = {
+                1: tuple(range(0, clan_size)),
+                2: tuple(range(clan_size, clan_size * 2)),
+                3: tuple(range(clan_size * 2, clan_size * 3)),
+                4: tuple(range(clan_size * 3, self.n_routed_experts)),
+            }
+
+        for clan_id, indices in clans.items():
             other_indices = tuple((i for i in range(self.n_routed_experts) if i not in indices))
             self.register_buffer(f'_clan_{clan_id}_indices', torch.tensor(indices, dtype=torch.long), persistent=False)
             self.register_buffer(f'_clan_{clan_id}_other_indices', torch.tensor(other_indices, dtype=torch.long), persistent=False)
@@ -187,12 +315,14 @@ class MarkV3MoE(nn.Module):
             clan_idx_buf = getattr(self, f'_clan_{clan_id}_indices')
             other_idx_buf = getattr(self, f'_clan_{clan_id}_other_indices')
             s_clan = s[:, clan_idx_buf]
-            _, top3_clan_rel = torch.topk(s_clan, k=3, dim=-1, sorted=False)
-            top3_clan = clan_idx_buf[top3_clan_rel]
+            k_clan = max(1, self.top_k - 1)
+            k_other = max(1, self.top_k - k_clan)
+            _, top_clan_rel = torch.topk(s_clan, k=min(k_clan, s_clan.shape[-1]), dim=-1, sorted=False)
+            top_clan = clan_idx_buf[top_clan_rel]
             s_other = s[:, other_idx_buf]
-            _, top1_other_rel = torch.topk(s_other, k=1, dim=-1, sorted=False)
-            top1_other = other_idx_buf[top1_other_rel]
-            topk_idx = torch.cat([top3_clan, top1_other], dim=-1)
+            _, top_other_rel = torch.topk(s_other, k=min(k_other, s_other.shape[-1]), dim=-1, sorted=False)
+            top_other = other_idx_buf[top_other_rel]
+            topk_idx = torch.cat([top_clan, top_other], dim=-1)
         else:
             _, topk_idx = torch.topk(s, k=self.top_k, dim=-1, sorted=False)
         topk_weights = torch.gather(p, dim=-1, index=topk_idx)
