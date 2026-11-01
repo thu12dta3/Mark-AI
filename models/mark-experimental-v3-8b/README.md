@@ -1,6 +1,6 @@
 # Mark-Experimental-V3-8B
 
-8.17B parameter V3 flagship base featuring 32 layers, 32 routed experts, 2 shared experts, and top-4 routing.
+V3 architecture 8B class research model with 32 routed experts, 2 shared experts, and MLA.
 
 ## Forensic Binary Specifications (GGUFReader Verified)
 
@@ -9,14 +9,15 @@
 | Architecture | `deepseek2` |
 | Quantization Type | `IQ4_NL` (4-bit Non-Linear Weights, FP32 Norms/Bias) |
 | Container File | `mark_experimental_v3_8b_iq4_nl.gguf` |
-| File Size | `4382.55 MB` |
+| File Size | `4382.55 MiB (4595.44 MB / 4,595,438,848 bytes)` |
 | SHA-256 Checksum | `792e127a71f62145f87c3775c4a03a0dc7bb68b8ee355acb74602348cf748b4a` |
-| Total Parameters | `8.17B` (8,168,001,024 physical) |
-| Active Parameters / Token | `2.00B` (2,002,374,144 active) |
-| Total Tensors | `579` (`418` IQ4_NL, `161` FP32) |
-| Hidden Dimension (`dim`) | `2560` |
+| Total Parameters | `8,168,001,024` physical |
+| Active Parameters / Token | `2,002,374,144` active |
+| Total Tensors | `579` ({'IQ4_NL': 418, 'F32': 161}) |
+| 1D RMSNorm Precision | `100% FP32` |
+| Hidden Dimension (`hidden_size`) | `2560` |
 | Transformer Layers | `32` |
-| Attention Query Heads | `32` |
+| Attention Heads | `32` |
 | Multi-Head Latent Attention (MLA) | `q_lora_rank=1024`, `kv_lora_rank=512` |
 | MoE Routed Experts | `32` |
 | MoE Shared Experts | `2` |
@@ -24,25 +25,15 @@
 | MoE Intermediate Size | `896` |
 | Context Window | `32768` |
 | Vocabulary Size | `32032` |
-| Training Status | **Architectural Base / Untrained / Weight Initialization via He/Xavier + Hadamard Fusion (Ready for Pre-training or Fine-Tuning)** |
+| Weight State | `UN-TRAINED_ARCHITECTURAL_BASE` |
 
-## Quantization Details
+## Quantization Architecture
 
-This model is quantized in native non-linear 4-bit (`IQ4_NL`) according to ggml specifications:
-- 2D linear weight matrices and 3D MoE expert tensors are packed into 18-byte blocks for each 32 weights (2-byte FP16 scale + 16 bytes mapping to non-linear lookup table `kvalues_iq4nl = [-127, -104, -83, -65, -49, -35, -22, -10, 1, 13, 25, 38, 53, 69, 89, 113]`).
-- Normalization weights (`*_norm.weight`) and router bias (`exp_probs_b.bias`) are preserved in full precision `FP32`.
+This model is quantized in native non-linear 4-bit (`IQ4_NL`):
+- Linear weight matrices and 3D MoE expert tensors are quantized to 4-bit non-linear integer tables with FP16 scale factors per 32 weights.
+- All layer normalization tensors (`*_norm.weight`) and router biases are preserved in full precision `FP32`.
 
-## Usage & Deployment
-
-### llama.cpp
-
-```bash
-# Run CLI inference
-llama-cli -m mark_experimental_v3_8b_iq4_nl.gguf -p "System architecture analysis:" -n 256
-
-# Start local OpenAI-compatible server
-llama-server -m mark_experimental_v3_8b_iq4_nl.gguf --port 8080 -c 32768
-```
+## Local Deployment & Inference
 
 ### Ollama
 
@@ -51,43 +42,43 @@ Create a `Modelfile` containing:
 ```dockerfile
 FROM ./mark_experimental_v3_8b_iq4_nl.gguf
 
-TEMPLATE """<|im_start|>system
-{{ .System }}<|im_end|>
-<|im_start|>user
-{{ .Prompt }}<|im_end|>
-<|im_start|>assistant
+TEMPLATE """{{ if .System }}<|bos|>System: {{ .System }}<|eos|>
+{{ end }}{{ if .Prompt }}<|bos|>User: {{ .Prompt }}<|eos|>
+{{ end }}<|bos|>Assistant:
 <think>
 """
 
-PARAMETER stop "<|im_end|>"
-PARAMETER stop "<|endoftext|>"
+PARAMETER stop "<|eos|>"
 PARAMETER temperature 0.2
 PARAMETER top_p 0.95
+PARAMETER repeat_penalty 1.1
+
+SYSTEM """You are Mark-Experimental-V3-8B, a model built on native DeepSeek2 MoE and MLA architecture."""
 ```
 
-Register and execute:
+Build and run:
 
 ```bash
 ollama create mark-experimental-v3-8b -f Modelfile
 ollama run mark-experimental-v3-8b
 ```
 
-### Python (llama-cpp-python)
+### llama.cpp
 
-```python
-from llama_cpp import Llama
+```bash
+# Run CLI inference
+llama-cli -m mark_experimental_v3_8b_iq4_nl.gguf -p "<|bos|>System: You are an expert system.<|eos|>\n<|bos|>User: Status report?<|eos|>\n<|bos|>Assistant:\n<think>\n" -n 256
 
-llm = Llama(
-    model_path="mark_experimental_v3_8b_iq4_nl.gguf",
-    n_ctx=32768,
-    n_threads=8,
-)
+# Start local OpenAI-compatible server
+llama-server -m mark_experimental_v3_8b_iq4_nl.gguf --port 8080 -c 32768
+```
 
-response = llm.create_chat_completion(
-    messages=[
-        {"role": "system", "content": "You are a concise software engineering assistant."},
-        {"role": "user", "content": "Explain lock-free atomic CAS loops."},
-    ]
-)
-print(response["choices"][0]["message"]["content"])
+## Artifact Provenance & Verification Manifest
+
+This repository includes an auditable verification manifest: `gguf_verification_manifest.json`.
+
+To audit the binary checksum and vocabulary on your local machine:
+
+```bash
+sha256sum mark_experimental_v3_8b_iq4_nl.gguf && python3 -c "import gguf; r = gguf.GGUFReader('mark_experimental_v3_8b_iq4_nl.gguf'); print('vocab:', r.get_field('deepseek2.vocab_size').parts[-1].tolist()[0])"
 ```

@@ -1,0 +1,11 @@
+{
+  "model_name": "Mark-Engineer-V2-8B",
+  "version": "2.0.0",
+  "total_parameters": 8258809040,
+  "active_parameters_per_token": 1770745040,
+  "vocab_size": 49152,
+  "format": "IQ4_NL",
+  "size_formatted": "4431.26 MiB (4646.52 MB / 4,646,516,576 bytes)",
+  "sha256": "28c014b5b903f7e21ee9777ef743030c7a068111c923baeb33d5f05685e05400",
+  "weight_state": "UN-TRAINED_ARCHITECTURAL_BASE"
+}

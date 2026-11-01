@@ -5,9 +5,9 @@
   "model_type": "mark",
   "model_name": "Mark Engineer 1.5B",
   "model_version": "1.0.0",
-  "total_parameters": 1502301456,
-  "active_parameters_per_token": "315M (padrao) a 440M (top-4)",
-  "vocab_size": 4377,
+  "total_parameters": 1496121824,
+  "active_parameters_per_token": 364151264,
+  "vocab_size": 4311,
   "hidden_size": 1280,
   "intermediate_size": 3840,
   "num_hidden_layers": 16,
@@ -30,10 +30,17 @@
   "tie_word_embeddings": true,
   "torch_dtype": "bfloat16",
   "quantization": "IQ4_NL",
-  "target_platforms": ["LM Studio", "Ollama", "llama.cpp", "PyTorch"],
+  "target_platforms": [
+    "LM Studio",
+    "Ollama",
+    "llama.cpp",
+    "PyTorch"
+  ],
   "download": {
     "gguf_url": "https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-engineer-1.5b/mark_engineer_1_5b_iq4_nl.gguf",
     "pt_url": "https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-engineer-1.5b/mark_engineer_1_5b_iq4_nl.pt",
-    "sha256": "2e84c661c3b4a00165a3a21608effe25cb9c87e6b469cc709d793858667d7a16"
-  }
+    "sha256": "fa7d3061f33a20beaae5c2b85aceaf720c75b811efd8bceae0c57c57037e838e"
+  },
+  "weight_state": "TRAINED_CHECKPOINT_VALIDATED",
+  "sha256": "fa7d3061f33a20beaae5c2b85aceaf720c75b811efd8bceae0c57c57037e838e"
 }

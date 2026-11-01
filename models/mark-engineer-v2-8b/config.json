@@ -9,8 +9,8 @@
   "model_type": "mark_engineer_v2_8b",
   "model_name": "Mark Engineer V2 8B",
   "model_version": "2.0.0",
-  "total_parameters": 8005905408,
-  "active_parameters_per_token": 1626500000,
+  "total_parameters": 8258809040,
+  "active_parameters_per_token": 1770745040,
   "vocab_size": 49152,
   "hidden_size": 2560,
   "intermediate_size": 7680,
@@ -44,9 +44,9 @@
   "target_platforms": [
     "Ollama",
     "LM Studio",
-    "Transformers",
-    "vLLM"
+    "Transformers"
   ],
-  "evaluation_status": "TRAINED_BUT_UNTESTED",
-  "training_convergence_loss": 1.9047
+  "weight_state": "UN-TRAINED_ARCHITECTURAL_BASE",
+  "sha256": "28c014b5b903f7e21ee9777ef743030c7a068111c923baeb33d5f05685e05400",
+  "quantization": "IQ4_NL"
 }

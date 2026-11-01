@@ -1,5 +1,5 @@
 {
-  "vocab_size": 4311,
+  "vocab_size": 32000,
   "bos_token_id": 1,
   "eos_token_id": 2,
   "special_tokens": {
@@ -58,5 +58,30 @@
     "ar",
     "hi",
     "zh-Hans"
+  ],
+  "bos_token": "<|bos|>",
+  "eos_token": "<|eos|>",
+  "pad_token": "<|pad|>",
+  "pad_token_id": 0,
+  "model_max_length": 16384,
+  "chat_template": "{% for message in messages %}{% if message['role'] == 'system' %}<|bos|>System: {{ message['content'] }}<|eos|>\n{% elif message['role'] == 'user' %}<|bos|>User: {{ message['content'] }}<|eos|>\n{% elif message['role'] == 'assistant' %}<|bos|>Assistant: {% if message['content'] %}{{ message['content'] }}<|eos|>\n{% endif %}{% endif %}{% endfor %}{% if add_generation_prompt %}<|bos|>Assistant:\n<think>\n{% endif %}",
+  "additional_special_tokens": [
+    "<think>",
+    "</think>",
+    "[RETRIEVE]",
+    "[/RETRIEVE]",
+    "[EVALUATE]",
+    "[ACCEPT]",
+    "[REJECT]",
+    "<|vision_start|>",
+    "<|vision_patch|>",
+    "<|vision_end|>",
+    "<|voice_stream|>",
+    "<|rag_context|>",
+    "<|/rag_context|>",
+    "<|mcp_call|>",
+    "<|mcp_response|>",
+    "<|citation|>",
+    "<|/citation|>"
   ]
 }

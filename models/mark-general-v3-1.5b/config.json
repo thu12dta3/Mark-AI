@@ -28,5 +28,15 @@
   "rms_norm_eps": 1e-06,
   "tie_word_embeddings": true,
   "torch_dtype": "bfloat16",
-  "quantization": "IQ4_NL"
+  "quantization": "IQ4_NL",
+  "total_parameters": 1520496960,
+  "active_parameters_per_token": 405729600,
+  "weight_state": "UN-TRAINED_ARCHITECTURAL_BASE",
+  "sha256": "7677ebd44467eecba594c2f41e8a9031590c3fdbb692089011eee7578c87c55f",
+  "target_platforms": [
+    "Ollama",
+    "LM Studio",
+    "llama.cpp",
+    "PyTorch"
+  ]
 }

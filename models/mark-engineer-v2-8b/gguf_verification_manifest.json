@@ -1,0 +1,72 @@
+{
+  "model_id": "mark-engineer-v2-8b",
+  "model_name": "Mark-Engineer-V2-8B",
+  "weight_state": "UN-TRAINED_ARCHITECTURAL_BASE",
+  "provenance": {
+    "gguf_file": "mark_engineer_v2_8b_iq4_nl.gguf",
+    "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v2_8b_iq4_nl.gguf",
+    "sha256": "28c014b5b903f7e21ee9777ef743030c7a068111c923baeb33d5f05685e05400",
+    "sha256_match_config": true,
+    "size_bytes": 4646516576,
+    "size_mib": 4431.26,
+    "size_mb": 4646.52,
+    "size_formatted": "4431.26 MiB (4646.52 MB / 4,646,516,576 bytes)",
+    "quantization": "IQ4_NL"
+  },
+  "tensor_architecture": {
+    "total_tensors": 569,
+    "tensor_types": {
+      "IQ4_NL": 410,
+      "F32": 159
+    },
+    "all_1d_norms_fp32": true,
+    "physical_total_parameters": 8258809040,
+    "physical_active_parameters": 1770745040,
+    "total_parameters_formatted": "8,258,809,040",
+    "active_parameters_formatted": "1,770,745,040"
+  },
+  "vocabulary_alignment": {
+    "gguf_vocab_size": 49152,
+    "config_vocab_size": 49152,
+    "tokenizer_config_vocab_size": 49152,
+    "tokenizer_json_vocab_len": 49152,
+    "vocab_equality_verified": true,
+    "bos_token": "<|bos|>",
+    "eos_token": "<|eos|>",
+    "pad_token": "<|pad|>",
+    "special_tokens_verified": true
+  },
+  "modelfile_alignment": {
+    "stop_token": "<|eos|>",
+    "no_unregistered_tokens": true,
+    "uses_bos_eos_delimiters": true
+  },
+  "runtime_forward_pass_test": {
+    "pytorch_class": "MarkEngineerV2Model",
+    "input_tokens": [
+      1,
+      3,
+      25,
+      4,
+      2
+    ],
+    "input_decoded": [
+      "<|bos|>",
+      "<think>",
+      "token_25",
+      "</think>",
+      "<|eos|>"
+    ],
+    "output_shape": [
+      1,
+      5,
+      49152
+    ],
+    "finite_logits": true,
+    "greedy_token_id": 23846,
+    "eos_token_id": 2,
+    "eos_handling_verified": true,
+    "status": "PASS"
+  },
+  "audit_command": "sha256sum mark_engineer_v2_8b_iq4_nl.gguf && python3 -c \"import gguf; r = gguf.GGUFReader('mark_engineer_v2_8b_iq4_nl.gguf'); print('vocab:', r.get_field('deepseek2.vocab_size').parts[-1].tolist()[0])\""
+}

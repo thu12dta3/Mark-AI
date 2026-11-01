@@ -6,8 +6,8 @@
   "model_name": "MarkVL 2.2B Dense Visual Perception Engine",
   "model_version": "1.0.0",
   "specialization": "Dense Visual Description, High-Resolution OCR, FACS Facial Decoding, and Random Object Identification",
-  "total_parameters": 2222269696,
-  "active_parameters_per_token": "313.5M FLOPs (Top-2 routed + 1 shared)",
+  "total_parameters": 2174310096,
+  "active_parameters_per_token": 395499216,
   "vocab_size": 32000,
   "hidden_size": 1280,
   "intermediate_size": 3840,
@@ -25,7 +25,10 @@
   "moe_intermediate_size": 1504,
   "vision": {
     "enabled": true,
-    "max_resolution": [2048, 2048],
+    "max_resolution": [
+      2048,
+      2048
+    ],
     "patch_size": 14,
     "dim": 768,
     "layers": 8,
@@ -41,12 +44,19 @@
   "tie_word_embeddings": true,
   "torch_dtype": "bfloat16",
   "quantization": "IQ4_NL",
-  "target_platforms": ["LM Studio", "Ollama", "llama.cpp", "PyTorch"],
+  "target_platforms": [
+    "LM Studio",
+    "Ollama",
+    "llama.cpp",
+    "PyTorch"
+  ],
   "target_hardware": {
     "gpu": "NVIDIA GeForce RTX 2060 Super",
     "vram_capacity_gb": 8.0,
     "model_vram_gb": 1.85,
     "free_vram_gb": 6.15,
     "tokens_per_second": "95 - 125 t/s"
-  }
+  },
+  "weight_state": "TRAINED_CHECKPOINT_VALIDATED",
+  "sha256": "073d3c00eaadfb98ef7c8b5276e355db134b4b1282ea74d8ce3d6116535cf354"
 }

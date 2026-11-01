@@ -26,7 +26,7 @@ class MarkEngineerV2_8BConfig(PretrainedConfig):
         n_shared_experts: int = 1,
         n_routed_experts: int = 24,
         num_experts_per_tok: int = 2,
-        moe_intermediate_size: int = 1254,
+        moe_intermediate_size: int = 1280,
         router_bias_update_rate: float = 1e-3,
         mtp_depth: int = 1,
         mtp_loss_weight: float = 0.3,

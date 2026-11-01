@@ -5,8 +5,8 @@
   "model_type": "mark",
   "model_name": "Mark Engineer 300M",
   "model_version": "1.0.0",
-  "total_parameters": 302019848,
-  "active_parameters_per_token": "110M (padrao) a 165M (top-4)",
+  "total_parameters": 251452416,
+  "active_parameters_per_token": 119331840,
   "vocab_size": 4311,
   "hidden_size": 1024,
   "intermediate_size": 3072,
@@ -33,6 +33,14 @@
   "download": {
     "gguf_url": "https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-302m/mark_engineer_302m.gguf",
     "pt_url": "https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-302m/mark_engineer_302m_iq4_nl.pt",
-    "sha256": "daf05dd0dab4fc90f620d959cb6e5731c49b3f3c4ddce0ff28765e0751075fd9"
-  }
+    "sha256": "5e9d7d6feb9bc0b6ad5da98e444e3e083a1936e58ad6091230ee674d1ef714b0"
+  },
+  "weight_state": "TRAINED_CHECKPOINT_VALIDATED",
+  "sha256": "5e9d7d6feb9bc0b6ad5da98e444e3e083a1936e58ad6091230ee674d1ef714b0",
+  "target_platforms": [
+    "Ollama",
+    "LM Studio",
+    "llama.cpp",
+    "PyTorch"
+  ]
 }

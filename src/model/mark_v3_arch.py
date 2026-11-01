@@ -85,6 +85,32 @@ class MarkV3Config:
         )
 
     @classmethod
+    def create_v3_1_1b(cls) -> 'MarkV3Config':
+        return cls(
+            model_name='Mark-V3-1.1B',
+            vocab_size=32032,
+            hidden_size=1152,
+            num_hidden_layers=18,
+            num_attention_heads=18,
+            num_key_value_heads=18,
+            intermediate_size=3072,
+            q_lora_rank=384,
+            kv_lora_rank=256,
+            qk_nope_head_dim=64,
+            qk_rope_head_dim=64,
+            v_head_dim=64,
+            n_routed_experts=32,
+            num_experts_per_tok=4,
+            n_shared_experts=2,
+            moe_intermediate_size=512,
+            tie_word_embeddings=True,
+            max_position_embeddings=32768,
+            original_max_position_embeddings=4096,
+            rope_theta=10000.0,
+            rope_scaling_factor=8.0,
+        )
+
+    @classmethod
     def create_general_v3_1_5b(cls) -> 'MarkV3Config':
         return cls(
             model_name='Mark-General-V3-1.5B',

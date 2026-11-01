@@ -5,8 +5,8 @@
   "model_type": "mark",
   "model_name": "Mark General 1.5B",
   "model_version": "1.0.0",
-  "total_parameters": 1502301456,
-  "active_parameters_per_token": "315M (padrao) a 440M (top-4)",
+  "total_parameters": 1496185824,
+  "active_parameters_per_token": 364215264,
   "vocab_size": 4377,
   "hidden_size": 1280,
   "intermediate_size": 3840,
@@ -30,10 +30,17 @@
   "tie_word_embeddings": true,
   "torch_dtype": "bfloat16",
   "quantization": "IQ4_NL",
-  "target_platforms": ["LM Studio", "Ollama", "llama.cpp", "PyTorch"],
+  "target_platforms": [
+    "LM Studio",
+    "Ollama",
+    "llama.cpp",
+    "PyTorch"
+  ],
   "download": {
     "gguf_url": "https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-general-1.5b/mark_general_1_5b_iq4_nl.gguf",
     "pt_url": "https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-general-1.5b/mark_general_1_5b_iq4_nl.pt",
-    "sha256": "6f6c7d8ca470829325b6a1e8162689f41746a7a2817f520ef8cb7a1fef7c4087"
-  }
+    "sha256": "4f2be0d7c3445333c3b35f4ff1ec5d4303de3cfbe6d1b6a01a2dd8efa09fab4b"
+  },
+  "weight_state": "TRAINED_CHECKPOINT_VALIDATED",
+  "sha256": "4f2be0d7c3445333c3b35f4ff1ec5d4303de3cfbe6d1b6a01a2dd8efa09fab4b"
 }

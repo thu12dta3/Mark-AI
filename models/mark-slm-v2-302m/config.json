@@ -33,5 +33,16 @@
   "auto_map": {
     "AutoConfig": "configuration_mark_slm_v2.MarkSLMV2Config",
     "AutoModelForCausalLM": "modeling_mark_slm_v2.MarkSLMV2ForCausalLM"
-  }
+  },
+  "total_parameters": 329132000,
+  "active_parameters_per_token": 155723744,
+  "weight_state": "TRAINED_CHECKPOINT_VALIDATED",
+  "sha256": "388237d49ea776c955851e575bb15e30a63b3e8218fda3d23cd690188bbb6b3a",
+  "quantization": "IQ4_NL",
+  "target_platforms": [
+    "Ollama",
+    "LM Studio",
+    "llama.cpp",
+    "PyTorch"
+  ]
 }

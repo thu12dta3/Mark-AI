@@ -1,0 +1,12 @@
+{
+  "model_name": "Mark-VL-2.2B",
+  "version": "1.0.0",
+  "total_parameters": 2174310096,
+  "active_parameters_per_token": 395499216,
+  "vocab_size": 32000,
+  "format": "IQ4_NL",
+  "size_formatted": "1166.72 MiB (1223.40 MB / 1,223,397,152 bytes)",
+  "sha256": "073d3c00eaadfb98ef7c8b5276e355db134b4b1282ea74d8ce3d6116535cf354",
+  "weight_state": "TRAINED_CHECKPOINT_VALIDATED",
+  "multimodal_projector": "mmproj_mark_vl_2_2b.gguf"
+}

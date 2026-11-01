@@ -1,0 +1,72 @@
+{
+  "model_id": "mark-vl-2.2b",
+  "model_name": "Mark-VL-2.2B",
+  "weight_state": "TRAINED_CHECKPOINT_VALIDATED",
+  "provenance": {
+    "gguf_file": "mark_vl_2_2b_iq4_nl.gguf",
+    "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_vl_2_2b_iq4_nl.gguf",
+    "sha256": "073d3c00eaadfb98ef7c8b5276e355db134b4b1282ea74d8ce3d6116535cf354",
+    "sha256_match_config": true,
+    "size_bytes": 1223397152,
+    "size_mib": 1166.72,
+    "size_mb": 1223.4,
+    "size_formatted": "1166.72 MiB (1223.40 MB / 1,223,397,152 bytes)",
+    "quantization": "IQ4_NL"
+  },
+  "tensor_architecture": {
+    "total_tensors": 255,
+    "tensor_types": {
+      "IQ4_NL": 184,
+      "F32": 71
+    },
+    "all_1d_norms_fp32": true,
+    "physical_total_parameters": 2174310096,
+    "physical_active_parameters": 395499216,
+    "total_parameters_formatted": "2,174,310,096",
+    "active_parameters_formatted": "395,499,216"
+  },
+  "vocabulary_alignment": {
+    "gguf_vocab_size": 32000,
+    "config_vocab_size": 32000,
+    "tokenizer_config_vocab_size": 32000,
+    "tokenizer_json_vocab_len": 32000,
+    "vocab_equality_verified": true,
+    "bos_token": "<|bos|>",
+    "eos_token": "<|eos|>",
+    "pad_token": "<|pad|>",
+    "special_tokens_verified": true
+  },
+  "modelfile_alignment": {
+    "stop_token": "<|eos|>",
+    "no_unregistered_tokens": true,
+    "uses_bos_eos_delimiters": true
+  },
+  "runtime_forward_pass_test": {
+    "pytorch_class": "MarkVLForCausalLM",
+    "input_tokens": [
+      1,
+      3,
+      25,
+      4,
+      2
+    ],
+    "input_decoded": [
+      "<|bos|>",
+      "<think>",
+      "token_25",
+      "</think>",
+      "<|eos|>"
+    ],
+    "output_shape": [
+      1,
+      5,
+      32000
+    ],
+    "finite_logits": true,
+    "greedy_token_id": 2,
+    "eos_token_id": 2,
+    "eos_handling_verified": true,
+    "status": "PASS"
+  },
+  "audit_command": "sha256sum mark_vl_2_2b_iq4_nl.gguf && python3 -c \"import gguf; r = gguf.GGUFReader('mark_vl_2_2b_iq4_nl.gguf'); print('vocab:', r.get_field('deepseek2.vocab_size').parts[-1].tolist()[0])\""
+}

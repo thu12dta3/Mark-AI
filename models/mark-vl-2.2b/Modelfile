@@ -1,17 +1,15 @@
 FROM ./mark_vl_2_2b_iq4_nl.gguf
+ADAPTER ./mmproj_mark_vl_2_2b.gguf
 
-TEMPLATE """<|im_start|>system
-{{ .System }}<|im_end|>
-<|im_start|>user
-{{ .Prompt }}<|im_end|>
-<|im_start|>assistant
+TEMPLATE """{{ if .System }}<|bos|>System: {{ .System }}<|eos|>
+{{ end }}{{ if .Prompt }}<|bos|>User: {{ .Prompt }}<|eos|>
+{{ end }}<|bos|>Assistant:
 <think>
 """
 
-PARAMETER stop "<|im_end|>"
-PARAMETER stop "<|endoftext|>"
+PARAMETER stop "<|eos|>"
 PARAMETER temperature 0.2
 PARAMETER top_p 0.95
 PARAMETER repeat_penalty 1.1
 
-SYSTEM """You are Mark-VL-2.2B, a language model built on native DeepSeek2 MoE and MLA architecture."""
+SYSTEM """You are Mark-VL-2.2B, a multimodal vision-language model built on native DeepSeek2 MoE and MLA architecture."""

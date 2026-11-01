@@ -29,5 +29,15 @@
   "tie_word_embeddings": true,
   "torch_dtype": "bfloat16",
   "quantization": "IQ4_NL",
-  "specialization": "low-level software engineering, Rust, C++, Linux, Assembly"
+  "specialization": "low-level software engineering, Rust, C++, Linux, Assembly",
+  "total_parameters": 1520496960,
+  "active_parameters_per_token": 405729600,
+  "weight_state": "UN-TRAINED_ARCHITECTURAL_BASE",
+  "sha256": "62b8bd003adcd0780a967faca7163f98e79334809fae2effea5e7f55d4c9bfe4",
+  "target_platforms": [
+    "Ollama",
+    "LM Studio",
+    "llama.cpp",
+    "PyTorch"
+  ]
 }

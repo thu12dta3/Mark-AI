@@ -1,15 +1,12 @@
 FROM ./mark_engineer_v2_8b_iq4_nl.gguf
 
-TEMPLATE """<|im_start|>system
-{{ .System }}<|im_end|>
-<|im_start|>user
-{{ .Prompt }}<|im_end|>
-<|im_start|>assistant
+TEMPLATE """{{ if .System }}<|bos|>System: {{ .System }}<|eos|>
+{{ end }}{{ if .Prompt }}<|bos|>User: {{ .Prompt }}<|eos|>
+{{ end }}<|bos|>Assistant:
 <think>
 """
 
-PARAMETER stop "<|im_end|>"
-PARAMETER stop "<|endoftext|>"
+PARAMETER stop "<|eos|>"
 PARAMETER temperature 0.2
 PARAMETER top_p 0.95
 PARAMETER repeat_penalty 1.1
