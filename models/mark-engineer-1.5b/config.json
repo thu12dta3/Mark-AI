@@ -34,6 +34,6 @@
   "download": {
     "gguf_url": "https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-engineer-1.5b/mark_engineer_1_5b_iq4_nl.gguf",
     "pt_url": "https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-engineer-1.5b/mark_engineer_1_5b_iq4_nl.pt",
-    "sha256": "b89e7c51480f27918ca193f40e325141ef31174092b774e1d9361be92d472280"
+    "sha256": "2e84c661c3b4a00165a3a21608effe25cb9c87e6b469cc709d793858667d7a16"
   }
 }

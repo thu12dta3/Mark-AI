@@ -1,0 +1,17 @@
+FROM ./mark_slm_v2_302m.gguf
+
+TEMPLATE """<|im_start|>system
+{{ .System }}<|im_end|>
+<|im_start|>user
+{{ .Prompt }}<|im_end|>
+<|im_start|>assistant
+<think>
+"""
+
+PARAMETER stop "<|im_end|>"
+PARAMETER stop "<|endoftext|>"
+PARAMETER temperature 0.2
+PARAMETER top_p 0.95
+PARAMETER repeat_penalty 1.1
+
+SYSTEM """Voce e o Mark-SLM-V2-302M, um modelo compacto de raciocinio analitico, matematica e sistemas baseado em DeepSeek2 MoE nativo com Multi-Head Latent Attention (MLA)."""
