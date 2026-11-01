@@ -24,34 +24,39 @@ Sparse Transformer architectures (Multi-Head Latent Attention + fine-grained Mix
 
 Standard Multi-Head Attention (MHA) creates a memory bottleneck during long-context generation due to linear expansion of stored Key-Value caches. Mark AI implements Multi-Head Latent Attention (MLA), projecting keys and values into a shared low-rank latent representation:
 
-$$\mathbf{c}_t^{KV} = W^{DKV} \mathbf{h}_t \quad (\mathbf{c}_t^{KV} \in \mathbb{R}^{d_{cKV}})$$
-
-$$\mathbf{c}_t^Q = W^{DQ} \mathbf{h}_t \quad (\mathbf{c}_t^Q \in \mathbb{R}^{d_{cQ}})$$
-
-$$\mathbf{q}_t^C = \text{RMSNorm}(W^{UQ} \mathbf{c}_t^Q), \quad \mathbf{k}_t^C = \text{RMSNorm}(W^{UK} \mathbf{c}_t^{KV})$$
+```text
+c_KV = h_t * W_DKV          (dim: kv_lora_rank)
+c_Q  = h_t * W_DQ           (dim: q_lora_rank)
+q_C  = RMSNorm(c_Q * W_UQ)
+k_C  = RMSNorm(c_KV * W_UK)
+```
 
 To maintain positional awareness without expanding the cached latent vector, decoupled rotary position embeddings are concatenated along a separate dimension:
 
-$$\mathbf{k}_t^R = \text{RoPE}(W^{KR} \mathbf{h}_t), \quad \mathbf{q}_{t, i} = [\mathbf{q}_{t, i}^C; \mathbf{q}_{t, i}^R], \quad \mathbf{k}_{t, i} = [\mathbf{k}_{t, i}^C; \mathbf{k}_t^R]$$
+```text
+k_R  = RoPE(h_t * W_KR)     (dim: qk_rope_head_dim)
+q_t  = [q_C ; q_R]
+k_t  = [k_C ; k_R]
+```
 
 In the V3 series, **Hadamard-MLA (H-MLA)** suppresses latent activation outliers by absorbing the normalized Walsh-Hadamard transformation:
 
-$$\mathbf{H}_{256} = \frac{1}{16} \mathbf{H}_2^{\otimes 8}$$
+`H_256 = (1/16) * H_2^(x8)`, `W_fused = H_256 * W_proj`
 
-directly into the offline projection weights ($W_{wkv_a}$ and $W_{wkv_b}$), eliminating activation spikes without adding runtime execution overhead.
+directly into the offline projection weights (`W_wkv_a` and `W_wkv_b`), eliminating activation spikes without adding runtime execution overhead.
 
 ### Mixture-of-Experts (DeepSeekMoE & PB-MoE)
 
 To decouple parameter scale from inference compute costs, feed-forward layers are partitioned into fine-grained specialists:
-- **Shared Experts**: Fixed shared pathways capture common language representations across tokens.
-- **Routed Experts**: Activated dynamically via top-$K$ gating with learned Aux-Loss-Free router biases ($s_{t, e} = \text{Softmax}(\mathbf{x}_t W_{\text{router}} + \mathbf{b}_e)$).
+- **Shared Experts**: Fixed shared pathways capture common language representations across tokens (`F_shared(x) = (SiLU(x * W_gate) * (x * W_up)) * W_down`).
+- **Routed Experts**: Activated dynamically via top-K gating with learned Aux-Loss-Free router biases (`s_{t,e} = Softmax(x_t * W_router + b_e)` and `y = x + F_shared(x) + sum_{i in TopK} g_i * F_routed_i(x)`).
 - **Domain Clan Partitioning (V3)**: Experts are partitioned into 4 distinct functional clans (Systems/Code, STEM/Logic, Security/Sentinel, Multimodal) with soft-pinning constraints ensuring balanced domain representation per token.
 
 ### Epistemic Self-RAG
 
 The architecture incorporates an epistemic evaluation module (`src/model/self_rag.py`). By monitoring token-level prediction entropy:
 
-$$H(X) = -\sum_{i=1}^{V} P(x_i) \log_2 P(x_i)$$
+`H(p) = -sum(p_i * log2(p_i))`
 
 the model detects uncertainty spikes, triggering structured `<think>` reasoning paths before finalizing output tokens.
 
@@ -64,7 +69,7 @@ The models preserve native 3D tensor layouts (`blk.{i}.ffn_gate_exps.weight`, `b
 ### Super-Block Structure (GGML_TYPE_IQ4_NL)
 
 - Linear weight matrices are compressed into 18-byte blocks per 32 weights:
-  - 2 bytes: Half-precision scale factor $d$.
+  - 2 bytes: Half-precision scale factor `d`.
   - 16 bytes: 32 four-bit nibbles mapped onto the non-linear 16-level quantization grid:
     `[-127, -104, -83, -65, -49, -35, -22, -10, 1, 13, 25, 38, 53, 69, 89, 113]`
 - 1D RMSNorm tensors and router bias vectors remain in full precision `FP32`, ensuring numerical stability at layer boundaries.

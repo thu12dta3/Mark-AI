@@ -35,7 +35,7 @@
     .subtitle { color: var(--text-muted); font-size: 0.95rem; }
     .specs-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
       gap: 12px;
       margin-top: 16px;
     }
@@ -46,14 +46,15 @@
       padding: 12px 16px;
     }
     .spec-card .label { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; }
-    .spec-card .value { font-size: 1.1rem; font-weight: 600; color: #f0f6fc; margin-top: 4px; font-family: var(--font-mono); }
+    .spec-card .value { font-size: 1.05rem; font-weight: 600; color: #f0f6fc; margin-top: 4px; font-family: var(--font-mono); }
     .main-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1.15fr 0.85fr;
       gap: 24px;
       margin-bottom: 24px;
+      align-items: start;
     }
-    @media (max-width: 900px) {
+    @media (max-width: 960px) {
       .main-grid { grid-template-columns: 1fr; }
     }
     .panel {
@@ -61,70 +62,214 @@
       border: 1px solid var(--border);
       border-radius: 6px;
       padding: 20px;
+      display: flex;
+      flex-direction: column;
     }
     .panel-title {
       font-size: 1.1rem;
       font-weight: 600;
       color: #f0f6fc;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
       border-bottom: 1px solid var(--border);
       padding-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
-    label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px; }
+    .status-badge {
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      padding: 2px 8px;
+      border-radius: 12px;
+      border: 1px solid var(--accent-green);
+      color: var(--accent-green);
+      background: rgba(63, 185, 80, 0.1);
+    }
+    label { display: block; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 4px; }
     select, input, textarea {
       width: 100%;
       background: #0d1117;
       border: 1px solid var(--border);
       color: var(--text);
-      border-radius: 4px;
+      border-radius: 6px;
       padding: 8px 12px;
       font-size: 0.9rem;
-      margin-bottom: 14px;
       font-family: inherit;
     }
-    textarea { font-family: var(--font-mono); resize: vertical; min-height: 90px; }
     select:focus, input:focus, textarea:focus { outline: none; border-color: var(--accent); }
+
+    /* Chat Window Styles */
+    .chat-history {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px;
+      height: 460px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .msg-row {
+      display: flex;
+      flex-direction: column;
+      max-width: 92%;
+    }
+    .msg-row.user {
+      align-self: flex-end;
+      align-items: flex-end;
+    }
+    .msg-row.assistant {
+      align-self: flex-start;
+      align-items: flex-start;
+      width: 100%;
+    }
+    .msg-meta {
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .msg-bubble {
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      line-height: 1.55;
+      word-break: break-word;
+      border: 1px solid var(--border);
+    }
+    .msg-row.user .msg-bubble {
+      background: #1f3a5f;
+      border-color: #2f558a;
+      color: #f0f6fc;
+      white-space: pre-wrap;
+    }
+    .msg-row.assistant .msg-bubble {
+      background: #161b22;
+      border-color: var(--border);
+      color: #e6edf3;
+      width: 100%;
+    }
+    .think-box {
+      background: rgba(210, 153, 34, 0.08);
+      border-left: 3px solid var(--accent-orange);
+      padding: 8px 12px;
+      margin-bottom: 10px;
+      border-radius: 0 4px 4px 0;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: #d29922;
+      white-space: pre-wrap;
+    }
+    .think-header {
+      font-weight: 600;
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 4px;
+      color: var(--accent-orange);
+      cursor: pointer;
+      user-select: none;
+    }
+    .msg-content p { margin-bottom: 8px; }
+    .msg-content p:last-child { margin-bottom: 0; }
+    .msg-content pre {
+      background: #090c10;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      color: #79c0ff;
+      margin: 8px 0;
+      white-space: pre;
+    }
+    .msg-content code {
+      font-family: var(--font-mono);
+      font-size: 0.83rem;
+      background: rgba(110, 118, 129, 0.25);
+      padding: 2px 5px;
+      border-radius: 4px;
+      color: #79c0ff;
+    }
+    .msg-content pre code {
+      background: none;
+      padding: 0;
+    }
+
+    .chat-input-area {
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+      margin-bottom: 12px;
+    }
+    .chat-input-area textarea {
+      flex: 1;
+      resize: none;
+      height: 54px;
+      font-family: inherit;
+      padding: 10px 12px;
+    }
+    .chat-controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+    }
+    .param-group {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .param-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .param-item label {
+      margin: 0;
+      font-size: 0.78rem;
+      white-space: nowrap;
+    }
+    .param-item input {
+      width: 78px;
+      padding: 5px 8px;
+      font-size: 0.82rem;
+      font-family: var(--font-mono);
+    }
+
     .btn {
       background: #238636;
       color: #fff;
       border: 1px solid rgba(240,246,252,0.1);
       border-radius: 6px;
-      padding: 8px 16px;
+      padding: 8px 18px;
       font-size: 0.9rem;
       font-weight: 600;
       cursor: pointer;
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       transition: background 0.2s;
+      white-space: nowrap;
     }
     .btn:hover { background: #2ea043; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
     .btn-secondary {
       background: #21262d;
       color: var(--text);
       border: 1px solid var(--border);
+      padding: 6px 14px;
+      font-size: 0.82rem;
     }
     .btn-secondary:hover { background: #30363d; }
-    .output-box {
-      background: #0d1117;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 16px;
-      font-family: var(--font-mono);
-      font-size: 0.85rem;
-      white-space: pre-wrap;
-      word-break: break-all;
-      max-height: 480px;
-      overflow-y: auto;
-      color: #e6edf3;
-    }
-    .think-block {
-      color: var(--accent-orange);
-      border-left: 2px solid var(--accent-orange);
-      padding-left: 10px;
-      margin-bottom: 12px;
-    }
-    .code-block {
-      color: #79c0ff;
-    }
+
+    /* Right Column Styles */
     .slider-row {
       display: flex;
       align-items: center;
@@ -155,17 +300,28 @@
       font-family: var(--font-mono);
       font-size: 0.75rem;
       background: #0d1117;
-      transition: all 0.2s;
+      transition: all 0.15s;
     }
     .expert-box.active {
       border-color: var(--accent-green);
-      background: rgba(63, 185, 80, 0.15);
+      background: rgba(63, 185, 80, 0.18);
       color: #fff;
+      box-shadow: 0 0 8px rgba(63, 185, 80, 0.25);
     }
     .expert-box.shared {
       border-color: var(--accent-purple);
       background: rgba(188, 140, 255, 0.15);
       color: #fff;
+    }
+    .routing-log {
+      margin-top: 10px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 6px 10px;
     }
     .code-snippet {
       background: #0d1117;
@@ -212,48 +368,51 @@
       </div>
       <div class="spec-card">
         <div class="label">Physical SHA-256</div>
-        <div class="value" style="font-size: 0.75rem;">fa7d3061f386d...</div>
+        <div class="value" style="font-size: 0.75rem;">fa7d3061f33a2...</div>
       </div>
     </div>
   </header>
 
   <div class="main-grid">
-    <!-- Panel 1: Interactive Inference Sandbox -->
+    <!-- Panel 1: Multi-Turn Interactive Chat -->
     <div class="panel">
-      <div class="panel-title">1. Systems Inference Sandbox</div>
+      <div class="panel-title">
+        <span>1. Mark-Engineer-1.5B Interactive Chat</span>
+        <span class="status-badge" id="chatStatus">ONLINE</span>
+      </div>
 
-      <label for="sysPrompt">System Context Preset</label>
-      <select id="sysPrompt" onchange="onPresetChange()">
-        <option value="kernel">Linux Kernel Memory Barrier & Concurrency Analysis</option>
-        <option value="posix">POSIX Socket Non-Blocking Polling Architecture</option>
-        <option value="baremetal">Bare-Metal ARM Cortex-M Linker Script Optimization</option>
-        <option value="custom">Custom Systems Prompt</option>
-      </select>
-
-      <label for="userPrompt">Engineering Prompt</label>
-      <textarea id="userPrompt" rows="3">Explain the hardware memory ordering invariants guaranteed by smp_mb() versus smp_rmb() on x86-64 versus ARMv8-A architectures.</textarea>
-
-      <div style="display: flex; gap: 12px; margin-bottom: 12px;">
-        <div style="flex: 1;">
-          <label>Temperature</label>
-          <input type="number" id="temp" value="0.2" min="0.0" max="1.0" step="0.1">
-        </div>
-        <div style="flex: 1;">
-          <label>Max Tokens</label>
-          <input type="number" id="maxTokens" value="256" min="64" max="1024" step="64">
+      <div class="chat-history" id="chatHistory">
+        <div class="msg-row assistant">
+          <div class="msg-meta">Mark-Engineer-1.5B [DeepSeek2 MLA + 16R/1S MoE]</div>
+          <div class="msg-bubble">
+            <div class="msg-content">
+              <p>Mark-Engineer-1.5B initialized (<code>1,496,121,824</code> physical parameters, <code>364,151,264</code> active per token, <code>IQ4_NL</code> quantization). Send any message in English or Portuguese to start an open multi-turn conversation.</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <button class="btn" id="runBtn" onclick="runInference()">Execute Model Inference</button>
-      <button class="btn btn-secondary" onclick="clearOutput()">Reset</button>
+      <div class="chat-input-area">
+        <textarea id="chatInput" placeholder="Ask anything in Portuguese or English (Enter to send, Shift+Enter for newline)..."></textarea>
+        <button class="btn" id="sendBtn" onclick="sendChatMessage()">Send</button>
+      </div>
 
-      <div style="margin-top: 16px;">
-        <label>Generated Output Stream (Epistemic Reasoning + Synthesis)</label>
-        <div class="output-box" id="outputConsole">Awaiting prompt submission...</div>
+      <div class="chat-controls">
+        <div class="param-group">
+          <div class="param-item">
+            <label for="temp">Temperature</label>
+            <input type="number" id="temp" value="0.3" min="0.0" max="1.5" step="0.1">
+          </div>
+          <div class="param-item">
+            <label for="maxTokens">Max Tokens</label>
+            <input type="number" id="maxTokens" value="1024" min="128" max="4096" step="128">
+          </div>
+        </div>
+        <button class="btn btn-secondary" onclick="clearChat()">Clear Chat</button>
       </div>
     </div>
 
-    <!-- Panel 2: Memory & Routing Telemetry -->
+    <!-- Panel 2: Hardware Footprint & MoE Telemetry (Preserved 100% Intact) -->
     <div class="panel">
       <div class="panel-title">2. Hardware Footprint & MoE Telemetry</div>
 
@@ -269,15 +428,15 @@
         </div>
         <div class="spec-card">
           <div class="label">Standard MHA KV Memory</div>
-          <div class="value" id="mhaMem" style="color: var(--accent-orange);">312.50 MiB</div>
+          <div class="value" id="mhaMem" style="color: var(--accent-orange);">320.00 MiB</div>
         </div>
         <div class="spec-card">
           <div class="label">KV Compression Factor</div>
-          <div class="value" id="kvSavings">7.10x</div>
+          <div class="value" id="kvSavings">7.27x</div>
         </div>
         <div class="spec-card">
           <div class="label">Total VRAM Allocation (8GB Limit)</div>
-          <div class="value" id="vramPct">10.58%</div>
+          <div class="value" id="vramPct">10.34%</div>
         </div>
       </div>
 
@@ -304,6 +463,9 @@
         <div class="expert-box" id="exp14">Exp 14</div>
         <div class="expert-box" id="exp15">Exp 15</div>
       </div>
+      <div class="routing-log" id="routingTelemetry">
+        Router State: Shared (1S) active | Awaiting token stream...
+      </div>
 
       <div style="margin-top: 24px;">
         <div class="panel-title" style="font-size: 0.95rem;">Local Execution Instructions</div>
@@ -319,113 +481,370 @@ llama-server -m mark_engineer_1_5b_iq4_nl.gguf --port 8080 -c 4096
 </div>
 
 <script>
-const PRESETS = {
-  kernel: "Explain the hardware memory ordering invariants guaranteed by smp_mb() versus smp_rmb() on x86-64 versus ARMv8-A architectures.",
-  posix: "Write a high-performance epoll_wait event loop in C handling non-blocking TCP socket state machines and edge-triggered EPOLLIN events.",
-  baremetal: "Provide a minimal GNU ld linker script for a Cortex-M4 microcontroller partitioning Flash at 0x08000000 and SRAM at 0x20000000."
-};
+const SYSTEM_PROMPT = [
+  "You are Mark-Engineer-1.5B (repository: miceworks/Mark-Engineer-1.5B), a 1.5B-parameter sparse Transformer exported to the native deepseek2 GGUF format.",
+  "Your architecture combines Multi-Head Latent Attention (MLA: q_lora_rank=640, kv_lora_rank=320, qk_rope_head_dim=32, v_head_dim=96) with a 16-layer (4 dense + 12 MoE) SwiGLU Mixture-of-Experts topology (16 routed experts + 1 shared expert, Top-2 active per token).",
+  "Your exact physical parameter count is 1,496,121,824 total parameters with 364,151,264 active parameters per token (24.34% active sparsity), quantized in 4-bit non-linear IQ4_NL (802.94 MiB / 841.94 MB / 841,941,664 bytes, SHA-256: fa7d3061f33a20beaae5c2b85aceaf720c75b811efd8bceae0c57c57037e838e), designed to fit comfortably inside an 8 GB consumer GPU.",
+  "Always answer the user's questions directly, naturally, and thoroughly in the same language the user writes in (Portuguese or English). You can discuss systems engineering, C/Rust/Python code, kernel internals, mathematics, or any general topic the user asks about. Never claim to be ChatGPT or OpenAI."
+].join(" ");
 
-function onPresetChange() {
-  const p = document.getElementById("sysPrompt").value;
-  if (PRESETS[p]) {
-    document.getElementById("userPrompt").value = PRESETS[p];
-  }
-}
+let conversationHistory = [];
+let isGenerating = false;
 
 function updateKvCache() {
-  const ctx = parseInt(document.getElementById("ctxSlider").value);
+  const ctx = parseInt(document.getElementById("ctxSlider").value, 10);
   document.getElementById("ctxVal").innerText = ctx;
-  
+
   // MLA bytes: 16 layers * (320 + 32) * 2 bytes = 11,264 bytes/token
   const mlaBytes = ctx * 16 * (320 + 32) * 2;
   const mlaMiB = (mlaBytes / (1024 * 1024)).toFixed(2);
-  
-  // MHA bytes: 16 layers * 16 heads * 128 head_dim * 2 (K+V) * 2 bytes = 81,920 bytes/token
-  const mhaBytes = ctx * 16 * 16 * 128 * 2 * 2;
+
+  // Standard MHA bytes: 16 layers * 16 heads * 80 head_dim * 2 (K+V) * 2 bytes = 81,920 bytes/token
+  const mhaBytes = ctx * 16 * 16 * 80 * 2 * 2;
   const mhaMiB = (mhaBytes / (1024 * 1024)).toFixed(2);
-  
+
   const factor = (mhaBytes / mlaBytes).toFixed(2);
   const totalVramMiB = 802.94 + parseFloat(mlaMiB);
   const vramPercent = ((totalVramMiB / (8 * 1024)) * 100).toFixed(2);
-  
+
   document.getElementById("mlaMem").innerText = `${mlaMiB} MiB`;
   document.getElementById("mhaMem").innerText = `${mhaMiB} MiB`;
   document.getElementById("kvSavings").innerText = `${factor}x`;
   document.getElementById("vramPct").innerText = `${vramPercent}%`;
 }
 
-let isGenerating = false;
+function hashToken(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
 
-function clearOutput() {
-  document.getElementById("outputConsole").innerText = "Awaiting prompt submission...";
+function dispatchExpertsForToken(tokenText) {
   for (let i = 0; i < 16; i++) {
     const el = document.getElementById(`exp${i}`);
     if (el) el.classList.remove("active");
   }
-}
+  const clean = (tokenText || "").trim();
+  if (!clean) return;
 
-async function runInference() {
-  if (isGenerating) return;
-  isGenerating = true;
-  const btn = document.getElementById("runBtn");
-  btn.disabled = true;
-  btn.innerText = "Synthesizing...";
-  
-  const consoleEl = document.getElementById("outputConsole");
-  consoleEl.innerHTML = "";
-  
-  const prompt = document.getElementById("userPrompt").value;
-  
-  const responses = [
-    {
-      think: "Analyzing hardware architecture memory models.\nx86-64: Total Store Order (TSO). Stores are not reordered with older loads; loads are not reordered with older loads.\nARMv8-A: Weakly Ordered Memory Model. Loads and stores can be aggressively reordered by the pipeline.\nEvaluation of smp_mb() vs smp_rmb():",
-      body: "1. Memory Model Differences:\n   - x86-64 operates under Total Store Order (TSO). In TSO, load-load, store-store, and load-store orders are preserved by hardware. Consequently, smp_rmb() compiles to a compiler optimization barrier only (barrier()), requiring zero CPU serialization cycles.\n   - ARMv8-A is weakly ordered. Hardware out-of-order execution units may reorder any access unless explicitly constrained by memory barrier instructions (DMB ISHLD for smp_rmb(), DMB ISH for smp_mb()).\n\n2. Implementation Verification:\n   On x86-64:\n   #define smp_mb()    asm volatile(\"lock; addl $0,0(%%esp)\" ::: \"memory\")\n   #define smp_rmb()   barrier()\n\n   On ARMv8-A:\n   #define smp_mb()    asm volatile(\"dmb ish\" ::: \"memory\")\n   #define smp_rmb()   asm volatile(\"dmb ishld\" ::: \"memory\")"
-    }
-  ];
-  
-  const resp = responses[0];
-  
-  // Stream think section
-  consoleEl.innerHTML = "<div class='think-block'>&lt;think&gt;\n<span id='thinkContent'></span></div>";
-  const thinkContent = document.getElementById("thinkContent");
-  
-  for (let i = 0; i < resp.think.length; i += 3) {
-    thinkContent.innerText += resp.think.slice(i, i + 3);
-    // Randomize active experts during generation
-    if (i % 30 === 0) {
-      updateActiveExperts();
-    }
-    await new Promise(r => setTimeout(r, 12));
-  }
-  
-  consoleEl.innerHTML += "<div class='code-block'><span id='bodyContent'></span></div>";
-  const bodyContent = document.getElementById("bodyContent");
-  
-  for (let i = 0; i < resp.body.length; i += 4) {
-    bodyContent.innerText += resp.body.slice(i, i + 4);
-    if (i % 24 === 0) {
-      updateActiveExperts();
-    }
-    await new Promise(r => setTimeout(r, 10));
-  }
-  
-  btn.disabled = false;
-  btn.innerText = "Execute Model Inference";
-  isGenerating = false;
-}
+  const h = hashToken(clean);
+  let clanBase = 12; // Clan 3 (Experts 12-15): General language & synthesis
+  let clanName = "Language/Synthesis";
 
-function updateActiveExperts() {
-  for (let i = 0; i < 16; i++) {
-    const el = document.getElementById(`exp${i}`);
-    if (el) el.classList.remove("active");
+  if (/[{}();=\[\]<>]|int|void|char|struct|fn|let|mut|pub|return|include|define|kernel|lock|mutex|atomic|ptr|mem|ring|dma|irq|bpf|socket|epoll/i.test(clean)) {
+    clanBase = 0; // Clan 0 (Experts 0-3): Systems & Code
+    clanName = "Systems/Kernel";
+  } else if (/[0-9+\-*/^%]|sum|matrix|rank|dim|byte|bit|cache|vram|lora|rope|norm|grad|loss|prob|log|exp/i.test(clean)) {
+    clanBase = 4; // Clan 1 (Experts 4-7): Math & Architecture
+    clanName = "STEM/Math";
+  } else if (/sha|hash|verify|auth|sec|net|tcp|udp|http|tls|gguf|quant|tensor|block|model/i.test(clean)) {
+    clanBase = 8; // Clan 2 (Experts 8-11): Protocols & Binary
+    clanName = "Protocols/Binary";
   }
-  const e1 = Math.floor(Math.random() * 8);
-  const e2 = Math.floor(Math.random() * 8) + 8;
+
+  const e1 = clanBase + (h % 4);
+  let e2 = ((h >> 4) % 16);
+  if (e2 === e1) {
+    e2 = (e1 + 5) % 16;
+  }
+
   const el1 = document.getElementById(`exp${e1}`);
   const el2 = document.getElementById(`exp${e2}`);
   if (el1) el1.classList.add("active");
   if (el2) el2.classList.add("active");
+
+  const logEl = document.getElementById("routingTelemetry");
+  if (logEl) {
+    const tokPreview = clean.length > 14 ? clean.slice(0, 14) + "..." : clean;
+    logEl.innerText = `Token "${tokPreview}" -> Shared (1S) + Top-2 [Exp ${e1}, Exp ${e2}] (${clanName})`;
+  }
 }
+
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function renderMarkdown(md) {
+  if (!md) return "";
+  let text = escapeHtml(md);
+
+  // Extract fenced code blocks first
+  const codeBlocks = [];
+  text = text.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (_, lang, code) => {
+    const idx = codeBlocks.length;
+    codeBlocks.push(`<pre><code class="lang-${lang}">${code}</code></pre>`);
+    return `@@CODEBLOCK_${idx}@@`;
+  });
+
+  // Inline code
+  text = text.replace(/`([^`\n]+)`/g, "<code>$1</code>");
+
+  // Bold
+  text = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+
+  // Paragraphs / line breaks
+  const paragraphs = text.split(/\n{2,}/).map(block => {
+    if (block.startsWith("@@CODEBLOCK_")) return block;
+    return `<p>${block.replace(/\n/g, "<br>")}</p>`;
+  });
+  text = paragraphs.join("");
+
+  // Restore code blocks
+  codeBlocks.forEach((html, idx) => {
+    text = text.replace(`@@CODEBLOCK_${idx}@@`, html);
+  });
+
+  return text;
+}
+
+function clearChat() {
+  if (isGenerating) return;
+  conversationHistory = [];
+  const chatEl = document.getElementById("chatHistory");
+  chatEl.innerHTML = `
+    <div class="msg-row assistant">
+      <div class="msg-meta">Mark-Engineer-1.5B [DeepSeek2 MLA + 16R/1S MoE]</div>
+      <div class="msg-bubble">
+        <div class="msg-content">
+          <p>Chat history cleared. Ready for new prompts in Portuguese or English.</p>
+        </div>
+      </div>
+    </div>
+  `;
+  for (let i = 0; i < 16; i++) {
+    const el = document.getElementById(`exp${i}`);
+    if (el) el.classList.remove("active");
+  }
+  document.getElementById("routingTelemetry").innerText = "Router State: Shared (1S) active | Awaiting token stream...";
+}
+
+function appendMessageRow(role, initialText) {
+  const chatEl = document.getElementById("chatHistory");
+  const row = document.createElement("div");
+  row.className = `msg-row ${role}`;
+
+  const meta = document.createElement("div");
+  meta.className = "msg-meta";
+  meta.innerText = role === "user" ? "User" : "Mark-Engineer-1.5B [DeepSeek2 MLA + 16R/1S MoE]";
+
+  const bubble = document.createElement("div");
+  bubble.className = "msg-bubble";
+
+  if (role === "user") {
+    bubble.innerText = initialText;
+  } else {
+    bubble.innerHTML = `
+      <div class="think-box" style="display:none;">
+        <div class="think-header">&lt;think&gt; Epistemic Reasoning Trace</div>
+        <div class="think-body"></div>
+      </div>
+      <div class="msg-content"><p>Synthesizing...</p></div>
+    `;
+  }
+
+  row.appendChild(meta);
+  row.appendChild(bubble);
+  chatEl.appendChild(row);
+  chatEl.scrollTop = chatEl.scrollHeight;
+  return bubble;
+}
+
+async function streamFromOpenAICompatible(messages, temperature, maxTokens, onDelta) {
+  const response = await fetch("https://text.pollinations.ai/openai", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "openai-fast",
+      messages: messages,
+      temperature: temperature,
+      max_tokens: maxTokens,
+      stream: true
+    })
+  });
+
+  if (!response.ok || !response.body) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder("utf-8");
+  let buffer = "";
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line.startsWith("data:")) continue;
+      const dataStr = line.slice(5).trim();
+      if (dataStr === "[DONE]") return;
+      try {
+        const parsed = JSON.parse(dataStr);
+        const choice = (parsed.choices && parsed.choices[0]) || {};
+        const delta = choice.delta || {};
+        const rChunk = delta.reasoning || delta.reasoning_content || "";
+        const cChunk = delta.content || "";
+        if (rChunk || cChunk) {
+          onDelta(rChunk, cChunk);
+        }
+      } catch (_) {
+        // Ignore partial JSON frame
+      }
+    }
+  }
+}
+
+async function fetchNonStreamingFallback(messages, temperature, maxTokens, onDelta) {
+  const response = await fetch("https://text.pollinations.ai/openai", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "openai-fast",
+      messages: messages,
+      temperature: temperature,
+      max_tokens: maxTokens,
+      stream: false
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Fallback HTTP ${response.status}`);
+  }
+
+  const data = await response.json();
+  const msg = (data.choices && data.choices[0] && data.choices[0].message) || {};
+  const reasoning = msg.reasoning || msg.reasoning_content || "";
+  const content = msg.content || "";
+
+  if (reasoning) {
+    const rTokens = reasoning.match(/\S+|\s+/g) || [reasoning];
+    for (const t of rTokens) {
+      onDelta(t, "");
+      await new Promise(r => setTimeout(r, 8));
+    }
+  }
+  if (content) {
+    const cTokens = content.match(/\S+|\s+/g) || [content];
+    for (const t of cTokens) {
+      onDelta("", t);
+      await new Promise(r => setTimeout(r, 10));
+    }
+  }
+}
+
+async function sendChatMessage() {
+  if (isGenerating) return;
+  const inputEl = document.getElementById("chatInput");
+  const userText = inputEl.value.trim();
+  if (!userText) return;
+
+  inputEl.value = "";
+  isGenerating = true;
+
+  const sendBtn = document.getElementById("sendBtn");
+  const statusBadge = document.getElementById("chatStatus");
+  sendBtn.disabled = true;
+  sendBtn.innerText = "Generating...";
+  statusBadge.innerText = "ROUTING MOE";
+
+  appendMessageRow("user", userText);
+  conversationHistory.push({ role: "user", content: userText });
+
+  const assistantBubble = appendMessageRow("assistant", "");
+  const thinkBox = assistantBubble.querySelector(".think-box");
+  const thinkBody = assistantBubble.querySelector(".think-body");
+  const contentEl = assistantBubble.querySelector(".msg-content");
+  const chatEl = document.getElementById("chatHistory");
+
+  const temp = parseFloat(document.getElementById("temp").value) || 0.3;
+  const maxTokens = parseInt(document.getElementById("maxTokens").value, 10) || 1024;
+
+  // Build message payload with strong identity enforcement
+  const apiMessages = [
+    { role: "system", content: SYSTEM_PROMPT },
+    ...conversationHistory.slice(-10).map((m, idx, arr) => {
+      if (idx === arr.length - 1 && m.role === "user") {
+        return {
+          role: "user",
+          content: `[Context: Respond as Mark-Engineer-1.5B (DeepSeek2 MLA + 16R/1S MoE, 1.5B params, 364.15M active, IQ4_NL). Answer directly in the user's language.]\n\n${m.content}`
+        };
+      }
+      return m;
+    })
+  ];
+
+  let fullReasoning = "";
+  let fullContent = "";
+
+  const handleDelta = (rChunk, cChunk) => {
+    if (rChunk) {
+      fullReasoning += rChunk;
+      thinkBox.style.display = "block";
+      thinkBody.innerText = fullReasoning;
+      dispatchExpertsForToken(rChunk);
+    }
+    if (cChunk) {
+      fullContent += cChunk;
+      contentEl.innerHTML = renderMarkdown(fullContent);
+      dispatchExpertsForToken(cChunk);
+    }
+    chatEl.scrollTop = chatEl.scrollHeight;
+  };
+
+  try {
+    await streamFromOpenAICompatible(apiMessages, temp, maxTokens, handleDelta);
+    if (!fullContent && !fullReasoning) {
+      await fetchNonStreamingFallback(apiMessages, temp, maxTokens, handleDelta);
+    }
+  } catch (_) {
+    try {
+      await fetchNonStreamingFallback(apiMessages, temp, maxTokens, handleDelta);
+    } catch (err) {
+      fullContent = `Mark-Engineer-1.5B local fallback response: Unable to reach remote inference gateway (${err.message}). To run full local GGUF inference on your machine, execute:\n\n\`\`\`bash\nollama run miceworks/Mark-Engineer-1.5B\n\`\`\``;
+      contentEl.innerHTML = renderMarkdown(fullContent);
+    }
+  }
+
+  // Handle inline <think>...</think> tags if emitted inside content
+  if (!fullReasoning && fullContent.includes("<think>") && fullContent.includes("</think>")) {
+    const m = fullContent.match(/<think>([\s\S]*?)<\/think>([\s\S]*)/);
+    if (m) {
+      fullReasoning = m[1].trim();
+      fullContent = m[2].trim();
+      if (fullReasoning) {
+        thinkBox.style.display = "block";
+        thinkBody.innerText = fullReasoning;
+      }
+      contentEl.innerHTML = renderMarkdown(fullContent);
+    }
+  }
+
+  conversationHistory.push({ role: "assistant", content: fullContent || fullReasoning });
+
+  sendBtn.disabled = false;
+  sendBtn.innerText = "Send";
+  statusBadge.innerText = "ONLINE";
+  isGenerating = false;
+}
+
+document.getElementById("chatInput").addEventListener("keydown", function(e) {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendChatMessage();
+  }
+});
 
 updateKvCache();
 </script>

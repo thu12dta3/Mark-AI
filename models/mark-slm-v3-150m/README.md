@@ -51,23 +51,26 @@ Quantized in IQ4_NL, the container occupies 79.97 MiB (83.85 MB / 83,849,984 byt
 
 The model projects key and value states into a shared low-rank latent representation to reduce KV cache memory:
 
-$$\mathbf{c}_t^{KV} = W^{DKV} \mathbf{h}_t \quad (\mathbf{c}_t^{KV} \in \mathbb{R}^{128})$$
-
-$$\mathbf{c}_t^Q = W^{DQ} \mathbf{h}_t \quad (\mathbf{c}_t^Q \in \mathbb{R}^{256})$$
-
-$$\mathbf{q}_t^C = \text{RMSNorm}(W^{UQ} \mathbf{c}_t^Q), \quad \mathbf{k}_t^C = \text{RMSNorm}(W^{UK} \mathbf{c}_t^{KV})$$
+```text
+c_KV = h_t * W_DKV          (dim: 128)
+c_Q  = h_t * W_DQ           (dim: 256)
+q_C  = RMSNorm(c_Q * W_UQ)
+k_C  = RMSNorm(c_KV * W_UK)
+```
 
 Decoupled rotary position embeddings are concatenated along a separate dimension to track token positions:
 
-$$\mathbf{k}_t^R = \text{RoPE}(W^{KR} \mathbf{h}_t) \quad (\mathbf{k}_t^R \in \mathbb{R}^{64})$$
-
-$$\mathbf{q}_{t, i} = [\mathbf{q}_{t, i}^C; \mathbf{q}_{t, i}^R], \quad \mathbf{k}_{t, i} = [\mathbf{k}_{t, i}^C; \mathbf{k}_t^R]$$
+```text
+k_R  = RoPE(h_t * W_KR)     (dim: 64)
+q_t  = [q_C ; q_R]
+k_t  = [k_C ; k_R]
+```
 
 ### KV Cache Memory Usage
 
 Physical memory consumption of the KV cache per token:
 
-$$\text{KV}_{\text{bytes/token}} = 15 \times (128 + 64) \times 2 \text{ bytes} = 5,760 \text{ bytes/token}$$
+`KV_bytes_per_token = 15 * (128 + 64) * 2 = 5,760 bytes/token`
 
 | Context Window | MLA KV Cache | Standard MHA KV Cache | Memory Savings |
 | :--- | :--- | :--- | :--- |
@@ -78,16 +81,17 @@ $$\text{KV}_{\text{bytes/token}} = 15 \times (128 + 64) \times 2 \text{ bytes} =
 ### Mixture-of-Experts (MoE)
 
 - **Shared Experts (1S)**: Constantly active path for common features:
-  $$F_{\text{shared}}(\mathbf{x}) = (\text{SiLU}(\mathbf{x} W_{\text{gate}}^S) \odot (\mathbf{x} W_{\text{up}}^S)) W_{\text{down}}^S$$
+  `F_shared(x) = (SiLU(x * W_gate) * (x * W_up)) * W_down`
 - **Routed Experts (16R, Top-2)**: Routed using learned bias offsets without auxiliary load balancing loss:
-  $$s_{t, e} = \text{Softmax}(\mathbf{x}_t W_{\text{router}} + \mathbf{b}_e)$$
+  `s_{t,e} = Softmax(x_t * W_router + b_e)`
+  `y = x + F_shared(x) + sum_{i in TopK} g_i * F_routed_i(x)`
 
 ### V3 Architecture Details
 
 1. **Hadamard-Transformed MLA (H-MLA)**:
    Suppresses latent activation outliers by absorbing the normalized Walsh-Hadamard matrix:
-   $$\mathbf{H}_{256} = \frac{1}{16} \mathbf{H}_2^{\otimes 8}$$
-   directly into key-value projection weights ($W_{wkv_a}$ and $W_{wkv_b}$) during compilation. This absorption eliminates activation spikes without adding runtime execution overhead.
+   `H_256 = (1/16) * H_2^(x8)`, `W_fused = H_256 * W_proj`
+   directly into key-value projection weights (`W_wkv_a` and `W_wkv_b`) during compilation. This absorption eliminates activation spikes without adding runtime execution overhead.
 
 2. **Partitioned-Balancing Mixture-of-Experts (PB-MoE)**:
    The 16 routed experts are partitioned into 4 functional clans:
@@ -104,7 +108,7 @@ $$\text{KV}_{\text{bytes/token}} = 15 \times (128 + 64) \times 2 \text{ bytes} =
 
 The model is quantized to GGML_TYPE_IQ4_NL (4-bit non-linear) within the native `deepseek2` GGUF container:
 - Linear weights are structured in 18-byte blocks for each group of 32 weights:
-  - 2 bytes: Half-precision (`FP16`) scale factor $d$.
+  - 2 bytes: Half-precision (`FP16`) scale factor `d`.
   - 16 bytes: 32 four-bit nibbles referencing the non-linear lookup table `kvalues_iq4nl`:
     `[-127, -104, -83, -65, -49, -35, -22, -10, 1, 13, 25, 38, 53, 69, 89, 113]`
 - 1D normalization weights (`*_norm.weight`) and router bias vectors (`exp_probs_b.bias`) remain in full precision `FP32` to preserve numerical accuracy at layer boundaries.
