@@ -146,24 +146,8 @@ def sync_space(api: HfApi):
 
     space_dir = REPO_ROOT / "spaces" / "mark-engineer-1.5b"
 
-    # Remove obsolete static files from remote Space if present
-    remote_space_files = api.list_repo_files(repo_id=space_id, repo_type="space")
-    for obsolete_file in ["index.html", "style.css"]:
-        if obsolete_file in remote_space_files:
-            print(f"  Deleting obsolete static file from Space: {obsolete_file}...")
-            try:
-                api.delete_file(
-                    path_in_repo=obsolete_file,
-                    repo_id=space_id,
-                    repo_type="space",
-                    commit_message=f"Remove obsolete static file {obsolete_file} in favor of Gradio app",
-                )
-                print(f"  [DELETED] {obsolete_file}")
-            except Exception as e:
-                print(f"  [WARNING] Could not delete {obsolete_file}: {e}")
-
-    # Upload app.py, requirements.txt, and README.md
-    for fname in ["README.md", "requirements.txt", "app.py"]:
+    # Upload interactive frontend (index.html), app.py, requirements.txt, and README.md
+    for fname in ["README.md", "index.html", "requirements.txt", "app.py"]:
         fpath = space_dir / fname
         if fpath.exists():
             print(f"  Uploading {fname} to Space...")
@@ -172,9 +156,16 @@ def sync_space(api: HfApi):
                 path_in_repo=fname,
                 repo_id=space_id,
                 repo_type="space",
-                commit_message=f"Deploy interactive Gradio application ({fname})",
+                commit_message=f"Update interactive Space application ({fname})",
             )
             print(f"  [OK] Uploaded {fname}")
+
+    # Verify Space Runtime Status
+    try:
+        runtime = api.get_space_runtime(space_id)
+        print(f"  Space Runtime Stage: {runtime.stage}")
+    except Exception as e:
+        print(f"  [WARNING] Could not get Space runtime: {e}")
 
 
 if __name__ == "__main__":

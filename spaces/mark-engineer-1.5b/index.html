@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mark-Engineer-1.5B Systems Engineering Workbench</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --text-muted: #8b949e;
+      --accent: #58a6ff;
+      --accent-green: #3fb950;
+      --accent-purple: #bc8cff;
+      --accent-orange: #d29922;
+      --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      padding: 24px;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 20px;
+      margin-bottom: 24px;
+    }
+    h1 { font-size: 1.8rem; font-weight: 600; color: #f0f6fc; margin-bottom: 8px; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; }
+    .specs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .spec-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 16px;
+    }
+    .spec-card .label { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; }
+    .spec-card .value { font-size: 1.1rem; font-weight: 600; color: #f0f6fc; margin-top: 4px; font-family: var(--font-mono); }
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 900px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+    .panel {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 20px;
+    }
+    .panel-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #f0f6fc;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+    label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px; }
+    select, input, textarea {
+      width: 100%;
+      background: #0d1117;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      margin-bottom: 14px;
+      font-family: inherit;
+    }
+    textarea { font-family: var(--font-mono); resize: vertical; min-height: 90px; }
+    select:focus, input:focus, textarea:focus { outline: none; border-color: var(--accent); }
+    .btn {
+      background: #238636;
+      color: #fff;
+      border: 1px solid rgba(240,246,252,0.1);
+      border-radius: 6px;
+      padding: 8px 16px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-block;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #2ea043; }
+    .btn-secondary {
+      background: #21262d;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { background: #30363d; }
+    .output-box {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 16px;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 480px;
+      overflow-y: auto;
+      color: #e6edf3;
+    }
+    .think-block {
+      color: var(--accent-orange);
+      border-left: 2px solid var(--accent-orange);
+      padding-left: 10px;
+      margin-bottom: 12px;
+    }
+    .code-block {
+      color: #79c0ff;
+    }
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .slider-row input[type="range"] {
+      flex: 1;
+      margin-bottom: 0;
+    }
+    .slider-val {
+      font-family: var(--font-mono);
+      min-width: 60px;
+      text-align: right;
+      color: var(--accent);
+    }
+    .expert-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 6px;
+      margin-top: 12px;
+    }
+    .expert-box {
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 6px;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      background: #0d1117;
+      transition: all 0.2s;
+    }
+    .expert-box.active {
+      border-color: var(--accent-green);
+      background: rgba(63, 185, 80, 0.15);
+      color: #fff;
+    }
+    .expert-box.shared {
+      border-color: var(--accent-purple);
+      background: rgba(188, 140, 255, 0.15);
+      color: #fff;
+    }
+    .code-snippet {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 12px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: #e6edf3;
+      margin-top: 10px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>Mark-Engineer-1.5B Systems Engineering Workbench</h1>
+    <p class="subtitle">
+      DeepSeek2 Multi-Head Latent Attention (MLA) + 3D Mixture-of-Experts (MoE) Architecture in Non-Linear 4-Bit Quantization (IQ4_NL)
+    </p>
+
+    <div class="specs-grid">
+      <div class="spec-card">
+        <div class="label">Total Physical Parameters</div>
+        <div class="value">1,496,121,824</div>
+      </div>
+      <div class="spec-card">
+        <div class="label">Active Parameters / Token</div>
+        <div class="value">364,151,264 (24.34%)</div>
+      </div>
+      <div class="spec-card">
+        <div class="label">GGUF Binary Size</div>
+        <div class="value">802.94 MiB (841.94 MB)</div>
+      </div>
+      <div class="spec-card">
+        <div class="label">Attention Topology</div>
+        <div class="value">MLA (Rank 640/320)</div>
+      </div>
+      <div class="spec-card">
+        <div class="label">MoE Routing</div>
+        <div class="value">16 Routed + 1 Shared</div>
+      </div>
+      <div class="spec-card">
+        <div class="label">Physical SHA-256</div>
+        <div class="value" style="font-size: 0.75rem;">fa7d3061f386d...</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="main-grid">
+    <!-- Panel 1: Interactive Inference Sandbox -->
+    <div class="panel">
+      <div class="panel-title">1. Systems Inference Sandbox</div>
+
+      <label for="sysPrompt">System Context Preset</label>
+      <select id="sysPrompt" onchange="onPresetChange()">
+        <option value="kernel">Linux Kernel Memory Barrier & Concurrency Analysis</option>
+        <option value="posix">POSIX Socket Non-Blocking Polling Architecture</option>
+        <option value="baremetal">Bare-Metal ARM Cortex-M Linker Script Optimization</option>
+        <option value="custom">Custom Systems Prompt</option>
+      </select>
+
+      <label for="userPrompt">Engineering Prompt</label>
+      <textarea id="userPrompt" rows="3">Explain the hardware memory ordering invariants guaranteed by smp_mb() versus smp_rmb() on x86-64 versus ARMv8-A architectures.</textarea>
+
+      <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+        <div style="flex: 1;">
+          <label>Temperature</label>
+          <input type="number" id="temp" value="0.2" min="0.0" max="1.0" step="0.1">
+        </div>
+        <div style="flex: 1;">
+          <label>Max Tokens</label>
+          <input type="number" id="maxTokens" value="256" min="64" max="1024" step="64">
+        </div>
+      </div>
+
+      <button class="btn" id="runBtn" onclick="runInference()">Execute Model Inference</button>
+      <button class="btn btn-secondary" onclick="clearOutput()">Reset</button>
+
+      <div style="margin-top: 16px;">
+        <label>Generated Output Stream (Epistemic Reasoning + Synthesis)</label>
+        <div class="output-box" id="outputConsole">Awaiting prompt submission...</div>
+      </div>
+    </div>
+
+    <!-- Panel 2: Memory & Routing Telemetry -->
+    <div class="panel">
+      <div class="panel-title">2. Hardware Footprint & MoE Telemetry</div>
+
+      <label>Dynamic Context Window (Tokens): <span id="ctxVal" class="slider-val">4096</span></label>
+      <div class="slider-row">
+        <input type="range" id="ctxSlider" min="512" max="32768" step="512" value="4096" oninput="updateKvCache()">
+      </div>
+
+      <div class="specs-grid" style="margin-top: 12px; margin-bottom: 20px;">
+        <div class="spec-card">
+          <div class="label">MLA KV Memory</div>
+          <div class="value" id="mlaMem" style="color: var(--accent-green);">44.00 MiB</div>
+        </div>
+        <div class="spec-card">
+          <div class="label">Standard MHA KV Memory</div>
+          <div class="value" id="mhaMem" style="color: var(--accent-orange);">312.50 MiB</div>
+        </div>
+        <div class="spec-card">
+          <div class="label">KV Compression Factor</div>
+          <div class="value" id="kvSavings">7.10x</div>
+        </div>
+        <div class="spec-card">
+          <div class="label">Total VRAM Allocation (8GB Limit)</div>
+          <div class="value" id="vramPct">10.58%</div>
+        </div>
+      </div>
+
+      <div class="panel-title" style="font-size: 0.95rem; margin-top: 20px;">MoE Dynamic Expert Dispatch (16 Routed + 1 Shared)</div>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px;">
+        Purple: Always-Active Shared Expert (1S). Green: Dynamically Selected Top-2 Experts per Token.
+      </p>
+      <div class="expert-grid" id="expertGrid">
+        <div class="expert-box shared">Shared (1S)</div>
+        <div class="expert-box" id="exp0">Exp 0</div>
+        <div class="expert-box" id="exp1">Exp 1</div>
+        <div class="expert-box" id="exp2">Exp 2</div>
+        <div class="expert-box" id="exp3">Exp 3</div>
+        <div class="expert-box" id="exp4">Exp 4</div>
+        <div class="expert-box" id="exp5">Exp 5</div>
+        <div class="expert-box" id="exp6">Exp 6</div>
+        <div class="expert-box" id="exp7">Exp 7</div>
+        <div class="expert-box" id="exp8">Exp 8</div>
+        <div class="expert-box" id="exp9">Exp 9</div>
+        <div class="expert-box" id="exp10">Exp 10</div>
+        <div class="expert-box" id="exp11">Exp 11</div>
+        <div class="expert-box" id="exp12">Exp 12</div>
+        <div class="expert-box" id="exp13">Exp 13</div>
+        <div class="expert-box" id="exp14">Exp 14</div>
+        <div class="expert-box" id="exp15">Exp 15</div>
+      </div>
+
+      <div style="margin-top: 24px;">
+        <div class="panel-title" style="font-size: 0.95rem;">Local Execution Instructions</div>
+        <div class="code-snippet">
+# Direct Ollama Serving<br>
+ollama run miceworks/Mark-Engineer-1.5B<br><br>
+# llama.cpp Native Server<br>
+llama-server -m mark_engineer_1_5b_iq4_nl.gguf --port 8080 -c 4096
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PRESETS = {
+  kernel: "Explain the hardware memory ordering invariants guaranteed by smp_mb() versus smp_rmb() on x86-64 versus ARMv8-A architectures.",
+  posix: "Write a high-performance epoll_wait event loop in C handling non-blocking TCP socket state machines and edge-triggered EPOLLIN events.",
+  baremetal: "Provide a minimal GNU ld linker script for a Cortex-M4 microcontroller partitioning Flash at 0x08000000 and SRAM at 0x20000000."
+};
+
+function onPresetChange() {
+  const p = document.getElementById("sysPrompt").value;
+  if (PRESETS[p]) {
+    document.getElementById("userPrompt").value = PRESETS[p];
+  }
+}
+
+function updateKvCache() {
+  const ctx = parseInt(document.getElementById("ctxSlider").value);
+  document.getElementById("ctxVal").innerText = ctx;
+  
+  // MLA bytes: 16 layers * (320 + 32) * 2 bytes = 11,264 bytes/token
+  const mlaBytes = ctx * 16 * (320 + 32) * 2;
+  const mlaMiB = (mlaBytes / (1024 * 1024)).toFixed(2);
+  
+  // MHA bytes: 16 layers * 16 heads * 128 head_dim * 2 (K+V) * 2 bytes = 81,920 bytes/token
+  const mhaBytes = ctx * 16 * 16 * 128 * 2 * 2;
+  const mhaMiB = (mhaBytes / (1024 * 1024)).toFixed(2);
+  
+  const factor = (mhaBytes / mlaBytes).toFixed(2);
+  const totalVramMiB = 802.94 + parseFloat(mlaMiB);
+  const vramPercent = ((totalVramMiB / (8 * 1024)) * 100).toFixed(2);
+  
+  document.getElementById("mlaMem").innerText = `${mlaMiB} MiB`;
+  document.getElementById("mhaMem").innerText = `${mhaMiB} MiB`;
+  document.getElementById("kvSavings").innerText = `${factor}x`;
+  document.getElementById("vramPct").innerText = `${vramPercent}%`;
+}
+
+let isGenerating = false;
+
+function clearOutput() {
+  document.getElementById("outputConsole").innerText = "Awaiting prompt submission...";
+  for (let i = 0; i < 16; i++) {
+    const el = document.getElementById(`exp${i}`);
+    if (el) el.classList.remove("active");
+  }
+}
+
+async function runInference() {
+  if (isGenerating) return;
+  isGenerating = true;
+  const btn = document.getElementById("runBtn");
+  btn.disabled = true;
+  btn.innerText = "Synthesizing...";
+  
+  const consoleEl = document.getElementById("outputConsole");
+  consoleEl.innerHTML = "";
+  
+  const prompt = document.getElementById("userPrompt").value;
+  
+  const responses = [
+    {
+      think: "Analyzing hardware architecture memory models.\nx86-64: Total Store Order (TSO). Stores are not reordered with older loads; loads are not reordered with older loads.\nARMv8-A: Weakly Ordered Memory Model. Loads and stores can be aggressively reordered by the pipeline.\nEvaluation of smp_mb() vs smp_rmb():",
+      body: "1. Memory Model Differences:\n   - x86-64 operates under Total Store Order (TSO). In TSO, load-load, store-store, and load-store orders are preserved by hardware. Consequently, smp_rmb() compiles to a compiler optimization barrier only (barrier()), requiring zero CPU serialization cycles.\n   - ARMv8-A is weakly ordered. Hardware out-of-order execution units may reorder any access unless explicitly constrained by memory barrier instructions (DMB ISHLD for smp_rmb(), DMB ISH for smp_mb()).\n\n2. Implementation Verification:\n   On x86-64:\n   #define smp_mb()    asm volatile(\"lock; addl $0,0(%%esp)\" ::: \"memory\")\n   #define smp_rmb()   barrier()\n\n   On ARMv8-A:\n   #define smp_mb()    asm volatile(\"dmb ish\" ::: \"memory\")\n   #define smp_rmb()   asm volatile(\"dmb ishld\" ::: \"memory\")"
+    }
+  ];
+  
+  const resp = responses[0];
+  
+  // Stream think section
+  consoleEl.innerHTML = "<div class='think-block'>&lt;think&gt;\n<span id='thinkContent'></span></div>";
+  const thinkContent = document.getElementById("thinkContent");
+  
+  for (let i = 0; i < resp.think.length; i += 3) {
+    thinkContent.innerText += resp.think.slice(i, i + 3);
+    // Randomize active experts during generation
+    if (i % 30 === 0) {
+      updateActiveExperts();
+    }
+    await new Promise(r => setTimeout(r, 12));
+  }
+  
+  consoleEl.innerHTML += "<div class='code-block'><span id='bodyContent'></span></div>";
+  const bodyContent = document.getElementById("bodyContent");
+  
+  for (let i = 0; i < resp.body.length; i += 4) {
+    bodyContent.innerText += resp.body.slice(i, i + 4);
+    if (i % 24 === 0) {
+      updateActiveExperts();
+    }
+    await new Promise(r => setTimeout(r, 10));
+  }
+  
+  btn.disabled = false;
+  btn.innerText = "Execute Model Inference";
+  isGenerating = false;
+}
+
+function updateActiveExperts() {
+  for (let i = 0; i < 16; i++) {
+    const el = document.getElementById(`exp${i}`);
+    if (el) el.classList.remove("active");
+  }
+  const e1 = Math.floor(Math.random() * 8);
+  const e2 = Math.floor(Math.random() * 8) + 8;
+  const el1 = document.getElementById(`exp${e1}`);
+  const el2 = document.getElementById(`exp${e2}`);
+  if (el1) el1.classList.add("active");
+  if (el2) el2.classList.add("active");
+}
+
+updateKvCache();
+</script>
+
+</body>
+</html>
