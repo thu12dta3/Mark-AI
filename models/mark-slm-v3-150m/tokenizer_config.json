@@ -83,5 +83,6 @@
     "<|mcp_response|>",
     "<|citation|>",
     "<|/citation|>"
-  ]
+  ],
+  "tokenizer_class": "PreTrainedTokenizerFast"
 }

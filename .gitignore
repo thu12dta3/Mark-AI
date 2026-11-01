@@ -46,6 +46,9 @@ checkpoints/
 *.iq4_nl
 *.zim
 .env
+kaggle.json
+*access_token*
+kaggle_slm_v3_150m/
 
 # OS & Editor Artifacts
 .DS_Store

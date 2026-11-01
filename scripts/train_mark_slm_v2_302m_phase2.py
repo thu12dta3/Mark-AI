@@ -75,16 +75,20 @@ class Phase2MultiSourceDataset(IterableDataset):
             if not text:
                 continue
             if hasattr(self, 'tokenizer') and self.tokenizer is not None:
-                tokens = self.tokenizer.encode(text).ids
+                tokens = self.tokenizer.encode(text)
             else:
-                from tokenizers import Tokenizer
-                tok_candidates = [Path('models/mark-engineer-1.5b/tokenizer.json'), Path('data/tokenizer/mark_bpe_tokenizer.json')]
+                from transformers import PreTrainedTokenizerFast
+                tok_candidates = [
+                    Path('models/mark-slm-v2-302m'),
+                    Path('models/mark-engineer-1.5b/tokenizer.json'),
+                    Path('data/tokenizer/mark_bpe_tokenizer.json')
+                ]
                 tok_p = next((p for p in tok_candidates if p.exists()), None)
                 if tok_p:
-                    self.tokenizer = Tokenizer.from_file(str(tok_p))
-                    tokens = self.tokenizer.encode(text).ids
+                    self.tokenizer = PreTrainedTokenizerFast.from_pretrained(str(tok_p)) if tok_p.is_dir() else PreTrainedTokenizerFast(tokenizer_file=str(tok_p))
+                    tokens = self.tokenizer.encode(text)
                 else:
-                    tokens = [ord(c) % (self.vocab_size - 100) + 10 for c in text]
+                    raise RuntimeError("PreTrainedTokenizerFast tokenizer required. No valid tokenizer file found.")
             if len(tokens) < self.seq_len:
                 tokens = tokens + [0] * (self.seq_len - len(tokens))
             else:

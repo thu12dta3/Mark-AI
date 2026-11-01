@@ -2,6 +2,10 @@
   "architectures": [
     "MarkV3ForCausalLM"
   ],
+  "auto_map": {
+    "AutoConfig": "configuration_mark_v3.MarkV3Config",
+    "AutoModelForCausalLM": "modeling_mark_v3.MarkV3ForCausalLM"
+  },
   "model_type": "deepseek2",
   "model_name": "Mark-SLM-V3-150M",
   "model_version": "3.0.0",
