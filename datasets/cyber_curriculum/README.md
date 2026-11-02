@@ -26,7 +26,7 @@ configs:
 
 ## Overview
 
-Mark-Cyber-Curriculum is an open, deduplicated cybersecurity dataset engineered for Supervised Fine-Tuning (SFT) and Direct Preference Optimization (DPO / ORPO). It contains 6,700 unique, verified instructional samples spanning vulnerability analysis, offensive workflows, binary reverse engineering, digital forensics, Linux kernel security, and artificial intelligence red-teaming.
+Mark-Cyber-Curriculum is an open, deduplicated cybersecurity dataset engineered for Supervised Fine-Tuning (SFT) and Direct Preference Optimization (DPO / ORPO). It contains 6,524 unique, verified instructional samples spanning vulnerability analysis, offensive workflows, binary reverse engineering, digital forensics, Linux kernel security, and artificial intelligence red-teaming.
 
 Every sample is paired with a compressed chain-of-thought trace (`compressed_think`) strictly bounded between 40 and 180 tokens, directly establishing root-cause attribution, attack vectors, and defensive remediations. This structure reduces generation overhead by 70% to 90% compared to verbose, conversational reasoning traces while preserving full technical precision.
 
@@ -58,10 +58,10 @@ The dataset provides balanced coverage across six core domains of modern informa
 | `vulnerability_research_cve` | 1,600 |
 | `red_team_pentest` | 1,100 |
 | `blue_team_siem_dfir` | 1,100 |
-| `ai_red_teaming_sentinel` | 1,000 |
 | `kernel_ebpf_secops` | 1,000 |
 | `binary_exploitation_re` | 900 |
-| **Total Verified Unique Samples** | **6,700** |
+| `ai_red_teaming_sentinel` | 824 |
+| **Total Verified Unique Samples** | **6,524** |
 
 ### Domain Descriptions
 
@@ -78,8 +78,8 @@ Modern reasoning models often generate lengthy, redundant chain-of-thought trace
 
 - SFT Training: Train models on the `chosen` field to enforce concise `<think>...</think>` traces followed by immediate technical solutions.
 - DPO / ORPO Training: Use `chosen` as the preferred response and `rejected` as the dispreferred completion. The `rejected` field contains either the unpatched vulnerable code or an excessively verbose, uncalibrated reasoning trace, establishing both security alignment and length-penalized token efficiency.
-- Average chosen token count: 478 tokens.
-- Mean token compression ratio: 1.34x.
+- Average chosen token count: 490 tokens.
+- Mean token compression ratio: 1.33x.
 
 ## Loading & Training Example
 

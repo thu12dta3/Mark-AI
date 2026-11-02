@@ -203,6 +203,25 @@ def build_mark_cyber_dataset():
     
     records = []
     seen_instructions = set()
+    prefix_tracker = {}
+    MAX_PREFIX_REPETITION = 3
+
+    def allow_instruction(text: str) -> bool:
+        if not text:
+            return False
+        clean = text.strip()
+        if len(clean) < 15:
+            return False
+        h = hashlib.sha256(clean.encode("utf-8")).hexdigest()
+        if h in seen_instructions:
+            return False
+        pref = clean[:40].lower()
+        if prefix_tracker.get(pref, 0) >= MAX_PREFIX_REPETITION:
+            return False
+        seen_instructions.add(h)
+        prefix_tracker[pref] = prefix_tracker.get(pref, 0) + 1
+        return True
+    
     category_counts = {
         "vulnerability_research_cve": 0,
         "red_team_pentest": 0,
@@ -213,12 +232,12 @@ def build_mark_cyber_dataset():
     }
     
     # -------------------------------------------------------------
-    # 1. CyberNative/Code_Vulnerability_Security_DPO (~1500 samples)
+    # 1. CyberNative/Code_Vulnerability_Security_DPO (~1400 samples)
     # -------------------------------------------------------------
     print("\n[Source 1] Loading CyberNative/Code_Vulnerability_Security_DPO...")
     try:
         ds_vuln = load_dataset("CyberNative/Code_Vulnerability_Security_DPO", split="train")
-        target_vuln = 1500
+        target_vuln = 1400
         for row in ds_vuln:
             if category_counts["vulnerability_research_cve"] >= target_vuln:
                 break
@@ -231,11 +250,10 @@ def build_mark_cyber_dataset():
             if len(q) < 15 or len(chosen_code) < 30 or len(rejected_code) < 20:
                 continue
             
-            inst_hash = hashlib.sha256(q.encode("utf-8")).hexdigest()
-            if inst_hash in seen_instructions:
+            if not allow_instruction(q):
                 continue
-            seen_instructions.add(inst_hash)
             
+            inst_hash = hashlib.sha256(q.encode("utf-8")).hexdigest()
             cwe = extract_cwe(vuln_desc + " " + q)
             comp_think = generate_compressed_think(
                 "vulnerability_research_cve", cwe, q, chosen_code, lang=lang, vuln_desc=vuln_desc
@@ -269,12 +287,12 @@ def build_mark_cyber_dataset():
         print(f"  Error loading CyberNative dataset: {e}")
 
     # -------------------------------------------------------------
-    # 2. neuralchemy/Prompt-injection-dataset (~900 samples)
+    # 2. neuralchemy/Prompt-injection-dataset (~600 samples)
     # -------------------------------------------------------------
     print("\n[Source 2] Loading neuralchemy/Prompt-injection-dataset for AI Red Teaming...")
     try:
         ds_ai = load_dataset("neuralchemy/Prompt-injection-dataset", split="train")
-        target_ai = 900
+        target_ai = 600
         for row in ds_ai:
             if category_counts["ai_red_teaming_sentinel"] >= target_ai:
                 break
@@ -285,12 +303,10 @@ def build_mark_cyber_dataset():
             if len(text) < 15 or label != 1:
                 continue
             
-            instruction = f"Analyze the following adversarial payload for Prompt Injection or Jailbreak attack vectors:\n```\n{text}\n```"
-            inst_hash = hashlib.sha256(instruction.encode("utf-8")).hexdigest()
-            if inst_hash in seen_instructions:
+            if not allow_instruction(text):
                 continue
-            seen_instructions.add(inst_hash)
             
+            inst_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
             cwe_or_mitre = "ATLAS-AML.T0051" if "injection" in cat_raw else "ATLAS-AML.T0054"
             comp_think = (
                 f"Adversarial Vector: {cat_raw.replace('_', ' ').capitalize()} payload targeting system prompt boundary ({cwe_or_mitre}).\n"
@@ -299,16 +315,16 @@ def build_mark_cyber_dataset():
             )
             
             response = (
-                f"### Threat Assessment: High-Risk Adversarial Input\n\n"
+                f"### Sentinel Threat Analysis & Mitigation\n\n"
                 f"- **Classification:** Adversarial Prompt Injection / Jailbreak ({cwe_or_mitre})\n"
                 f"- **Attack Category:** `{cat_raw}`\n"
-                f"- **Payload Analysis:** The input employs roleplay delimiters and adversarial framing designed to subvert system prompt constraints.\n"
+                f"- **Payload Analysis:** The input employs adversarial framing and delimiter manipulation designed to override system constraints.\n"
                 f"- **Recommended Mitigation:** Sanitize delimiters (`<|...|>`, markdown codeblocks), validate user input against Sentinel policy, and isolate execution tools behind explicit permission boundaries."
             )
             
             chosen_full = f"<think>\n{comp_think}\n</think>\n\n{response}"
             rejected_full = generate_rejected(
-                "ai_red_teaming_sentinel", instruction, response, comp_think
+                "ai_red_teaming_sentinel", text, response, comp_think
             )
             
             c_tokens = len(tok.encode(chosen_full).ids)
@@ -319,7 +335,7 @@ def build_mark_cyber_dataset():
                 "id": f"cyber_{inst_hash[:12]}",
                 "category": "ai_red_teaming_sentinel",
                 "cwe_or_mitre": cwe_or_mitre,
-                "instruction": instruction,
+                "instruction": text,
                 "compressed_think": comp_think,
                 "response": response,
                 "chosen": chosen_full,
@@ -373,11 +389,10 @@ def build_mark_cyber_dataset():
                 if not target_cat:
                     continue
                 
-                inst_hash = hashlib.sha256(prompt.encode("utf-8")).hexdigest()
-                if inst_hash in seen_instructions:
+                if not allow_instruction(prompt):
                     continue
-                seen_instructions.add(inst_hash)
                 
+                inst_hash = hashlib.sha256(prompt.encode("utf-8")).hexdigest()
                 cwe_or_mitre = extract_mitre(prompt + " " + completion)
                 comp_think = generate_compressed_think(target_cat, cwe_or_mitre, prompt, completion)
                 chosen_full = f"<think>\n{comp_think}\n</think>\n\n{completion}"
@@ -410,7 +425,7 @@ def build_mark_cyber_dataset():
         "binary_exploitation_re": 900,
         "blue_team_siem_dfir": 1100,
         "red_team_pentest": 1100,
-        "ai_red_teaming_sentinel": 1000,
+        "ai_red_teaming_sentinel": 1100,
         "vulnerability_research_cve": 1600
     }
     
@@ -444,10 +459,10 @@ def build_mark_cyber_dataset():
             if not cat or category_counts[cat] >= target_caps[cat]:
                 continue
                 
-            inst_hash = hashlib.sha256(user.encode("utf-8")).hexdigest()
-            if inst_hash in seen_instructions:
+            if not allow_instruction(user):
                 continue
-            seen_instructions.add(inst_hash)
+                
+            inst_hash = hashlib.sha256(user.encode("utf-8")).hexdigest()
             
             if cat in ["vulnerability_research_cve"]:
                 cwe_or_mitre = extract_cwe(user + " " + assistant)
