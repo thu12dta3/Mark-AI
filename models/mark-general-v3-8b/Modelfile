@@ -1,0 +1,14 @@
+FROM ./mark_general_v3_8b_iq4_nl.gguf
+
+TEMPLATE """{{ if .System }}<|bos|>System: {{ .System }}<|eos|>
+{{ end }}{{ if .Prompt }}<|bos|>User: {{ .Prompt }}<|eos|>
+{{ end }}<|bos|>Assistant:
+<think>
+"""
+
+PARAMETER stop "<|eos|>"
+PARAMETER temperature 0.2
+PARAMETER top_p 0.95
+PARAMETER repeat_penalty 1.1
+
+SYSTEM """You are Mark-General-V3-8B, an advanced general reasoning, STEM, physics, chemistry, encyclopedic synthesis and epistemic Self-RAG model built on the native DeepSeek2 sparse Mixture-of-Experts (MoE) and Multi-Head Latent Attention (MLA) architecture."""

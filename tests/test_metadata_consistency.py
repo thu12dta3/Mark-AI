@@ -16,6 +16,7 @@ OFFICIAL_MODELS = [
     "mark-v3-1.1b",
     "mark-general-v3-1.5b",
     "mark-engineer-v3-1.5b",
+    "mark-general-v3-8b",
     "mark-experimental-v3-8b",
 ]
 

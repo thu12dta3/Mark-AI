@@ -192,6 +192,8 @@ def get_model_config(model_type: str) -> Any:
         return MarkV3Config.create_general_v3_1_5b()
     elif m in ('engineer-v3-1.5b', 'mark-engineer-v3-1.5b'):
         return MarkV3Config.create_engineer_v3_1_5b()
+    elif m in ('general-v3-8b', 'mark-general-v3-8b'):
+        return MarkV3Config.create_general_v3_8b()
     elif m in ('experimental-v3-8b', 'mark-experimental-v3-8b'):
         return MarkV3Config.create_experimental_v3_8b()
     elif m in ('v3-1.1b', 'v3', 'mark-v3-1.1b', 'mark-v3', 'mark-v3-core-1.1b'):
@@ -505,7 +507,7 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
 
 def main():
     parser = argparse.ArgumentParser(description='Universal DeepSeek2 GGUF Exporter for Mark Models (IQ4_NL)')
-    parser.add_argument('--model', type=str, default='1.5b', choices=['302m', 'slm-v2-302m', 'engineer-1.5b', '1.5b', 'general-1.5b', 'vl-2.2b', 'v2-8b', 'v3-1.1b', 'slm-v3-150m', 'general-v3-1.5b', 'engineer-v3-1.5b', 'experimental-v3-8b', 'all'])
+    parser.add_argument('--model', type=str, default='1.5b', choices=['302m', 'slm-v2-302m', 'engineer-1.5b', '1.5b', 'general-1.5b', 'vl-2.2b', 'v2-8b', 'v3-1.1b', 'slm-v3-150m', 'general-v3-1.5b', 'engineer-v3-1.5b', 'general-v3-8b', 'experimental-v3-8b', 'all'])
     parser.add_argument('--ckpt', type=str, default='', help='Path to source .pt checkpoint')
     parser.add_argument('--out', type=str, default='', help='Path to destination .gguf container')
     parser.add_argument('--quant', type=str, default='iq4_nl', choices=['iq4_nl', 'f16'], help='Quantization type')
@@ -522,6 +524,7 @@ def main():
         'slm-v3-150m': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_slm_v3_150m.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_slm_v3_150m_iq4_nl.gguf')),
         'general-v3-1.5b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_general_v3_1_5b.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_general_v3_1_5b_iq4_nl.gguf')),
         'engineer-v3-1.5b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v3_1_5b.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v3_1_5b_iq4_nl.gguf')),
+        'general-v3-8b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_general_v3_8b_iq4_nl.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_general_v3_8b_iq4_nl.gguf')),
         'experimental-v3-8b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_experimental_v3_8b.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_experimental_v3_8b_iq4_nl.gguf')),
     }
 

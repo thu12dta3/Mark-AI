@@ -14,6 +14,7 @@ def test_slm_v3_150m_parameter_ceiling():
 def test_v3_lineup_dimensioning():
     cfg_gen = MarkV3Config.create_general_v3_1_5b()
     cfg_eng = MarkV3Config.create_engineer_v3_1_5b()
+    cfg_gen8b = MarkV3Config.create_general_v3_8b()
     cfg_exp = MarkV3Config.create_experimental_v3_8b()
 
     with torch.device("meta"):
@@ -23,6 +24,9 @@ def test_v3_lineup_dimensioning():
         m_eng = MarkV3ForCausalLM(cfg_eng)
         tot_eng = sum(p.numel() for p in m_eng.parameters())
 
+        m_gen8b = MarkV3ForCausalLM(cfg_gen8b)
+        tot_gen8b = sum(p.numel() for p in m_gen8b.parameters())
+
         m_exp = MarkV3ForCausalLM(cfg_exp)
         tot_exp = sum(p.numel() for p in m_exp.parameters())
 
@@ -30,6 +34,8 @@ def test_v3_lineup_dimensioning():
     assert 1_475_000_000 <= tot_eng <= 1_550_000_000, f"Engineer-V3-1.5B fora da faixa: {tot_eng}"
     assert tot_gen == tot_eng, "General-V3 e Engineer-V3 devem possuir contagem de parametros identica"
     assert 7_900_000_000 <= tot_exp <= 8_200_000_000, f"Experimental-V3-8B fora da faixa: {tot_exp}"
+    assert 7_900_000_000 <= tot_gen8b <= 8_200_000_000, f"General-V3-8B fora da faixa: {tot_gen8b}"
+    assert tot_gen8b == tot_exp, "General-V3-8B e Experimental-V3-8B devem possuir contagem de parametros identica"
 
 
 def test_v3_lineup_initial_forward():
@@ -37,6 +43,7 @@ def test_v3_lineup_initial_forward():
         MarkV3Config.create_slm_v3_150m(),
         MarkV3Config.create_general_v3_1_5b(),
         MarkV3Config.create_engineer_v3_1_5b(),
+        MarkV3Config.create_general_v3_8b(),
         MarkV3Config.create_experimental_v3_8b(),
     ]
 

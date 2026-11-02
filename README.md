@@ -16,6 +16,7 @@ Sparse Transformer architectures (Multi-Head Latent Attention + fine-grained Mix
 | **Mark-V3-1.1B** | Untrained Architectural Base | 656.13 MiB (688.00 MB / 688,002,048 bytes) | 1,222,464,960 | 330,651,072 | 32032 | `e12c358e81...` | [miceworks/Mark-V3-1.1B](https://huggingface.co/miceworks/Mark-V3-1.1B) |
 | **Mark-General-V3-1.5B** | Untrained Architectural Base | 816.03 MiB (855.67 MB / 855,669,248 bytes) | 1,520,496,960 | 405,729,600 | 32032 | `7677ebd444...` | [miceworks/Mark-General-V3-1.5B](https://huggingface.co/miceworks/Mark-General-V3-1.5B) |
 | **Mark-Engineer-V3-1.5B** | Untrained Architectural Base | 816.03 MiB (855.67 MB / 855,669,248 bytes) | 1,520,496,960 | 405,729,600 | 32032 | `62b8bd003a...` | [miceworks/Mark-Engineer-V3-1.5B](https://huggingface.co/miceworks/Mark-Engineer-V3-1.5B) |
+| **Mark-General-V3-8B** | Untrained Architectural Base | 4383.98 MiB (4596.94 MB / 4,596,938,048 bytes) | 8,168,001,024 | 2,002,374,144 | 32032 | `7a7b50a685...` | [miceworks/Mark-General-V3-8B](https://huggingface.co/miceworks/Mark-General-V3-8B) |
 | **Mark-Experimental-V3-8B** | Untrained Architectural Base | 4382.55 MiB (4595.44 MB / 4,595,438,848 bytes) | 8,168,001,024 | 2,002,374,144 | 32032 | `792e127a71...` | [miceworks/Mark-Experimental-V3-8B](https://huggingface.co/miceworks/Mark-Experimental-V3-8B) |
 
 ## Architecture
@@ -90,6 +91,7 @@ Mark-AI/
 │   ├── mark-experimental-v3-8b/
 │   ├── mark-general-1.5b/
 │   ├── mark-general-v3-1.5b/
+│   ├── mark-general-v3-8b/
 │   ├── mark-slm-v2-302m/
 │   ├── mark-slm-v3-150m/
 │   ├── mark-v3-1.1b/

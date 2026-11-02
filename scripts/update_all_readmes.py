@@ -232,6 +232,27 @@ MODELS_METADATA = [
         ),
     },
     {
+        "id": "mark-general-v3-8b",
+        "name": "Mark-General-V3-8B",
+        "hf_repo": "miceworks/Mark-General-V3-8B",
+        "is_vl": False,
+        "is_trained": False,
+        "is_v3": True,
+        "pipeline_tag": "text-generation",
+        "overview": (
+            "Mark-General-V3-8B is an 8B-class sparse language model designed for general reasoning, STEM, physics, "
+            "chemistry, encyclopedic synthesis, and epistemic Self-RAG reflection. It packs 32 layers, 32 routed experts, "
+            "2 shared experts, and full H-MLA attention into 8,168,001,024 total physical parameters (2,002,374,144 active per token).\n\n"
+            "Quantized in IQ4_NL, the binary occupies 4383.98 MiB (4596.94 MB / 4,596,938,048 bytes), operating within "
+            "standard 8 GB consumer GPUs while leaving over 3.4 GB of VRAM for context."
+        ),
+        "training_scope": (
+            "Untrained architectural base (UN-TRAINED_ARCHITECTURAL_BASE). The GGUF file contains initialized weights "
+            "for testing binary graph compatibility with llama.cpp, measuring memory footprint on target hardware, and "
+            "serving as a base for downstream pre-training and distillation into Mark-General-V3-1.5B."
+        ),
+    },
+    {
         "id": "mark-experimental-v3-8b",
         "name": "Mark-Experimental-V3-8B",
         "hf_repo": "miceworks/Mark-Experimental-V3-8B",
@@ -621,6 +642,7 @@ Mark-AI/
 │   ├── mark-experimental-v3-8b/
 │   ├── mark-general-1.5b/
 │   ├── mark-general-v3-1.5b/
+│   ├── mark-general-v3-8b/
 │   ├── mark-slm-v2-302m/
 │   ├── mark-slm-v3-150m/
 │   ├── mark-v3-1.1b/
