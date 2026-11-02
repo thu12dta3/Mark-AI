@@ -75,12 +75,24 @@ The models preserve native 3D tensor layouts (`blk.{i}.ffn_gate_exps.weight`, `b
     `[-127, -104, -83, -65, -49, -35, -22, -10, 1, 13, 25, 38, 53, 69, 89, 113]`
 - 1D RMSNorm tensors and router bias vectors remain in full precision `FP32`, ensuring numerical stability at layer boundaries.
 
+## Training Curricula & Datasets
+
+The Mark-AI model suite is trained and aligned on curated, token-efficient open datasets hosted on the Hugging Face Hub:
+
+| Dataset | Type | Samples | Primary Focus | Hugging Face Repository |
+| :--- | :--- | :---: | :--- | :--- |
+| **Mark-Ultra-Curriculum** | SFT / Master Corpus | 4,821 | Systems programming, Linux kernel stubs, eBPF, POSIX C, and robotics | [miceworks/Mark-Ultra-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Ultra-Curriculum) |
+| **Mark-Cyber-Curriculum** | SFT / DPO / ORPO | 6,700 | Vulnerability audit (CVE/CWE), red-teaming, reverse engineering, SIEM/YARA, eBPF secops, and AI defense | [miceworks/Mark-Cyber-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Cyber-Curriculum) |
+
 ## Repository Structure
 
 ```
 Mark-AI/
 ├── artifacts/              # Binary audits and verification reports
 │   └── gguf_forensic_audit.json
+├── datasets/               # Open training curricula and preference datasets
+│   ├── cyber_curriculum/   # Mark-Cyber-Curriculum (miceworks/Mark-Cyber-Curriculum)
+│   └── ultra_curriculum/   # Mark-Ultra-Curriculum (miceworks/Mark-Ultra-Curriculum)
 ├── export/                 # DeepSeek2 GGUF export and quantization pipelines
 │   └── convert_to_deepseek2_gguf.py
 ├── models/                 # Model configs, tokenizers and Modelfiles
@@ -97,6 +109,7 @@ Mark-AI/
 │   ├── mark-v3-1.1b/
 │   └── mark-vl-2.2b/
 ├── scripts/                # Verification and synchronization utilities
+│   ├── build_mark_cyber_dataset.py
 │   ├── generate_verification_manifests.py
 │   ├── gguf_forensic_xray.py
 │   ├── sanitize_all_models_metadata.py
@@ -110,7 +123,7 @@ Mark-AI/
 │       └── README.md
 ├── src/                    # PyTorch reference neural architectures
 │   └── model/
-└── tests/                  # Automated verification test suite (70 tests)
+└── tests/                  # Automated verification test suite (75 tests)
 ```
 
 ## Testing & Verification
@@ -121,11 +134,11 @@ The repository is validated against physical GGUF binaries using pytest:
 # 1. Validate Python syntax across all modules
 python3 -m compileall -q src/ export/ scripts/ models/ tests/ spaces/
 
-# 2. Run the 70-test comprehensive validation suite
+# 2. Run the 75-test comprehensive validation suite
 pytest tests/ -v
 ```
 
-All 70 tests must pass, verifying:
+All 75 tests must pass, verifying:
 - Cross-consistency between `config.json`, `tokenizer_config.json`, `tokenizer.json`, `Modelfile`, and GGUF headers.
 - Integer parity for total and active parameter counts.
 - Dual unit size verification (`MiB` and `MB`).
