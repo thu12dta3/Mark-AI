@@ -83,6 +83,7 @@ The Mark-AI model suite is trained and aligned on curated, token-efficient open 
 | :--- | :--- | :---: | :--- | :--- |
 | **Mark-Ultra-Curriculum** | SFT / Master Corpus | 4,821 | Systems programming, Linux kernel stubs, eBPF, POSIX C, and robotics | [miceworks/Mark-Ultra-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Ultra-Curriculum) |
 | **Mark-Cyber-Curriculum** | SFT / DPO / ORPO | 6,700 | Vulnerability audit (CVE/CWE), red-teaming, reverse engineering, SIEM/YARA, eBPF secops, and AI defense | [miceworks/Mark-Cyber-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Cyber-Curriculum) |
+| **Mark-Open-SLM-Curriculum** | Pretraining / SLM | 12,000 | Open SLM Rule 02 compliant pretraining: HellaSwag, ARC, PIQA, SciQ, ArithMark-3, and Cosmopedia STEM | [miceworks/Mark-Open-SLM-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Open-SLM-Curriculum) |
 
 ## Repository Structure
 
@@ -92,6 +93,7 @@ Mark-AI/
 │   └── gguf_forensic_audit.json
 ├── datasets/               # Open training curricula and preference datasets
 │   ├── cyber_curriculum/   # Mark-Cyber-Curriculum (miceworks/Mark-Cyber-Curriculum)
+│   ├── open_slm_curriculum/ # Mark-Open-SLM-Curriculum (miceworks/Mark-Open-SLM-Curriculum)
 │   └── ultra_curriculum/   # Mark-Ultra-Curriculum (miceworks/Mark-Ultra-Curriculum)
 ├── export/                 # DeepSeek2 GGUF export and quantization pipelines
 │   └── convert_to_deepseek2_gguf.py
@@ -110,6 +112,7 @@ Mark-AI/
 │   └── mark-vl-2.2b/
 ├── scripts/                # Verification and synchronization utilities
 │   ├── build_mark_cyber_dataset.py
+│   ├── build_open_slm_curriculum.py
 │   ├── generate_verification_manifests.py
 │   ├── gguf_forensic_xray.py
 │   ├── sanitize_all_models_metadata.py
