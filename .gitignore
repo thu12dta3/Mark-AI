@@ -49,6 +49,7 @@ checkpoints/
 kaggle.json
 *access_token*
 kaggle_slm_v3_150m/
+kaggle_slm_v3_eval/
 
 # OS & Editor Artifacts
 .DS_Store
