@@ -288,7 +288,7 @@ class MarkV3ForCausalLM(MarkV3PreTrainedModel):
             self.apply(self._init_weights)
             self.tie_weights()
 
-    def tie_weights(self):
+    def tie_weights(self, *args, **kwargs):
         if getattr(self.config, "tie_word_embeddings", True) and hasattr(self, "model") and hasattr(self.model, "embed_tokens"):
             self.lm_head.weight = self.model.embed_tokens.weight
 
