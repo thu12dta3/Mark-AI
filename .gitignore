@@ -50,6 +50,7 @@ kaggle.json
 *access_token*
 kaggle_slm_v3_150m/
 kaggle_slm_v3_eval/
+kaggle_slm_v3_cooldown/
 
 # OS & Editor Artifacts
 .DS_Store
