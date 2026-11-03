@@ -8,11 +8,12 @@ from src.model.mark_slm_v2_302m_arch import MarkSLMV2Config, MarkSLMV2Model
 from src.model.mark_engineer_v2_8b_arch import MarkEngineerV2Config, MarkEngineerV2Model
 from src.model.mark_vl_2_2b_arch import MarkVL2_2BConfig, MarkVLForCausalLM
 from src.model.mark_v3_arch import MarkV3Config, MarkV3Model, MarkV3ForCausalLM
+from src.model.mark_vl_v3_4b_arch import MarkVLV3Config, MarkVLV3ForConditionalGeneration
 from src.model.self_rag import SelfRAGController, SpecialTokens
 from export.quantize_4bit import NativeIQ4NLLinear, MarkInferenceEngine, load_mark_for_8gb_vram, enforce_vram_ceiling, quantize_mark_model_nf4
 quantize_to_iq4_nl = quantize_mark_model_nf4
 __version__ = '1.0.0'
-__all__ = ['MarkConfig', 'MarkModel', 'MarkForCausalLM', 'MarkSLMV2Config', 'MarkSLMV2Model', 'MarkEngineerV2Config', 'MarkEngineerV2Model', 'MarkVL2_2BConfig', 'MarkVLForCausalLM', 'MarkV3Config', 'MarkV3Model', 'MarkV3ForCausalLM', 'PagedKVCache', 'SelfRAGController', 'SpecialTokens', 'NativeIQ4NLLinear', 'MarkInferenceEngine', 'load_mark_for_8gb_vram', 'enforce_vram_ceiling', 'quantize_to_iq4_nl', 'quantize_mark_model_nf4', 'load_model']
+__all__ = ['MarkConfig', 'MarkModel', 'MarkForCausalLM', 'MarkSLMV2Config', 'MarkSLMV2Model', 'MarkEngineerV2Config', 'MarkEngineerV2Model', 'MarkVL2_2BConfig', 'MarkVLForCausalLM', 'MarkV3Config', 'MarkV3Model', 'MarkV3ForCausalLM', 'MarkVLV3Config', 'MarkVLV3ForConditionalGeneration', 'PagedKVCache', 'SelfRAGController', 'SpecialTokens', 'NativeIQ4NLLinear', 'MarkInferenceEngine', 'load_mark_for_8gb_vram', 'enforce_vram_ceiling', 'quantize_to_iq4_nl', 'quantize_mark_model_nf4', 'load_model']
 
 def _has_quantized_weights(sd: Dict[str, Any]) -> bool:
     for k, v in sd.items():
@@ -47,6 +48,8 @@ def load_model(variant: str='302m', checkpoint_path: Optional[str]=None, device:
             candidate_names.extend(['mark_general_v3_8b.pt', 'mark_general_v3_8b_iq4_nl.pt'])
         elif variant_norm in ('markvl-2.2b', 'markvl', 'markvl_2_2b'):
             candidate_names.extend(['mark_vl_2_2b.pt', 'mark_vl_2_2b_iq4_nl.pt'])
+        elif variant_norm in ('vl-v3-4b', 'mark-vl-v3-4b', 'vl_v3_4b', 'v3-4b'):
+            candidate_names.extend(['mark_vl_v3_4b.pt', 'mark_vl_v3_4b_iq4_nl.pt'])
         search_dirs = [root_dir / 'checkpoints', Path('checkpoints'), Path('/mnt/ssd_1/mark ai/checkpoints'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v2_8b')]
         for d in search_dirs:
             for name in candidate_names:
@@ -96,6 +99,9 @@ def load_model(variant: str='302m', checkpoint_path: Optional[str]=None, device:
     elif variant_norm in ('v3-1.1b', 'mark-v3-1.1b', 'v3', '3-1.1b', 'v3_1.1b', 'core-1.1b', 'mark-v3-core-1.1b'):
         config = MarkV3Config()
         model_cls = MarkV3ForCausalLM
+    elif variant_norm in ('vl-v3-4b', 'mark-vl-v3-4b', 'vl_v3_4b', 'v3-4b'):
+        config = MarkVLV3Config()
+        model_cls = MarkVLV3ForConditionalGeneration
     elif variant_norm in ('primal', 'base', '0.1'):
         config = MarkConfig.create_primal()
         model_cls = MarkModel

@@ -1,0 +1,31 @@
+{
+  "model_id": "mark-vl-v3-4b",
+  "model_name": "Mark-VL-V3-4B",
+  "weight_state": "UN-TRAINED_ARCHITECTURAL_BASE",
+  "provenance": {
+    "gguf_file": "mark_vl_v3_4b_iq4_nl.gguf",
+    "mmproj_file": "mmproj-mark_vl_v3_4b.gguf",
+    "quantization": "IQ4_NL"
+  },
+  "tensor_architecture": {
+    "physical_total_parameters": 4134688769,
+    "physical_active_parameters": 824483584,
+    "total_parameters_formatted": "4,134,688,769",
+    "active_parameters_formatted": "824,483,584"
+  },
+  "vocabulary_alignment": {
+    "config_vocab_size": 32032,
+    "tokenizer_config_vocab_size": 32032,
+    "tokenizer_json_vocab_len": 32032,
+    "vocab_equality_verified": true,
+    "bos_token": "<|bos|>",
+    "eos_token": "<|eos|>",
+    "pad_token": "<|pad|>",
+    "special_tokens_verified": true
+  },
+  "modelfile_alignment": {
+    "stop_token": "<|eos|>",
+    "no_unregistered_tokens": true,
+    "adapter": "mmproj-mark_vl_v3_4b.gguf"
+  }
+}

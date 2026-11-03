@@ -421,13 +421,26 @@ class MarkV3Model(nn.Module):
         self.norm = RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.rotary_emb = MarkV3YaRNRotaryEmbedding(config)
 
-    def forward(self, input_ids: torch.Tensor, attention_mask: Optional[torch.Tensor]=None, clan_id: Optional[int]=None, core_loops: int=1) -> torch.Tensor:
-        bsz, seqlen = input_ids.shape
-        x = self.embed_tokens(input_ids)
-        cos, sin = self.rotary_emb(seqlen, device=input_ids.device)
+    @torch.no_grad()
+    def fuse_hadamard_weights_(self):
+        for layer in self.layers:
+            layer.attn.fuse_hadamard_weights_()
+
+    def forward(self, input_ids: Optional[torch.Tensor]=None, attention_mask: Optional[torch.Tensor]=None, clan_id: Optional[int]=None, core_loops: int=1, inputs_embeds: Optional[torch.Tensor]=None) -> torch.Tensor:
+        if inputs_embeds is None:
+            if input_ids is None:
+                raise ValueError("Must provide either input_ids or inputs_embeds")
+            bsz, seqlen = input_ids.shape
+            x = self.embed_tokens(input_ids)
+            device = input_ids.device
+        else:
+            bsz, seqlen = inputs_embeds.shape[:2]
+            x = inputs_embeds
+            device = inputs_embeds.device
+        cos, sin = self.rotary_emb(seqlen, device=device)
         causal_mask = None
         if attention_mask is not None:
-            causal_mask = torch.ones((bsz, 1, seqlen, seqlen), dtype=torch.bool, device=input_ids.device).tril(0)
+            causal_mask = torch.ones((bsz, 1, seqlen, seqlen), dtype=torch.bool, device=device).tril(0)
             causal_mask = causal_mask & attention_mask[:, None, None, :].bool()
         for i in range(min(4, len(self.layers))):
             x = self.layers[i](x, cos, sin, mask=causal_mask, clan_id=clan_id)
@@ -456,8 +469,12 @@ class MarkV3ForCausalLM(nn.Module):
         if config.tie_word_embeddings:
             self.lm_head.weight = self.model.embed_tokens.weight
 
-    def forward(self, input_ids: torch.Tensor, attention_mask: Optional[torch.Tensor]=None, labels: Optional[torch.Tensor]=None, clan_id: Optional[int]=None, core_loops: int=1) -> Union[torch.Tensor, Dict[str, torch.Tensor]]:
-        hidden_states = self.model(input_ids, attention_mask=attention_mask, clan_id=clan_id, core_loops=core_loops)
+    @torch.no_grad()
+    def fuse_hadamard_weights_(self):
+        self.model.fuse_hadamard_weights_()
+
+    def forward(self, input_ids: Optional[torch.Tensor]=None, attention_mask: Optional[torch.Tensor]=None, labels: Optional[torch.Tensor]=None, clan_id: Optional[int]=None, core_loops: int=1, inputs_embeds: Optional[torch.Tensor]=None) -> Union[torch.Tensor, Dict[str, torch.Tensor]]:
+        hidden_states = self.model(input_ids, attention_mask=attention_mask, clan_id=clan_id, core_loops=core_loops, inputs_embeds=inputs_embeds)
         logits = self.lm_head(hidden_states)
         if labels is not None:
             shift_logits = logits[..., :-1, :].contiguous()

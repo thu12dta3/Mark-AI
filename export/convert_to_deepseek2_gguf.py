@@ -20,6 +20,7 @@ from src.model.mark_slm_v2_302m_arch import MarkSLMV2Config, MarkSLMV2Model
 from src.model.mark_engineer_v2_8b_arch import MarkEngineerV2Config, MarkEngineerV2Model
 from src.model.mark_vl_2_2b_arch import MarkVL2_2BConfig, MarkVLForCausalLM
 from src.model.mark_v3_arch import MarkV3Config, MarkV3Block, MarkV3ForCausalLM, get_walsh_hadamard_matrix
+from src.model.mark_vl_v3_4b_arch import MarkVLV3Config, MarkVLV3ForConditionalGeneration
 
 lut = torch.tensor(IQ4_NL_LOOKUP_VALUES, dtype=torch.float32)
 
@@ -172,6 +173,75 @@ def verify_gguf_integrity(gguf_path: Path):
     del reader, tensor_names
     gc.collect()
 
+def verify_mmproj_integrity(mmproj_path: Path):
+    print(f'[Mark GGUF Exporter] Verifying mmproj container integrity: {mmproj_path}...')
+    reader = gguf.GGUFReader(str(mmproj_path))
+    arch = reader.get_field('general.architecture')
+    arch_str = bytes(arch.parts[arch.data[0]]).decode('utf-8') if arch else 'unknown'
+    assert arch_str in ('clip', 'mmp', 'mmproj'), f'Expected mmproj architecture, got {arch_str}'
+    tensor_names = [tensor.name for tensor in reader.tensors]
+    assert any(('patch_embed' in t for t in tensor_names)), 'Missing patch_embed in mmproj!'
+    assert any(('mm.' in t or 'swiglu' in t or 'norm_in' in t for t in tensor_names)), 'Missing projector in mmproj!'
+    print(f'[Mark GGUF Exporter] mmproj Integrity Verified: architecture={arch_str}, total_tensors={len(tensor_names)}')
+    del reader, tensor_names
+    gc.collect()
+
+def export_mmproj_gguf(config: Any, sd: Optional[Dict[str, Any]], output_path: Path, quant_type: str = 'f16') -> Path:
+    print(f'[Mark GGUF Exporter] Exporting mmproj container to {output_path} ({quant_type.upper()})...')
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    writer = gguf.GGUFWriter(str(output_path), 'clip')
+    writer.add_name('mmproj-mark-vl-v3-4b')
+    writer.add_description('Mark-VL-V3-4B Vision Tower & Pixel-Shuffle Projector Adapter')
+    writer.add_uint32('clip.vision.image_size', getattr(config, 'image_size', 448))
+    writer.add_uint32('clip.vision.patch_size', getattr(config, 'patch_size', 14))
+    writer.add_uint32('clip.vision.embedding_length', getattr(config, 'vision_hidden_size', 1024))
+    writer.add_uint32('clip.vision.block_count', getattr(config, 'vision_layers', 16))
+    writer.add_uint32('clip.vision.feed_forward_length', getattr(config, 'vision_intermediate_size', 2816))
+    writer.add_uint32('clip.vision.head_count', getattr(config, 'vision_heads', 16))
+    writer.add_uint32('clip.vision.pixel_shuffle_scale', getattr(config, 'pixel_shuffle_scale', 2))
+    writer.add_uint32('clip.vision.projector_dim', getattr(config, 'hidden_size', 1792))
+
+    if sd is None:
+        from src.model.mark_vl_v3_4b_arch import MarkV3VisionTower, MarkV3PixelShuffleProjector
+        vt = MarkV3VisionTower(config)
+        proj = MarkV3PixelShuffleProjector(config)
+        raw_tensors = {}
+        for k, v in vt.state_dict().items():
+            raw_tensors[f'v.{k}'] = v
+        for k, v in proj.state_dict().items():
+            raw_tensors[f'mm.{k}'] = v
+        del vt, proj
+        gc.collect()
+    else:
+        raw_tensors = {}
+        for k, v in sd.items():
+            if k.startswith('vision_tower.'):
+                raw_tensors[k.replace('vision_tower.', 'v.')] = v
+            elif k.startswith('projector.'):
+                raw_tensors[k.replace('projector.', 'mm.')] = v
+
+    for name, val in raw_tensors.items():
+        if isinstance(val, torch.Tensor):
+            arr = val.detach().cpu().float().numpy()
+        else:
+            arr = np.asarray(val, dtype=np.float32)
+        if quant_type.lower() == 'q8_0' and arr.ndim == 2 and arr.shape[-1] % 32 == 0:
+            q = gguf.quants.quantize(arr, gguf.GGMLQuantizationType.Q8_0)
+            writer.add_tensor(name, q, raw_dtype=gguf.GGMLQuantizationType.Q8_0)
+        elif arr.ndim > 1:
+            writer.add_tensor(name, arr.astype(np.float16))
+        else:
+            writer.add_tensor(name, arr)
+
+    writer.write_header_to_file()
+    writer.write_kv_data_to_file()
+    writer.write_tensors_to_file()
+    writer.close()
+    verify_mmproj_integrity(output_path)
+    size_mb = output_path.stat().st_size / (1024 * 1024)
+    print(f'[Mark GGUF Exporter] Success mmproj: {output_path} ({size_mb:.2f} MB)')
+    return output_path
+
 def get_model_config(model_type: str) -> Any:
     m = model_type.lower().strip()
     if m in ('302m', 'engineer-302m', '300m', 'mark-engineer-302m'):
@@ -198,13 +268,21 @@ def get_model_config(model_type: str) -> Any:
         return MarkV3Config.create_experimental_v3_8b()
     elif m in ('v3-1.1b', 'v3', 'mark-v3-1.1b', 'mark-v3', 'mark-v3-core-1.1b'):
         return MarkV3Config()
+    elif m in ('vl-v3-4b', 'mark-vl-v3-4b', 'vl_v3_4b', 'v3-4b'):
+        return MarkVLV3Config()
     else:
         raise ValueError(f'Unsupported model type: {model_type}')
 
 def build_model_state_dict(model_type: str, config: Any) -> Dict[str, Any]:
     m = model_type.lower().strip()
     print(f'[Mark GGUF Exporter] Initializing weights from PyTorch architecture for {model_type}...')
-    if isinstance(config, MarkV3Config) or 'v3' in m:
+    if m in ('vl-v3-4b', 'mark-vl-v3-4b', 'vl_v3_4b', 'v3-4b') or isinstance(config, MarkVLV3Config):
+        model = MarkVLV3ForConditionalGeneration(config)
+        model.eval()
+        for layer in model.model.layers:
+            layer.attn.fuse_hadamard_weights_()
+        sd = model.state_dict()
+    elif isinstance(config, MarkV3Config) or 'v3' in m:
         model = MarkV3ForCausalLM(config)
         model.eval()
         for layer in model.model.layers:
@@ -224,7 +302,7 @@ def build_model_state_dict(model_type: str, config: Any) -> Dict[str, Any]:
         sd = model.state_dict()
     return sd
 
-def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_gguf: Path, model_name: Optional[str] = None, quant_type: Optional[str] = None):
+def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_gguf: Path, model_name: Optional[str] = None, quant_type: Optional[str] = None, mmproj_path: Optional[Path] = None, mmproj_quant: str = 'f16'):
     config = get_model_config(model_type)
     is_v3 = isinstance(config, MarkV3Config) or 'v3' in model_type.lower()
     if model_name is None:
@@ -518,14 +596,22 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
     tempfile.tempdir = orig_tempdir
     size_mb = output_gguf.stat().st_size / (1024 * 1024)
     print(f'[Mark GGUF Exporter] Success: {output_gguf} ({size_mb:.2f} MB)')
+
+    if isinstance(config, MarkVLV3Config) or model_type.lower().strip() in ('vl-v3-4b', 'mark-vl-v3-4b', 'vl_v3_4b', 'v3-4b'):
+        if mmproj_path is None:
+            mmproj_path = output_gguf.parent / 'mmproj-mark_vl_v3_4b.gguf'
+        export_mmproj_gguf(config, sd, Path(mmproj_path), quant_type=mmproj_quant)
+
     return output_gguf
 
 def main():
     parser = argparse.ArgumentParser(description='Universal DeepSeek2 GGUF Exporter for Mark Models (IQ4_NL)')
-    parser.add_argument('--model', type=str, default='1.5b', choices=['302m', 'slm-v2-302m', 'engineer-1.5b', '1.5b', 'general-1.5b', 'vl-2.2b', 'v2-8b', 'v3-1.1b', 'slm-v3-150m', 'general-v3-1.5b', 'engineer-v3-1.5b', 'general-v3-8b', 'experimental-v3-8b', 'all'])
+    parser.add_argument('--model', type=str, default='1.5b', choices=['302m', 'slm-v2-302m', 'engineer-1.5b', '1.5b', 'general-1.5b', 'vl-2.2b', 'v2-8b', 'v3-1.1b', 'slm-v3-150m', 'general-v3-1.5b', 'engineer-v3-1.5b', 'general-v3-8b', 'experimental-v3-8b', 'vl-v3-4b', 'mark-vl-v3-4b', 'all'])
     parser.add_argument('--ckpt', type=str, default='', help='Path to source .pt checkpoint')
     parser.add_argument('--out', type=str, default='', help='Path to destination .gguf container')
     parser.add_argument('--quant', type=str, default='iq4_nl', choices=['iq4_nl', 'f16'], help='Quantization type')
+    parser.add_argument('--mmproj-out', type=str, default='', help='Path to destination mmproj .gguf container')
+    parser.add_argument('--mmproj-quant', type=str, default='f16', choices=['f16', 'q8_0'], help='Quantization for mmproj (f16 or q8_0)')
     args = parser.parse_args()
 
     default_paths = {
@@ -541,6 +627,8 @@ def main():
         'engineer-v3-1.5b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v3_1_5b.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v3_1_5b_iq4_nl.gguf')),
         'general-v3-8b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_general_v3_8b_iq4_nl.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_general_v3_8b_iq4_nl.gguf')),
         'experimental-v3-8b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_experimental_v3_8b.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_experimental_v3_8b_iq4_nl.gguf')),
+        'vl-v3-4b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_vl_v3_4b/mark_vl_v3_4b.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_vl_v3_4b/mark_vl_v3_4b_iq4_nl.gguf')),
+        'mark-vl-v3-4b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_vl_v3_4b/mark_vl_v3_4b.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_vl_v3_4b/mark_vl_v3_4b_iq4_nl.gguf')),
     }
 
     models_to_export = list(default_paths.keys()) if args.model == 'all' else ['engineer-1.5b' if args.model == '1.5b' else args.model]
@@ -548,7 +636,8 @@ def main():
         def_src, def_dst = default_paths.get(m, (None, Path(f'/mnt/ssd_1/mark ai/checkpoints/{m}.gguf')))
         src = Path(args.ckpt) if args.ckpt and args.model != 'all' else def_src
         dst = Path(args.out) if args.out and args.model != 'all' else def_dst
-        export_to_deepseek2_gguf(m, src, dst, quant_type=args.quant)
+        mm_dst = Path(args.mmproj_out) if args.mmproj_out and args.model != 'all' else None
+        export_to_deepseek2_gguf(m, src, dst, quant_type=args.quant, mmproj_path=mm_dst, mmproj_quant=args.mmproj_quant)
 
 if __name__ == '__main__':
     main()
