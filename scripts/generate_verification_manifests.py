@@ -92,7 +92,7 @@ MODELS = [
         "name": "Mark-SLM-V3-150M",
         "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_slm_v3_150m_iq4_nl.gguf",
         "gguf_filename": "mark_slm_v3_150m_iq4_nl.gguf",
-        "weight_state": "UN-TRAINED_ARCHITECTURAL_BASE",
+        "weight_state": "TRAINED_MODEL_SOUP_25K_BASE_4K_COOLDOWN",
         "pt_class": "MarkV3ForCausalLM",
         "pt_cfg_fn": lambda: MarkV3Config.create_slm_v3_150m(),
         "is_vl": False,

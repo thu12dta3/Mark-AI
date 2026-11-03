@@ -5,6 +5,8 @@ pipeline_tag: text-generation
 language:
   - en
   - pt
+datasets:
+  - miceworks/Mark-Open-SLM-Curriculum
 tags:
   - gguf
   - deepseek2
@@ -22,15 +24,15 @@ tags:
 
 Mark-SLM-V3-150M is a compact edge model built to stay under the 150M parameter ceiling. By using tied word embeddings (reusing token_embd.weight as the language model output projection), the GGUF file contains 272 tensors and exactly 146,899,248 parameters (54.00M active per token).
 
-Quantized in IQ4_NL, the container occupies 79.97 MiB (83.85 MB / 83,849,984 bytes), making it suitable for low-power edge microcontrollers and embedded devices.
+Quantized in IQ4_NL, the container occupies 80.48 MiB (84.39 MB / 84,385,888 bytes), making it suitable for low-power edge microcontrollers and embedded devices.
 
 ## Specifications
 
 | Field | Value |
 | :--- | :--- |
 | Architecture | `deepseek2` |
-| Weight State | `UN-TRAINED_ARCHITECTURAL_BASE` |
-| Binary Size | `79.97 MiB (83.85 MB / 83,849,984 bytes)` |
+| Weight State | `TRAINED_MODEL_SOUP_25K_BASE_4K_COOLDOWN` |
+| Binary Size | `80.48 MiB (84.39 MB / 84,385,888 bytes)` |
 | Total Parameters | `146,899,248` (146899248 physical) |
 | Active Parameters | `54,001,968` (54001968 active) |
 | Vocabulary Size | `32032` |
@@ -129,7 +131,9 @@ The model is quantized to GGML_TYPE_IQ4_NL (4-bit non-linear) within the native 
 
 ## Training Status
 
-Untrained architectural base (UN-TRAINED_ARCHITECTURAL_BASE). The GGUF file contains initialized weights for testing binary graph compatibility with llama.cpp, measuring memory usage on target hardware, and serving as a base for downstream pre-training and fine-tuning.
+Trained model checkpoint (TRAINED_MODEL_SOUP_25K_BASE_4K_COOLDOWN). The model was trained through 25,000 optimization steps of pre-training followed by 4,000 steps of Phase 2 Cooldown with Contrastive Answer-Masking and dynamic MoE load balancing on Kaggle cloud GPUs, consolidated via 50/50 Model Soup (Weight Averaging).
+
+Evaluated on the official Open SLM Leaderboard benchmark suite (Rule 01 & Rule 02 compliant), achieving an official AxiomicLabs Intelligence Index of 16.36.
 
 All reported metrics represent physical parameter counts and deterministic SHA-256 checksums from the GGUF binary.
 

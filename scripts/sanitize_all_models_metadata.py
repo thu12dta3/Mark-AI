@@ -88,9 +88,9 @@ MODELS_SPECS = [
         "gguf_filename": "mark_slm_v3_150m_iq4_nl.gguf",
         "name": "Mark-SLM-V3-150M",
         "description": "Sub-200M parameter edge model with native DeepSeek2 MoE and MLA architecture.",
-        "weight_state": "UN-TRAINED_ARCHITECTURAL_BASE",
+        "weight_state": "TRAINED_MODEL_SOUP_25K_BASE_4K_COOLDOWN",
         "is_vl": False,
-        "is_untrained": True,
+        "is_untrained": False,
     },
     {
         "id": "mark-v3-1.1b",
