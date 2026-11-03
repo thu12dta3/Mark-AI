@@ -437,14 +437,14 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
         if head_key in sd:
             w_out = extract_linear_weight(sd, 'lm_head', dim, config.vocab_size)
         else:
-            w_out = w_emb
+            w_out = w_emb.clone()
     else:
         n_layers = getattr(config, 'n_layers', getattr(config, 'num_hidden_layers', 16))
         embed_mod = torch.nn.Embedding(config.vocab_size, dim)
         w_emb = embed_mod.weight.data.float()
         norm_raw = torch.ones(dim, dtype=torch.float32)
         if getattr(config, 'tie_word_embeddings', False):
-            w_out = w_emb
+            w_out = w_emb.clone()
         else:
             lm_head_mod = torch.nn.Linear(dim, config.vocab_size, bias=False)
             w_out = lm_head_mod.weight.data.float()
@@ -460,14 +460,12 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
     del norm_raw
     gc.collect()
 
-    should_skip_output = getattr(config, 'tie_word_embeddings', False) and ('150m' in model_type.lower() or 'slm-v3' in model_type.lower())
-    if not should_skip_output:
-        if w_out.shape[0] < pad_vocab_size:
-            pad = torch.zeros((pad_vocab_size - w_out.shape[0], w_out.shape[1]), dtype=torch.float32)
-            w_out = torch.cat([w_out, pad], dim=0)
-        add_linear(writer, 'output.weight', w_out)
-    else:
-        print(f'[Mark GGUF Exporter] Skipping output.weight for tied model {model_type} (llama.cpp deepseek2 reuses token_embd.weight)')
+    # llama.cpp deepseek2 architecture requires output.weight to be explicitly present in the GGUF container
+    # even when tie_word_embeddings is True, otherwise logits remain uninitialized causing gibberish.
+    if w_out.shape[0] < pad_vocab_size:
+        pad = torch.zeros((pad_vocab_size - w_out.shape[0], w_out.shape[1]), dtype=torch.float32)
+        w_out = torch.cat([w_out, pad], dim=0)
+    add_linear(writer, 'output.weight', w_out)
     del w_out
     gc.collect()
 

@@ -22,9 +22,9 @@ tags:
 
 ## Overview
 
-Mark-SLM-V3-150M is a compact edge model built to stay under the 150M parameter ceiling. By using tied word embeddings (reusing token_embd.weight as the language model output projection), the GGUF file contains 272 tensors and exactly 146,899,248 parameters (54.00M active per token).
+Mark-SLM-V3-150M is a compact edge model built to stay under the 150M parameter ceiling with exactly 146,899,248 physical parameters (54.00M active per token). In the GGUF container, `output.weight` is explicitly materialized (bringing the container tensor count to 273 tensors) to ensure out-of-the-box compatibility with `llama.cpp` and `Ollama` without relying on runtime tied-embeddings fallback.
 
-Quantized in IQ4_NL, the container occupies 80.48 MiB (84.39 MB / 84,385,888 bytes), making it suitable for low-power edge microcontrollers and embedded devices.
+Quantized in IQ4_NL, the container occupies 90.37 MiB (94.76 MB / 94,764,288 bytes), making it suitable for low-power edge microcontrollers and embedded devices.
 
 ## Specifications
 
@@ -32,7 +32,7 @@ Quantized in IQ4_NL, the container occupies 80.48 MiB (84.39 MB / 84,385,888 byt
 | :--- | :--- |
 | Architecture | `deepseek2` |
 | Weight State | `TRAINED_MODEL_SOUP_25K_BASE_4K_COOLDOWN` |
-| Binary Size | `80.48 MiB (84.39 MB / 84,385,888 bytes)` |
+| Binary Size | `90.37 MiB (94.76 MB / 94,764,288 bytes)` |
 | Total Parameters | `146,899,248` (146899248 physical) |
 | Active Parameters | `54,001,968` (54001968 active) |
 | Vocabulary Size | `32032` |
@@ -43,9 +43,9 @@ Quantized in IQ4_NL, the container occupies 80.48 MiB (84.39 MB / 84,385,888 byt
 | MoE Experts | `16 routed, 1 shared (2 active/token)` |
 | Expert FFN Dim | `256` |
 | Context Length | `8192` tokens |
-| Tensor Count | `272` |
-| Quantization Types | `{'IQ4_NL': 196, 'F32': 76}` |
-| SHA-256 | `44417a82088f6394a9c619060febdf47ae0daca3ba38fd81525e31b1bbf2a66c` |
+| Tensor Count | `273` |
+| Quantization Types | `{'IQ4_NL': 197, 'F32': 76}` |
+| SHA-256 | `51a89fc7b792044f864d551fc1540cf8693adb2949599a1666b2d5d9f092f7b0` |
 
 ## Open SLM Leaderboard Benchmarks
 
@@ -117,7 +117,7 @@ Physical memory consumption of the KV cache per token:
    Routing enforces soft-pinning constraints ensuring balanced domain representation per token.
 
 3. **Latent Recursive Depth (LRD) & Tied Embeddings**:
-   Enables recurrent intermediate latent steps while enforcing weight-tying between input and output representations to minimize physical disk and VRAM footprints.
+   Enables recurrent intermediate latent steps while enforcing weight-tying between input and output representations to minimize physical parameters (146,899,248 physical parameters). Note: `output.weight` is explicitly materialized into the GGUF binary (273 total tensors) for full out-of-the-box compatibility across `llama.cpp` runtimes and Ollama without relying on runtime fallback heuristics.
 
 ## Quantization
 
@@ -153,7 +153,7 @@ hf_hub_download(repo_id="miceworks/Mark-SLM-V3-150M", filename="mark_slm_v3_150m
 ### Cryptographic Verification
 
 ```bash
-echo "44417a82088f6394a9c619060febdf47ae0daca3ba38fd81525e31b1bbf2a66c  mark_slm_v3_150m_iq4_nl.gguf" | sha256sum -c -
+echo "51a89fc7b792044f864d551fc1540cf8693adb2949599a1666b2d5d9f092f7b0  mark_slm_v3_150m_iq4_nl.gguf" | sha256sum -c -
 ```
 
 ### Ollama

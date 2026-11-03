@@ -36,7 +36,7 @@
   "total_parameters": 146899248,
   "active_parameters_per_token": 54001968,
   "weight_state": "TRAINED_MODEL_SOUP_25K_BASE_4K_COOLDOWN",
-  "sha256": "44417a82088f6394a9c619060febdf47ae0daca3ba38fd81525e31b1bbf2a66c",
+  "sha256": "51a89fc7b792044f864d551fc1540cf8693adb2949599a1666b2d5d9f092f7b0",
   "target_platforms": [
     "Ollama",
     "LM Studio",

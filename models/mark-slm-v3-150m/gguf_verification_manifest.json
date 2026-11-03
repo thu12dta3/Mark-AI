@@ -5,18 +5,18 @@
   "provenance": {
     "gguf_file": "mark_slm_v3_150m_iq4_nl.gguf",
     "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_slm_v3_150m_iq4_nl.gguf",
-    "sha256": "44417a82088f6394a9c619060febdf47ae0daca3ba38fd81525e31b1bbf2a66c",
+    "sha256": "51a89fc7b792044f864d551fc1540cf8693adb2949599a1666b2d5d9f092f7b0",
     "sha256_match_config": true,
-    "size_bytes": 84385888,
-    "size_mib": 80.48,
-    "size_mb": 84.39,
-    "size_formatted": "80.48 MiB (84.39 MB / 84,385,888 bytes)",
+    "size_bytes": 94764288,
+    "size_mib": 90.37,
+    "size_mb": 94.76,
+    "size_formatted": "90.37 MiB (94.76 MB / 94,764,288 bytes)",
     "quantization": "IQ4_NL"
   },
   "tensor_architecture": {
-    "total_tensors": 272,
+    "total_tensors": 273,
     "tensor_types": {
-      "IQ4_NL": 196,
+      "IQ4_NL": 197,
       "F32": 76
     },
     "all_1d_norms_fp32": true,
