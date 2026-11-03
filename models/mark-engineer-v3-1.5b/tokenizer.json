@@ -686,6 +686,42 @@
       "rstrip": false,
       "normalized": false,
       "special": true
+    },
+    {
+      "id": 32000,
+      "content": "<tool_call>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 32001,
+      "content": "</tool_call>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 32002,
+      "content": "<tool_response>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 32003,
+      "content": "</tool_response>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
     }
   ],
   "normalizer": {
@@ -32728,10 +32764,6 @@
       "<extra_token_31997>": 31997,
       "<extra_token_31998>": 31998,
       "<extra_token_31999>": 31999,
-      "<extra_token_32000>": 32000,
-      "<extra_token_32001>": 32001,
-      "<extra_token_32002>": 32002,
-      "<extra_token_32003>": 32003,
       "<extra_token_32004>": 32004,
       "<extra_token_32005>": 32005,
       "<extra_token_32006>": 32006,
@@ -32759,7 +32791,11 @@
       "<extra_token_32028>": 32028,
       "<extra_token_32029>": 32029,
       "<extra_token_32030>": 32030,
-      "<extra_token_32031>": 32031
+      "<extra_token_32031>": 32031,
+      "<tool_call>": 32000,
+      "</tool_call>": 32001,
+      "<tool_response>": 32002,
+      "</tool_response>": 32003
     },
     "merges": [
       [
