@@ -247,7 +247,11 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
             w_writer.add_tensor(name, arr)
 
     if ckpt_path is not None and Path(ckpt_path).exists() and Path(ckpt_path).is_file():
-        raw_ckpt = torch.load(ckpt_path, map_location='cpu', weights_only=False)
+        if str(ckpt_path).endswith('.safetensors'):
+            from safetensors.torch import load_file
+            raw_ckpt = load_file(str(ckpt_path), device='cpu')
+        else:
+            raw_ckpt = torch.load(ckpt_path, map_location='cpu', weights_only=False)
         candidate_sd = raw_ckpt.get('model_state_dict', raw_ckpt) if isinstance(raw_ckpt, dict) else raw_ckpt
         has_tensors = isinstance(candidate_sd, dict) and any('weight' in k for k in candidate_sd.keys())
         if has_tensors:
@@ -423,8 +427,19 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
         kv_norm_key = next((k for k in (f'{pfx}attn.kv_norm.weight', f'{pfx}attn.kv_a_layernorm.weight') if k in cur_sd), None)
         kv_norm_w = cur_sd[kv_norm_key].float()
 
-        wkv_b_prefix = f'{pfx}attn.w_kv_b' if f'{pfx}attn.w_kv_b.weight' in cur_sd or f'{pfx}attn.w_kv_b.qweight' in cur_sd else f'{pfx}attn.wkv_b'
-        wkv_b = extract_linear_weight(cur_sd, wkv_b_prefix, config.kv_lora_rank, n_heads * (config.qk_nope_head_dim + config.v_head_dim))
+        if f'{pfx}attn.wk_b.weight' in cur_sd and f'{pfx}attn.wv_b.weight' in cur_sd:
+            wk_b = extract_linear_weight(cur_sd, f'{pfx}attn.wk_b', config.kv_lora_rank, n_heads * config.qk_nope_head_dim)
+            wv_b = extract_linear_weight(cur_sd, f'{pfx}attn.wv_b', config.kv_lora_rank, n_heads * config.v_head_dim)
+            wkv_b = torch.cat(
+                [
+                    wk_b.view(n_heads, config.qk_nope_head_dim, config.kv_lora_rank),
+                    wv_b.view(n_heads, config.v_head_dim, config.kv_lora_rank),
+                ],
+                dim=1,
+            ).reshape(n_heads * (config.qk_nope_head_dim + config.v_head_dim), config.kv_lora_rank)
+        else:
+            wkv_b_prefix = f'{pfx}attn.w_kv_b' if f'{pfx}attn.w_kv_b.weight' in cur_sd or f'{pfx}attn.w_kv_b.qweight' in cur_sd else f'{pfx}attn.wkv_b'
+            wkv_b = extract_linear_weight(cur_sd, wkv_b_prefix, config.kv_lora_rank, n_heads * (config.qk_nope_head_dim + config.v_head_dim))
 
         if is_v3 and sd is not None:
             h_mat = get_walsh_hadamard_matrix(config.kv_lora_rank).to(device=wkv_b.device, dtype=torch.float32)

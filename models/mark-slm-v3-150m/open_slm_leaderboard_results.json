@@ -1,0 +1,38 @@
+{
+  "benchmark": "Open SLM Leaderboard",
+  "organization": "AxiomicLabs & Miceworks",
+  "model_id": "miceworks/Mark-SLM-V3-150M",
+  "model_parameters": 146899248,
+  "parameter_ceiling": "< 150M (Rule 01)",
+  "checkpoint": "Model Soup 50/50 (OptStep 25000 Base + OptStep 4000 Cooldown)",
+  "commit_evaluated": "ada42278",
+  "timestamp_utc": "2026-11-03T01:43:17.757482+00:00",
+  "intelligence_index": 16.36,
+  "weights": {
+    "hellaswag": 1.0,
+    "arc_avg": 1.0,
+    "piqa": 1.0,
+    "arithmark3": 0.65,
+    "denominator": 3.65
+  },
+  "scores_raw": {
+    "hellaswag_acc_norm": 37.1,
+    "arc_easy_acc_norm": 40.8,
+    "arc_challenge_acc_norm": 25.5,
+    "piqa_acc_norm": 62.5,
+    "arithmark3_acc": 33.9
+  },
+  "scores_normalized": {
+    "hellaswag_norm": 16.13,
+    "arc_easy_norm": 21.07,
+    "arc_challenge_norm": 0.67,
+    "piqa_norm": 25.0,
+    "arithmark3_norm": 11.87,
+    "arc_avg_norm": 10.87
+  },
+  "leaderboard_rankings_reference": {
+    "gpt_x3_150m_baseline": 35.12,
+    "pre_cooldown_step_25000": 10.04,
+    "model_soup_final_mark_slm_v3_150m": 16.36
+  }
+}

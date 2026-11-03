@@ -35,8 +35,8 @@
   "quantization": "IQ4_NL",
   "total_parameters": 146899248,
   "active_parameters_per_token": 54001968,
-  "weight_state": "UN-TRAINED_ARCHITECTURAL_BASE",
-  "sha256": "6308c8c1529b79e3965131693dbbf46937950b38f88d9791aa6d97a4b87b9a34",
+  "weight_state": "TRAINED_MODEL_SOUP_25K_BASE_4K_COOLDOWN",
+  "sha256": "44417a82088f6394a9c619060febdf47ae0daca3ba38fd81525e31b1bbf2a66c",
   "target_platforms": [
     "Ollama",
     "LM Studio",

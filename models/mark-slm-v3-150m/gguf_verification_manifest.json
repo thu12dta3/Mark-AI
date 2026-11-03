@@ -1,16 +1,16 @@
 {
   "model_id": "mark-slm-v3-150m",
   "model_name": "Mark-SLM-V3-150M",
-  "weight_state": "UN-TRAINED_ARCHITECTURAL_BASE",
+  "weight_state": "TRAINED_MODEL_SOUP_25K_BASE_4K_COOLDOWN",
   "provenance": {
     "gguf_file": "mark_slm_v3_150m_iq4_nl.gguf",
     "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_slm_v3_150m_iq4_nl.gguf",
-    "sha256": "6308c8c1529b79e3965131693dbbf46937950b38f88d9791aa6d97a4b87b9a34",
+    "sha256": "44417a82088f6394a9c619060febdf47ae0daca3ba38fd81525e31b1bbf2a66c",
     "sha256_match_config": true,
-    "size_bytes": 83849984,
-    "size_mib": 79.97,
-    "size_mb": 83.85,
-    "size_formatted": "79.97 MiB (83.85 MB / 83,849,984 bytes)",
+    "size_bytes": 84385888,
+    "size_mib": 80.48,
+    "size_mb": 84.39,
+    "size_formatted": "80.48 MiB (84.39 MB / 84,385,888 bytes)",
     "quantization": "IQ4_NL"
   },
   "tensor_architecture": {

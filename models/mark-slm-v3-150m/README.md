@@ -43,7 +43,20 @@ Quantized in IQ4_NL, the container occupies 79.97 MiB (83.85 MB / 83,849,984 byt
 | Context Length | `8192` tokens |
 | Tensor Count | `272` |
 | Quantization Types | `{'IQ4_NL': 196, 'F32': 76}` |
-| SHA-256 | `6308c8c1529b79e3965131693dbbf46937950b38f88d9791aa6d97a4b87b9a34` |
+| SHA-256 | `44417a82088f6394a9c619060febdf47ae0daca3ba38fd81525e31b1bbf2a66c` |
+
+## Open SLM Leaderboard Benchmarks
+
+Evaluated on Kaggle Cloud GPUs (`commit ada42278`, Model Soup 50/50: OptStep 25000 Base + OptStep 4000 Cooldown, `146,899,248` parameters, Rule 01 & Rule 02 compliant):
+
+| Benchmark | Metric | Raw Score (%) | Chance Floor (%) | Normalized Score | Weight |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| **HellaSwag** (`Rowan/hellaswag`) | `acc_norm` | 37.10% | 25.00% | 16.13 | 1.00 |
+| **ARC-E** (`allenai/ai2_arc`) | `acc_norm` | 40.80% | 25.00% | 21.07 | 0.50 |
+| **ARC-C** (`allenai/ai2_arc`) | `acc_norm` | 25.50% | 25.00% | 0.67 | 0.50 |
+| **PIQA** (`ybisk/piqa`) | `acc_norm` | 62.50% | 50.00% | 25.00 | 1.00 |
+| **ArithMark-3** (1,000 items) | `acc` | 33.90% | 25.00% | 11.87 | 0.65 |
+| **Intelligence Index** | AxiomicLabs Official | -- | -- | **16.36** | Total / 3.65 |
 
 ## Architecture
 
@@ -136,7 +149,7 @@ hf_hub_download(repo_id="miceworks/Mark-SLM-V3-150M", filename="mark_slm_v3_150m
 ### Cryptographic Verification
 
 ```bash
-echo "6308c8c1529b79e3965131693dbbf46937950b38f88d9791aa6d97a4b87b9a34  mark_slm_v3_150m_iq4_nl.gguf" | sha256sum -c -
+echo "44417a82088f6394a9c619060febdf47ae0daca3ba38fd81525e31b1bbf2a66c  mark_slm_v3_150m_iq4_nl.gguf" | sha256sum -c -
 ```
 
 ### Ollama

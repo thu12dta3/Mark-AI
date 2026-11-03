@@ -19,6 +19,15 @@ Sparse Transformer architectures (Multi-Head Latent Attention + fine-grained Mix
 | **Mark-General-V3-8B** | Untrained Architectural Base | 4383.98 MiB (4596.94 MB / 4,596,938,048 bytes) | 8,168,001,024 | 2,002,374,144 | 32032 | `7a7b50a685...` | [miceworks/Mark-General-V3-8B](https://huggingface.co/miceworks/Mark-General-V3-8B) |
 | **Mark-Experimental-V3-8B** | Untrained Architectural Base | 4382.55 MiB (4595.44 MB / 4,595,438,848 bytes) | 8,168,001,024 | 2,002,374,144 | 32032 | `792e127a71...` | [miceworks/Mark-Experimental-V3-8B](https://huggingface.co/miceworks/Mark-Experimental-V3-8B) |
 
+## Open SLM Leaderboard Benchmarks
+
+Official evaluation results for **Mark-SLM-V3-150M** (`146,899,248` parameters, Model Soup 50/50: OptStep 25000 Base + OptStep 4000 Cooldown, commit `ada42278`):
+
+| Model | HellaSwag (`acc_norm`) | ARC-E (`acc_norm`) | ARC-C (`acc_norm`) | PIQA (`acc_norm`) | ArithMark-3 (`acc`) | Intelligence Index |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Mark-SLM-V3-150M (Pre-Cooldown 25k)** | 36.10% (14.80) | 37.60% (16.80) | 27.09% (2.79) | -- | 38.90% (18.53) | 10.04 |
+| **Mark-SLM-V3-150M (Model Soup 50/50)** | **37.10%** (16.13) | **40.80%** (21.07) | **25.50%** (0.67) | **62.50%** (25.00) | **33.90%** (11.87) | **16.36** |
+
 ## Architecture
 
 ### Multi-Head Latent Attention (MLA & H-MLA)
