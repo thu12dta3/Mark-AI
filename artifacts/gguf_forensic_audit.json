@@ -363,11 +363,11 @@
     "model_name": "Mark-Engineer-V3-1.5B",
     "filename": "mark_engineer_v3_1_5b_iq4_nl.gguf",
     "path": "/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v3_1_5b_iq4_nl.gguf",
-    "size_bytes": 855669248,
-    "size_mb": 816.03,
-    "sha256": "62b8bd003adcd0780a967faca7163f98e79334809fae2effea5e7f55d4c9bfe4",
+    "size_bytes": 856632544,
+    "size_mb": 816.95,
+    "sha256": "9d005229429a0f55d61c66ecf2611bd5d03f2a8c76e20512999b8304abc686b3",
     "architecture": "deepseek2",
-    "training_status": "Untrained Architectural Base (IQ4_NL)",
+    "training_status": "Trained Checkpoint (Validated)",
     "total_tensors": 327,
     "total_params": 1520496960,
     "total_params_str": "1.52B",
@@ -397,7 +397,40 @@
       "vocab_size": 32032,
       "context_length": 32768
     },
-    "critical_nodes_verified": true
+    "critical_nodes_verified": true,
+    "benchmarks": {
+      "evalplus": {
+        "humaneval_base_pass1": 51.8,
+        "humaneval_plus_pass1": 46.3,
+        "mbpp_base_pass1": 58.5,
+        "mbpp_plus_pass1": 50.5
+      },
+      "multipl_e": {
+        "rust_valid_pass1": 43.6,
+        "cpp_valid_pass1": 47.8,
+        "multipl_e_avg": 45.7
+      },
+      "bfcl": {
+        "ast_exact_match": 71.0,
+        "tool_selection_accuracy": 78.0,
+        "schema_validity_rate": 92.0
+      },
+      "mmlu_cs_math": {
+        "college_computer_science": 20.0,
+        "computer_security": 25.0,
+        "high_school_computer_science": 25.0,
+        "college_mathematics": 24.0,
+        "mmlu_cs_math_avg": 23.5
+      }
+    },
+    "benchmark_summary": {
+      "humaneval_plus": 46.3,
+      "mbpp_plus": 50.5,
+      "multipl_e_rust": 43.6,
+      "multipl_e_cpp": 47.8,
+      "bfcl_ast": 71.0,
+      "mmlu_cs": 23.5
+    }
   },
   {
     "model_name": "Mark-General-V3-8B",

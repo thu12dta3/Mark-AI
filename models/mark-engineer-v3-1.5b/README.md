@@ -22,7 +22,7 @@ tags:
 
 Mark-Engineer-V3-1.5B is a systems engineering variant with 1,520,496,960 total physical parameters and 405.73M active parameters per token. It uses 32 routed experts, 2 shared experts, and domain soft-pinning configured for code generation, compilers, and kernel internals.
 
-Quantized in IQ4_NL, the container occupies 816.03 MiB (855.67 MB / 855,669,248 bytes), leaving ample VRAM on 8 GB GPUs for large source code files.
+Quantized in IQ4_NL, the container occupies 816.95 MiB (856.63 MB / 856,632,544 bytes), leaving ample VRAM on 8 GB GPUs for large source code files.
 
 ## Specifications
 
@@ -30,7 +30,7 @@ Quantized in IQ4_NL, the container occupies 816.03 MiB (855.67 MB / 855,669,248 
 | :--- | :--- |
 | Architecture | `deepseek2` |
 | Weight State | `TRAINED_CHECKPOINT` |
-| Binary Size | `816.03 MiB (855.67 MB / 855,669,248 bytes)` |
+| Binary Size | `816.95 MiB (856.63 MB / 856,632,544 bytes)` |
 | Total Parameters | `1,520,496,960` (1520496960 physical) |
 | Active Parameters | `405,729,600` (405729600 active) |
 | Vocabulary Size | `32032` |
@@ -43,9 +43,11 @@ Quantized in IQ4_NL, the container occupies 816.03 MiB (855.67 MB / 855,669,248 
 | Context Length | `32768` tokens |
 | Tensor Count | `327` |
 | Quantization Types | `{'IQ4_NL': 236, 'F32': 91}` |
-| SHA-256 | `62b8bd003adcd0780a967faca7163f98e79334809fae2effea5e7f55d4c9bfe4` |
+| SHA-256 | `9d005229429a0f55d61c66ecf2611bd5d03f2a8c76e20512999b8304abc686b3` |
 
-## Official Benchmarks
+## Official Benchmark Telemetry
+
+### Official Benchmarks (EvalPlus, MultiPL-E, BFCL, MMLU)
 
 Official evaluation results for **Mark-Engineer-V3-1.5B** (`1,520,496,960` physical parameters, `405,729,600` active parameters per token, evaluated on Kaggle Cloud 2x Tesla T4 GPUs in greedy decoding mode `temperature=0.0`, `top_p=1.0`):
 
@@ -160,7 +162,7 @@ hf_hub_download(repo_id="miceworks/Mark-Engineer-V3-1.5B", filename="mark_engine
 ### Cryptographic Verification
 
 ```bash
-echo "62b8bd003adcd0780a967faca7163f98e79334809fae2effea5e7f55d4c9bfe4  mark_engineer_v3_1_5b_iq4_nl.gguf" | sha256sum -c -
+echo "9d005229429a0f55d61c66ecf2611bd5d03f2a8c76e20512999b8304abc686b3  mark_engineer_v3_1_5b_iq4_nl.gguf" | sha256sum -c -
 ```
 
 ### Ollama

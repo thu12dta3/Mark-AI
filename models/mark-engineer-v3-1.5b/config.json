@@ -37,11 +37,44 @@
   "total_parameters": 1520496960,
   "active_parameters_per_token": 405729600,
   "weight_state": "TRAINED_CHECKPOINT",
-  "sha256": "62b8bd003adcd0780a967faca7163f98e79334809fae2effea5e7f55d4c9bfe4",
+  "sha256": "9d005229429a0f55d61c66ecf2611bd5d03f2a8c76e20512999b8304abc686b3",
   "target_platforms": [
     "Ollama",
     "LM Studio",
     "llama.cpp",
     "PyTorch"
-  ]
+  ],
+  "benchmarks": {
+    "evalplus": {
+      "humaneval_base_pass1": 51.8,
+      "humaneval_plus_pass1": 46.3,
+      "mbpp_base_pass1": 58.5,
+      "mbpp_plus_pass1": 50.5
+    },
+    "multipl_e": {
+      "rust_valid_pass1": 43.6,
+      "cpp_valid_pass1": 47.8,
+      "multipl_e_avg": 45.7
+    },
+    "bfcl": {
+      "ast_exact_match": 71.0,
+      "tool_selection_accuracy": 78.0,
+      "schema_validity_rate": 92.0
+    },
+    "mmlu_cs_math": {
+      "college_computer_science": 20.0,
+      "computer_security": 25.0,
+      "high_school_computer_science": 25.0,
+      "college_mathematics": 24.0,
+      "mmlu_cs_math_avg": 23.5
+    }
+  },
+  "benchmark_summary": {
+    "humaneval_plus": 46.3,
+    "mbpp_plus": 50.5,
+    "multipl_e_rust": 43.6,
+    "multipl_e_cpp": 47.8,
+    "bfcl_ast": 71.0,
+    "mmlu_cs": 23.5
+  }
 }
