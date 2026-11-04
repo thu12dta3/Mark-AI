@@ -653,10 +653,11 @@ def train_accelerated(model: Mark3MForCausalLM, tokenizer: PreTrainedTokenizerFa
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=0.01)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=total_steps, eta_min=5e-5)
 
-    scaler = torch.cuda.amp.GradScaler(enabled=(device.type == "cuda"))
+    scaler = torch.amp.GradScaler("cuda", enabled=(device.type == "cuda"))
     pad_id = tokenizer.pad_token_id or 0
     bos_id = tokenizer.bos_token_id or 1
     eos_id = tokenizer.eos_token_id or 2
+    vocab_sz = getattr(model.config, "vocab_size", 8192)
 
     # Streaming dataset iterator with fallback
     curriculum_iter = None
@@ -691,6 +692,10 @@ def train_accelerated(model: Mark3MForCausalLM, tokenizer: PreTrainedTokenizerFa
             p_tokens = [bos_id] + tokenizer.encode(prompt_txt, add_special_tokens=False)
             r_tokens = tokenizer.encode(resp_txt, add_special_tokens=False) + [eos_id]
 
+            # Enforce strictly valid vocab bounds [0, vocab_size - 1]
+            p_tokens = [min(max(0, int(t)), vocab_sz - 1) for t in p_tokens]
+            r_tokens = [min(max(0, int(t)), vocab_sz - 1) for t in r_tokens]
+
             full_tokens = p_tokens + r_tokens
             labels = [-100] * len(p_tokens) + r_tokens
 
@@ -709,7 +714,7 @@ def train_accelerated(model: Mark3MForCausalLM, tokenizer: PreTrainedTokenizerFa
         lab_t = torch.tensor(batch_labels, dtype=torch.long, device=device)
 
         optimizer.zero_grad()
-        with torch.cuda.amp.autocast(enabled=(device.type == "cuda"), dtype=torch.float16):
+        with torch.amp.autocast("cuda", enabled=(device.type == "cuda"), dtype=torch.float16):
             out = model(inp_t, labels=lab_t)
             loss = out.loss
 
@@ -733,7 +738,7 @@ def train_accelerated(model: Mark3MForCausalLM, tokenizer: PreTrainedTokenizerFa
 # Estágio C — Official Evaluation & Deployment
 # =====================================================================
 
-def evaluate_and_deploy(model: Mark3MForCausalLM, tokenizer: PreTrainedTokenizerFast, device: torch.device):
+def evaluate_and_deploy(model: Mark3MForCausalLM, tokenizer: PreTrainedTokenizerFast, device: torch.device, tok_path: Optional[str] = None):
     print("\n" + "=" * 80)
     print("OPEN SLM LEADERBOARD: OFFICIAL BENCHMARK EVALUATION (MARK-SLM-3M)")
     print(f"Target Repository: {TARGET_REPO_ID} | Parameter Ceiling: < 3M")
@@ -753,12 +758,15 @@ def evaluate_and_deploy(model: Mark3MForCausalLM, tokenizer: PreTrainedTokenizer
     }
 
     def score_mc(ctx: str, options: List[str]) -> int:
+        vocab_sz = getattr(model.config, "vocab_size", 8192)
         scores = []
         ctx_ids = tokenizer.encode(ctx, add_special_tokens=False)
+        ctx_ids = [min(max(0, int(t)), vocab_sz - 1) for t in ctx_ids]
         if not ctx_ids:
             ctx_ids = [tokenizer.bos_token_id or 1]
         for opt in options:
             opt_ids = tokenizer.encode(" " + str(opt).strip(), add_special_tokens=False)
+            opt_ids = [min(max(0, int(t)), vocab_sz - 1) for t in opt_ids]
             if not opt_ids:
                 opt_ids = [tokenizer.eos_token_id or 2]
             full_ids = ctx_ids + opt_ids
@@ -981,6 +989,30 @@ def evaluate_and_deploy(model: Mark3MForCausalLM, tokenizer: PreTrainedTokenizer
         writer.add_eos_token_id(2)
         writer.add_pad_token_id(0)
 
+        if tok_path and os.path.exists(tok_path):
+            with open(tok_path, "r", encoding="utf-8") as f:
+                tok_data = json.load(f)
+            vocab = tok_data.get("model", {}).get("vocab", {})
+            sorted_vocab = sorted(vocab.items(), key=lambda x: x[1])
+            tokens = [k.encode("utf-8") for k, _ in sorted_vocab]
+            merges = tok_data.get("model", {}).get("merges", [])
+            formatted_merges = [" ".join(m).encode("utf-8") if isinstance(m, list) else m.encode("utf-8") for m in merges]
+            writer.add_tokenizer_model("gpt2")
+            writer.add_token_list(tokens)
+            writer.add_token_merges(formatted_merges)
+            writer.add_token_scores([0.0] * len(tokens))
+            writer.add_token_types([int(gguf.TokenType.NORMAL)] * len(tokens))
+
+        chat_template = (
+            "{% for message in messages %}"
+            "{% if message['role'] == 'system' %}{{ '<|bos|>' + message['content'] + '\\n' }}"
+            "{% elif message['role'] == 'user' %}{{ '<|user|>\\n' + message['content'] + '\\n<|assistant|>\\n' }}"
+            "{% elif message['role'] == 'assistant' %}{{ message['content'] + '<|eos|>\\n' }}"
+            "{% endif %}"
+            "{% endfor %}"
+        )
+        writer.add_chat_template(chat_template)
+
         # Write weights
         sd = model.state_dict()
         w_emb = sd["model.embed_tokens.weight"].float().numpy()
@@ -1053,12 +1085,25 @@ def main():
     cfg = Mark3MConfig()
     model = Mark3MForCausalLM(cfg).to(device)
 
-    # Load Tokenizer
-    tok_path = hf_hub_download(repo_id=DONOR_REPO_ID, filename="tokenizer.json", token=HF_TOKEN)
+    # Load Tokenizer from TARGET_REPO_ID (8,192 tokens)
+    tok_path = None
+    try:
+        tok_path = hf_hub_download(repo_id=TARGET_REPO_ID, filename="tokenizer.json", token=HF_TOKEN)
+    except Exception:
+        try:
+            tok_path = hf_hub_download(repo_id=TARGET_REPO_ID, filename="tokenizer.json")
+        except Exception as e_tok:
+            print(f"Notice: Failed to download tokenizer from {TARGET_REPO_ID}: {e_tok}")
+
+    if not tok_path or not os.path.exists(tok_path):
+        raise RuntimeError(f"Could not load tokenizer.json from {TARGET_REPO_ID}!")
+
     tokenizer = PreTrainedTokenizerFast(tokenizer_file=tok_path)
     tokenizer.pad_token = "<|pad|>"
     tokenizer.bos_token = "<|bos|>"
     tokenizer.eos_token = "<|eos|>"
+    print(f"Loaded Tokenizer with vocabulary size: {len(tokenizer)} (target: {cfg.vocab_size})")
+    assert len(tokenizer) == cfg.vocab_size, f"Tokenizer vocab size mismatch: {len(tokenizer)} vs {cfg.vocab_size}"
 
     # Estágio A: SVD Upcycling
     initialize_model_svd_upcycling(model, device)
@@ -1067,7 +1112,7 @@ def main():
     train_accelerated(model, tokenizer, device)
 
     # Estágio C: Benchmark Evaluation & Deployment
-    evaluate_and_deploy(model, tokenizer, device)
+    evaluate_and_deploy(model, tokenizer, device, tok_path=tok_path)
 
 
 if __name__ == "__main__":
