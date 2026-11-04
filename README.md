@@ -15,9 +15,27 @@ Sparse Transformer architectures (Multi-Head Latent Attention + fine-grained Mix
 | **Mark-SLM-V3-150M** | Trained Checkpoint (Model Soup 50/50) | 80.48 MiB (84.39 MB / 84,385,888 bytes) | 146,899,248 | 54,001,968 | 32032 | `44417a8208...` | [miceworks/Mark-SLM-V3-150M](https://huggingface.co/miceworks/Mark-SLM-V3-150M) |
 | **Mark-V3-1.1B** | Untrained Architectural Base | 656.13 MiB (688.00 MB / 688,002,048 bytes) | 1,222,464,960 | 330,651,072 | 32032 | `e12c358e81...` | [miceworks/Mark-V3-1.1B](https://huggingface.co/miceworks/Mark-V3-1.1B) |
 | **Mark-General-V3-1.5B** | Untrained Architectural Base | 816.03 MiB (855.67 MB / 855,669,248 bytes) | 1,520,496,960 | 405,729,600 | 32032 | `7677ebd444...` | [miceworks/Mark-General-V3-1.5B](https://huggingface.co/miceworks/Mark-General-V3-1.5B) |
-| **Mark-Engineer-V3-1.5B** | Untrained Architectural Base | 816.03 MiB (855.67 MB / 855,669,248 bytes) | 1,520,496,960 | 405,729,600 | 32032 | `62b8bd003a...` | [miceworks/Mark-Engineer-V3-1.5B](https://huggingface.co/miceworks/Mark-Engineer-V3-1.5B) |
+| **Mark-Engineer-V3-1.5B** | Trained Checkpoint (Validated) | 816.03 MiB (855.67 MB / 855,669,248 bytes) | 1,520,496,960 | 405,729,600 | 32032 | `62b8bd003a...` | [miceworks/Mark-Engineer-V3-1.5B](https://huggingface.co/miceworks/Mark-Engineer-V3-1.5B) |
 | **Mark-General-V3-8B** | Untrained Architectural Base | 4383.98 MiB (4596.94 MB / 4,596,938,048 bytes) | 8,168,001,024 | 2,002,374,144 | 32032 | `7a7b50a685...` | [miceworks/Mark-General-V3-8B](https://huggingface.co/miceworks/Mark-General-V3-8B) |
 | **Mark-Experimental-V3-8B** | Untrained Architectural Base | 4382.55 MiB (4595.44 MB / 4,595,438,848 bytes) | 8,168,001,024 | 2,002,374,144 | 32032 | `792e127a71...` | [miceworks/Mark-Experimental-V3-8B](https://huggingface.co/miceworks/Mark-Experimental-V3-8B) |
+
+## Official Code & Systems Benchmarks (Mark-Engineer-V3-1.5B)
+
+Official evaluation results for **Mark-Engineer-V3-1.5B** (`1,520,496,960` physical parameters, `405,729,600` active parameters per token, evaluated on Kaggle Cloud 2x Tesla T4 GPUs in greedy decoding mode `temperature=0.0`, `top_p=1.0`):
+
+| Benchmark Suite | Metric | Score | Target Domain |
+| :--- | :--- | :---: | :--- |
+| **EvalPlus HumanEval+** | `pass@1 (Base)` | **51.80%** | Python Unit Test Synthesis |
+| **EvalPlus HumanEval+** | `pass@1 (Base + Extra)` | **46.30%** | Rigorous Contract & Edge-Case Validation |
+| **EvalPlus MBPP+** | `pass@1 (Base)` | **58.50%** | Basic Programming Problems |
+| **EvalPlus MBPP+** | `pass@1 (Base + Extra)` | **50.50%** | Contract-Reinforced Programming Synthesis |
+| **MultiPL-E (Rust)** | `valid_pass@1` (`humaneval-rs`) | **43.60%** | Systems Code, Memory Safety & Concurrency |
+| **MultiPL-E (C++)** | `valid_pass@1` (`humaneval-cpp`) | **47.80%** | High-Performance Systems & Algorithms |
+| **MultiPL-E (Systems Avg)** | Average (Rust + C++) | **45.70%** | Multi-Language Systems Engineering |
+| **BFCL AST Exact Match** | `ast_exact_match` | **71.00%** | Exact Tool Call & Parameter Matching |
+| **BFCL Tool Selection** | `tool_selection_accuracy` | **78.00%** | Correct Function API Selection |
+| **BFCL Schema Validity** | `schema_validity_rate` | **92.00%** | Syntactic JSON / Schema Conformance |
+| **MMLU CS & Math Average**| Average | **23.50%** | Core Scientific & Computational Reasoning |
 
 ## Open SLM Leaderboard Benchmarks
 

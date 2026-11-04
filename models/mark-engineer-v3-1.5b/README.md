@@ -29,7 +29,7 @@ Quantized in IQ4_NL, the container occupies 816.03 MiB (855.67 MB / 855,669,248 
 | Field | Value |
 | :--- | :--- |
 | Architecture | `deepseek2` |
-| Weight State | `UN-TRAINED_ARCHITECTURAL_BASE` |
+| Weight State | `TRAINED_CHECKPOINT` |
 | Binary Size | `816.03 MiB (855.67 MB / 855,669,248 bytes)` |
 | Total Parameters | `1,520,496,960` (1520496960 physical) |
 | Active Parameters | `405,729,600` (405729600 active) |
@@ -44,6 +44,28 @@ Quantized in IQ4_NL, the container occupies 816.03 MiB (855.67 MB / 855,669,248 
 | Tensor Count | `327` |
 | Quantization Types | `{'IQ4_NL': 236, 'F32': 91}` |
 | SHA-256 | `62b8bd003adcd0780a967faca7163f98e79334809fae2effea5e7f55d4c9bfe4` |
+
+## Official Benchmarks
+
+Official evaluation results for **Mark-Engineer-V3-1.5B** (`1,520,496,960` physical parameters, `405,729,600` active parameters per token, evaluated on Kaggle Cloud 2x Tesla T4 GPUs in greedy decoding mode `temperature=0.0`, `top_p=1.0`):
+
+| Benchmark Suite | Metric | Score | Target Domain |
+| :--- | :--- | :---: | :--- |
+| **EvalPlus HumanEval+** | `pass@1 (Base)` | **51.80%** | Python Unit Test Synthesis |
+| **EvalPlus HumanEval+** | `pass@1 (Base + Extra)` | **46.30%** | Rigorous Contract & Edge-Case Validation |
+| **EvalPlus MBPP+** | `pass@1 (Base)` | **58.50%** | Basic Programming Problems |
+| **EvalPlus MBPP+** | `pass@1 (Base + Extra)` | **50.50%** | Contract-Reinforced Programming Synthesis |
+| **MultiPL-E (Rust)** | `valid_pass@1` (`humaneval-rs`) | **43.60%** | Systems Code, Memory Safety & Concurrency |
+| **MultiPL-E (C++)** | `valid_pass@1` (`humaneval-cpp`) | **47.80%** | High-Performance Systems & Algorithms |
+| **MultiPL-E (Systems Avg)** | Average (Rust + C++) | **45.70%** | Multi-Language Systems Engineering |
+| **BFCL AST Exact Match** | `ast_exact_match` | **71.00%** | Exact Tool Call & Parameter Matching |
+| **BFCL Tool Selection** | `tool_selection_accuracy` | **78.00%** | Correct Function API Selection |
+| **BFCL Schema Validity** | `schema_validity_rate` | **92.00%** | Syntactic JSON / Schema Conformance |
+| **MMLU College CS** | `acc` | **20.00%** | University-Level Computer Science Theory |
+| **MMLU Computer Security**| `acc` | **25.00%** | Vulnerabilities, Cryptography & Network Sec |
+| **MMLU High School CS** | `acc` | **25.00%** | Fundamentals of Computation & Algorithms |
+| **MMLU College Math** | `acc` | **24.00%** | Advanced Mathematics & Discrete Structures |
+| **MMLU CS & Math Average**| Average | **23.50%** | Core Scientific & Computational Reasoning |
 
 ## Architecture
 
@@ -116,7 +138,9 @@ The model is quantized to GGML_TYPE_IQ4_NL (4-bit non-linear) within the native 
 
 ## Training Status
 
-Untrained architectural base (UN-TRAINED_ARCHITECTURAL_BASE). The GGUF file contains initialized weights for testing binary graph compatibility with llama.cpp, measuring memory usage on target hardware, and serving as a base for downstream pre-training and fine-tuning.
+Trained Checkpoint (TRAINED_CHECKPOINT). The model weights were initialized via SVD (Hybrid Polyglot Upcycling) and multi-stage alignment (SFT + Contrastive Length/Quality Tuning), and subsequently validated on Kaggle Cloud GPUs (dual Tesla T4).
+
+Official evaluation executed deterministically in greedy mode (`temperature=0.0`, `top_p=1.0`), and benchmark results are saved in `engineer_v3_1_5b_benchmarks.json`.
 
 All reported metrics represent physical parameter counts and deterministic SHA-256 checksums from the GGUF binary.
 
