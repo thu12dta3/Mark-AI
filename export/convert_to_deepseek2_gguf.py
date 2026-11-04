@@ -24,6 +24,7 @@ from src.model.mark_slm_v2_302m_arch import MarkSLMV2Config, MarkSLMV2Model
 from src.model.mark_engineer_v2_8b_arch import MarkEngineerV2Config, MarkEngineerV2Model
 from src.model.mark_vl_2_2b_arch import MarkVL2_2BConfig, MarkVLForCausalLM
 from src.model.mark_v3_arch import MarkV3Config, MarkV3Block, MarkV3ForCausalLM, get_walsh_hadamard_matrix
+from src.model.mark_slm_3m_arch import Mark3MConfig, Mark3MBlock, Mark3MForCausalLM
 from src.model.mark_vl_v3_4b_arch import MarkVLV3Config, MarkVLV3ForConditionalGeneration
 
 lut = torch.tensor(IQ4_NL_LOOKUP_VALUES, dtype=torch.float32)
@@ -262,6 +263,8 @@ def get_model_config(model_type: str) -> Any:
         return MarkEngineerV2Config()
     elif m in ('slm-v3-150m', 'mark-slm-v3-150m'):
         return MarkV3Config.create_slm_v3_150m()
+    elif m in ('slm-3m', 'mark-slm-3m', 'slm_3m', '3m'):
+        return Mark3MConfig()
     elif m in ('general-v3-1.5b', 'mark-general-v3-1.5b'):
         return MarkV3Config.create_general_v3_1_5b()
     elif m in ('engineer-v3-1.5b', 'mark-engineer-v3-1.5b'):
@@ -282,6 +285,12 @@ def build_model_state_dict(model_type: str, config: Any) -> Dict[str, Any]:
     print(f'[Mark GGUF Exporter] Initializing weights from PyTorch architecture for {model_type}...')
     if m in ('vl-v3-4b', 'mark-vl-v3-4b', 'vl_v3_4b', 'v3-4b') or isinstance(config, MarkVLV3Config):
         model = MarkVLV3ForConditionalGeneration(config)
+        model.eval()
+        for layer in model.model.layers:
+            layer.attn.fuse_hadamard_weights_()
+        sd = model.state_dict()
+    elif m in ('slm-3m', 'mark-slm-3m', 'slm_3m', '3m') or isinstance(config, Mark3MConfig):
+        model = Mark3MForCausalLM(config)
         model.eval()
         for layer in model.model.layers:
             layer.attn.fuse_hadamard_weights_()
@@ -308,7 +317,7 @@ def build_model_state_dict(model_type: str, config: Any) -> Dict[str, Any]:
 
 def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_gguf: Path, model_name: Optional[str] = None, quant_type: Optional[str] = None, mmproj_path: Optional[Path] = None, mmproj_quant: str = 'f16'):
     config = get_model_config(model_type)
-    is_v3 = isinstance(config, MarkV3Config) or 'v3' in model_type.lower()
+    is_v3 = isinstance(config, (MarkV3Config, Mark3MConfig)) or 'v3' in model_type.lower() or '3m' in model_type.lower()
     if model_name is None:
         model_name = getattr(config, 'model_name', f'mark-{model_type}')
 
@@ -537,7 +546,10 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
             cur_sd = sd
             block = None
         else:
-            if is_v3:
+            if isinstance(config, Mark3MConfig):
+                block = Mark3MBlock(config, layer_idx=i)
+                block.attn.fuse_hadamard_weights_()
+            elif is_v3:
                 block = MarkV3Block(config, layer_idx=i)
                 block.attn.fuse_hadamard_weights_()
             else:
@@ -665,7 +677,7 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
 
 def main():
     parser = argparse.ArgumentParser(description='Universal DeepSeek2 GGUF Exporter for Mark Models (IQ4_NL)')
-    parser.add_argument('--model', type=str, default='1.5b', choices=['302m', 'slm-v2-302m', 'engineer-1.5b', '1.5b', 'general-1.5b', 'vl-2.2b', 'v2-8b', 'v3-1.1b', 'slm-v3-150m', 'general-v3-1.5b', 'engineer-v3-1.5b', 'general-v3-8b', 'experimental-v3-8b', 'vl-v3-4b', 'mark-vl-v3-4b', 'all'])
+    parser.add_argument('--model', type=str, default='1.5b', choices=['302m', 'slm-v2-302m', 'engineer-1.5b', '1.5b', 'general-1.5b', 'vl-2.2b', 'v2-8b', 'v3-1.1b', 'slm-v3-150m', 'slm-3m', 'mark-slm-3m', 'general-v3-1.5b', 'engineer-v3-1.5b', 'general-v3-8b', 'experimental-v3-8b', 'vl-v3-4b', 'mark-vl-v3-4b', 'all'])
     parser.add_argument('--ckpt', type=str, default='', help='Path to source .pt checkpoint')
     parser.add_argument('--out', type=str, default='', help='Path to destination .gguf container')
     parser.add_argument('--quant', type=str, default='iq4_nl', choices=['iq4_nl', 'f16'], help='Quantization type')
@@ -682,6 +694,8 @@ def main():
         'v2-8b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v2_8b/mark_engineer_v2_8b_step_15000.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v2_8b_iq4_nl.gguf')),
         'v3-1.1b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_v3_1_1b.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_v3_1_1b_iq4_nl.gguf')),
         'slm-v3-150m': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_slm_v3_150m.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_slm_v3_150m_iq4_nl.gguf')),
+        'slm-3m': (Path('models/mark-slm-3m/model.safetensors'), Path('models/mark-slm-3m/mark_slm_3m_iq4_nl.gguf')),
+        'mark-slm-3m': (Path('models/mark-slm-3m/model.safetensors'), Path('models/mark-slm-3m/mark_slm_3m_iq4_nl.gguf')),
         'general-v3-1.5b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_general_v3_1_5b.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_general_v3_1_5b_iq4_nl.gguf')),
         'engineer-v3-1.5b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v3_1_5b.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v3_1_5b_iq4_nl.gguf')),
         'general-v3-8b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_general_v3_8b_iq4_nl.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_general_v3_8b_iq4_nl.gguf')),

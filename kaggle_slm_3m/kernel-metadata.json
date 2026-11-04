@@ -1,0 +1,10 @@
+{
+  "id": "thu12dta3/mark-slm-3m-trainer",
+  "title": "mark-slm-3m-trainer",
+  "code_file": "train_slm_3m_kaggle.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_internet": "true"
+}
