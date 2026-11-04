@@ -1,14 +1,12 @@
 FROM ./mark_slm_v3_150m_iq4_nl.gguf
 
-TEMPLATE """{{ if .System }}<|bos|>System: {{ .System }}<|eos|>
-{{ end }}{{ if .Prompt }}<|bos|>User: {{ .Prompt }}<|eos|>
-{{ end }}<|bos|>Assistant:
-<think>
-"""
+TEMPLATE """{{ if .System }}System: {{ .System }}
+{{ end }}{{ if .Prompt }}User: {{ .Prompt }}
+{{ end }}Assistant: {{ .Response }}"""
 
 PARAMETER stop "<|eos|>"
-PARAMETER temperature 0.2
-PARAMETER top_p 0.95
-PARAMETER repeat_penalty 1.1
+PARAMETER temperature 0.6
+PARAMETER top_p 0.9
+PARAMETER repeat_penalty 1.15
 
-SYSTEM """You are Mark-SLM-V3-150M, a language model built on native DeepSeek2 MoE and MLA architecture."""
+SYSTEM """You are Mark-SLM-V3-150M, an efficient compact language model based on DeepSeek2 architecture."""

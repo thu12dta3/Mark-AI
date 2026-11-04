@@ -5,7 +5,7 @@
   "provenance": {
     "gguf_file": "mark_slm_v3_150m_iq4_nl.gguf",
     "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_slm_v3_150m_iq4_nl.gguf",
-    "sha256": "51a89fc7b792044f864d551fc1540cf8693adb2949599a1666b2d5d9f092f7b0",
+    "sha256": "a5b059b63e4e37d6a5cd1572d59f2fd19352999a1388e97dd7b0fcc8455673e4",
     "sha256_match_config": true,
     "size_bytes": 94764288,
     "size_mib": 90.37,

@@ -5,8 +5,12 @@ import gc
 import json
 import tempfile
 import argparse
+import re
+import logging
 from pathlib import Path
 from typing import Dict, Any, Optional
+
+logger = logging.getLogger(__name__)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
@@ -381,9 +385,9 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
     writer.add_expert_shared_count(config.n_shared_experts)
     writer.add_expert_used_count(config.num_experts_per_tok)
     writer.add_rope_dimension_count(config.qk_rope_head_dim)
-    writer.add_bos_token_id(config.bos_token_id)
-    writer.add_eos_token_id(config.eos_token_id)
-    writer.add_pad_token_id(config.pad_token_id)
+    writer.add_bos_token_id(getattr(config, 'bos_token_id', 1) if getattr(config, 'bos_token_id', None) is not None else 1)
+    writer.add_eos_token_id(getattr(config, 'eos_token_id', 2) if getattr(config, 'eos_token_id', None) is not None else 2)
+    writer.add_pad_token_id(getattr(config, 'pad_token_id', 0) if getattr(config, 'pad_token_id', None) is not None else 0)
 
     tok_candidates = [
         REPO_ROOT / 'models' / f'mark-{model_type}' / 'tokenizer.json',
@@ -394,22 +398,62 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
     ]
     tok_path = next((p for p in tok_candidates if p.exists()), None)
     if tok_path:
+        tok_dir = Path(tok_path).parent
+        tokens: list[bytes] = []
+        scores: list[float] = []
+        toktypes: list[int] = []
+        model_name = 'llama'
+
+        try:
+            from gguf.vocab import LlamaHfVocab
+            hf_vocab = LlamaHfVocab(tok_dir)
+            for t_bytes, score, t_type in hf_vocab.all_tokens():
+                tokens.append(t_bytes)
+                scores.append(score)
+                toktypes.append(int(t_type))
+            model_name = hf_vocab.tokenizer_model
+        except Exception as e:
+            logger.warning(f"LlamaHfVocab initialization failed ({e}), falling back to direct JSON parsing.")
+            tokens.clear()
+            scores.clear()
+            toktypes.clear()
+            with open(tok_path, 'r', encoding='utf-8') as f:
+                tok_data = json.load(f)
+            vocab = tok_data.get('model', {}).get('vocab', {})
+            sorted_vocab = sorted(vocab.items(), key=lambda x: x[1])
+
+            added_tokens = tok_data.get('added_tokens', [])
+            special_ids = {item['id'] for item in added_tokens if item.get('special', False)}
+            special_ids.update({0, 1, 2})
+
+            byte_hex_pat = re.compile(r'^<0x([0-9A-Fa-f]{2})>$')
+            unk_byte_pat = re.compile(r'^\[UNK_BYTE_0x([0-9A-Fa-f]{2})_?\]$')
+
+            for k, v in sorted_vocab:
+                tokens.append(k.encode('utf-8'))
+                scores.append(0.0)
+                if byte_hex_pat.match(k) or unk_byte_pat.match(k):
+                    toktypes.append(int(gguf.TokenType.BYTE))
+                elif v in special_ids or k.startswith('<|') or (k.startswith('[') and k.endswith(']')):
+                    toktypes.append(int(gguf.TokenType.CONTROL))
+                else:
+                    toktypes.append(int(gguf.TokenType.NORMAL))
+
         with open(tok_path, 'r', encoding='utf-8') as f:
             tok_data = json.load(f)
-        vocab = tok_data.get('model', {}).get('vocab', {})
-        sorted_vocab = sorted(vocab.items(), key=lambda x: x[1])
-        tokens = [k.encode('utf-8') for k, v in sorted_vocab]
         merges = tok_data.get('model', {}).get('merges', [])
         formatted_merges = [' '.join(m).encode('utf-8') if isinstance(m, list) else m.encode('utf-8') for m in merges]
         pad_vocab_size = config.vocab_size
         diff = max(0, pad_vocab_size - len(tokens))
         for k in range(diff):
             tokens.append(f'<pad_align_{k}>'.encode('utf-8'))
-        writer.add_tokenizer_model('gpt2')
+            scores.append(-1000.0)
+            toktypes.append(int(gguf.TokenType.UNUSED))
+        writer.add_tokenizer_model(model_name)
         writer.add_token_list(tokens)
         writer.add_token_merges(formatted_merges)
-        writer.add_token_scores([0.0] * len(tokens))
-        writer.add_token_types([1] * len(tokens))
+        writer.add_token_scores(scores if len(scores) == len(tokens) else [0.0] * len(tokens))
+        writer.add_token_types(toktypes)
     else:
         pad_vocab_size = config.vocab_size
 

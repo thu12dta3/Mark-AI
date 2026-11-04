@@ -1,4 +1,5 @@
 import tempfile
+import gc
 from pathlib import Path
 import pytest
 import torch
@@ -143,3 +144,6 @@ def test_mark_vl_v3_4b_gguf_and_mmproj_export():
         assert "v.patch_embed.weight" in mm_tensors
         assert "mm.w_gate.weight" in mm_tensors
         assert "mm.alpha_vis" in mm_tensors
+
+        del reader_lm, reader_mm
+        gc.collect()

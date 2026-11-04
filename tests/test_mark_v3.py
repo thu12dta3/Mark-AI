@@ -1,4 +1,5 @@
 import tempfile
+import gc
 from pathlib import Path
 import pytest
 import torch
@@ -38,9 +39,9 @@ def test_mark_v3_mla_hadamard_offline_fusion():
     assert torch.allclose(h @ h.T, torch.eye(256), atol=1e-06)
     assert torch.allclose(h, h.T, atol=1e-06)
     bsz, seqlen = (2, 8)
-    x = torch.randn(bsz, seqlen, cfg.hidden_size)
-    cos = torch.randn(seqlen, cfg.qk_rope_head_dim // 2)
-    sin = torch.randn(seqlen, cfg.qk_rope_head_dim // 2)
+    x = torch.sin(torch.arange(bsz * seqlen * cfg.hidden_size, dtype=torch.float32).reshape(bsz, seqlen, cfg.hidden_size))
+    cos = torch.cos(torch.arange(seqlen * (cfg.qk_rope_head_dim // 2), dtype=torch.float32).reshape(seqlen, cfg.qk_rope_head_dim // 2))
+    sin = torch.sin(torch.arange(seqlen * (cfg.qk_rope_head_dim // 2), dtype=torch.float32).reshape(seqlen, cfg.qk_rope_head_dim // 2))
     with torch.no_grad():
         out_before = mla(x, cos, sin)
         mla.fuse_hadamard_weights_()
@@ -53,7 +54,7 @@ def test_mark_v3_pb_moe_clans_and_soft_pinning():
     moe = MarkV3MoE(cfg)
     moe.eval()
     bsz, seqlen = (2, 4)
-    x = torch.randn(bsz, seqlen, cfg.hidden_size)
+    x = torch.sin(torch.arange(bsz * seqlen * cfg.hidden_size, dtype=torch.float32).reshape(bsz, seqlen, cfg.hidden_size))
     with torch.no_grad():
         out_global = moe(x, clan_id=None)
         assert out_global.shape == (bsz, seqlen, cfg.hidden_size)
@@ -130,3 +131,6 @@ def test_mark_v3_gguf_export():
         assert tensor_dict['output_norm.weight'].data.dtype == np.float32
         assert tensor_dict['blk.0.exp_probs_b.bias'].data.dtype == np.float32
         assert tensor_dict['blk.0.ffn_gate_exps.weight'].data.shape == (32, 512, 1152)
+
+        del reader, tensor_dict
+        gc.collect()

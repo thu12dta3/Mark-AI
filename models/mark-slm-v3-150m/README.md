@@ -45,7 +45,7 @@ Quantized in IQ4_NL, the container occupies 90.37 MiB (94.76 MB / 94,764,288 byt
 | Context Length | `8192` tokens |
 | Tensor Count | `273` |
 | Quantization Types | `{'IQ4_NL': 197, 'F32': 76}` |
-| SHA-256 | `51a89fc7b792044f864d551fc1540cf8693adb2949599a1666b2d5d9f092f7b0` |
+| SHA-256 | `a5b059b63e4e37d6a5cd1572d59f2fd19352999a1388e97dd7b0fcc8455673e4` |
 
 ## Open SLM Leaderboard Benchmarks
 
@@ -153,7 +153,7 @@ hf_hub_download(repo_id="miceworks/Mark-SLM-V3-150M", filename="mark_slm_v3_150m
 ### Cryptographic Verification
 
 ```bash
-echo "51a89fc7b792044f864d551fc1540cf8693adb2949599a1666b2d5d9f092f7b0  mark_slm_v3_150m_iq4_nl.gguf" | sha256sum -c -
+echo "a5b059b63e4e37d6a5cd1572d59f2fd19352999a1388e97dd7b0fcc8455673e4  mark_slm_v3_150m_iq4_nl.gguf" | sha256sum -c -
 ```
 
 ### Ollama
