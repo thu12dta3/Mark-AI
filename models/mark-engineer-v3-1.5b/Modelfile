@@ -7,8 +7,10 @@ TEMPLATE """{{ if .System }}<|bos|>System: {{ .System }}<|eos|>
 """
 
 PARAMETER stop "<|eos|>"
+PARAMETER stop "<|pad|>"
+PARAMETER stop "<|user|>"
+PARAMETER stop "<|assistant|>"
 PARAMETER temperature 0.2
 PARAMETER top_p 0.95
-PARAMETER repeat_penalty 1.1
-
+PARAMETER repeat_penalty 1.15
 SYSTEM """You are Mark-Engineer-V3-1.5B, a language model built on native DeepSeek2 MoE and MLA architecture."""

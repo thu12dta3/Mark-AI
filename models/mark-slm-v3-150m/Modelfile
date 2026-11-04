@@ -5,6 +5,9 @@ TEMPLATE """{{ if .System }}System: {{ .System }}
 {{ end }}Assistant: {{ .Response }}"""
 
 PARAMETER stop "<|eos|>"
+PARAMETER stop "<|pad|>"
+PARAMETER stop "<|user|>"
+PARAMETER stop "<|assistant|>"
 PARAMETER temperature 0.6
 PARAMETER top_p 0.9
 PARAMETER repeat_penalty 1.15

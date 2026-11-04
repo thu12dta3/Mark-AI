@@ -385,9 +385,9 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
     writer.add_expert_shared_count(config.n_shared_experts)
     writer.add_expert_used_count(config.num_experts_per_tok)
     writer.add_rope_dimension_count(config.qk_rope_head_dim)
-    writer.add_bos_token_id(getattr(config, 'bos_token_id', 1) if getattr(config, 'bos_token_id', None) is not None else 1)
-    writer.add_eos_token_id(getattr(config, 'eos_token_id', 2) if getattr(config, 'eos_token_id', None) is not None else 2)
-    writer.add_pad_token_id(getattr(config, 'pad_token_id', 0) if getattr(config, 'pad_token_id', None) is not None else 0)
+    writer.add_bos_token_id(1)
+    writer.add_eos_token_id(2)
+    writer.add_pad_token_id(0)
 
     tok_candidates = [
         REPO_ROOT / 'models' / f'mark-{model_type}' / 'tokenizer.json',
@@ -431,13 +431,23 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
 
             for k, v in sorted_vocab:
                 tokens.append(k.encode('utf-8'))
-                scores.append(0.0)
                 if byte_hex_pat.match(k) or unk_byte_pat.match(k):
                     toktypes.append(int(gguf.TokenType.BYTE))
+                    scores.append(0.0)
+                elif k.startswith('<extra_token_') or k.startswith('<pad_align_'):
+                    toktypes.append(int(gguf.TokenType.UNUSED))
+                    scores.append(-10000.0)
                 elif v in special_ids or k.startswith('<|') or (k.startswith('[') and k.endswith(']')):
                     toktypes.append(int(gguf.TokenType.CONTROL))
+                    scores.append(0.0)
                 else:
                     toktypes.append(int(gguf.TokenType.NORMAL))
+                    scores.append(0.0)
+
+            if tok_data.get('decoder', {}).get('type') == 'ByteLevel' or (tok_data.get('model', {}).get('type') == 'BPE' and not any(k.startswith('<0x') for k in vocab.keys())):
+                model_name = 'gpt2'
+            else:
+                model_name = 'llama'
 
         with open(tok_path, 'r', encoding='utf-8') as f:
             tok_data = json.load(f)
@@ -457,7 +467,14 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
     else:
         pad_vocab_size = config.vocab_size
 
-    chat_template = 'chat_template_default'
+    chat_template = (
+        "{% for message in messages %}"
+        "{% if message['role'] == 'system' %}{{ '<|bos|>' + message['content'] + '\\n' }}"
+        "{% elif message['role'] == 'user' %}{{ '<|user|>\\n' + message['content'] + '\\n<|assistant|>\\n' }}"
+        "{% elif message['role'] == 'assistant' %}{{ message['content'] + '<|eos|>\\n' }}"
+        "{% endif %}"
+        "{% endfor %}"
+    )
     writer.add_chat_template(chat_template)
 
     dim = getattr(config, 'dim', getattr(config, 'hidden_size', 1280))

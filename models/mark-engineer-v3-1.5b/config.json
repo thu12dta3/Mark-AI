@@ -37,7 +37,7 @@
   "total_parameters": 1520496960,
   "active_parameters_per_token": 405729600,
   "weight_state": "TRAINED_CHECKPOINT",
-  "sha256": "9d005229429a0f55d61c66ecf2611bd5d03f2a8c76e20512999b8304abc686b3",
+  "sha256": "24093fd96a22c7b4b19e85df2fb0d4e1757361d6f58baa4f36ad0285fa29ac68",
   "target_platforms": [
     "Ollama",
     "LM Studio",

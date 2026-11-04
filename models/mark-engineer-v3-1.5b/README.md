@@ -162,7 +162,7 @@ hf_hub_download(repo_id="miceworks/Mark-Engineer-V3-1.5B", filename="mark_engine
 ### Cryptographic Verification
 
 ```bash
-echo "9d005229429a0f55d61c66ecf2611bd5d03f2a8c76e20512999b8304abc686b3  mark_engineer_v3_1_5b_iq4_nl.gguf" | sha256sum -c -
+echo "24093fd96a22c7b4b19e85df2fb0d4e1757361d6f58baa4f36ad0285fa29ac68  mark_engineer_v3_1_5b_iq4_nl.gguf" | sha256sum -c -
 ```
 
 ### Ollama

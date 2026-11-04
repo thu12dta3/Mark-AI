@@ -153,7 +153,7 @@ hf_hub_download(repo_id="miceworks/Mark-SLM-V3-150M", filename="mark_slm_v3_150m
 ### Cryptographic Verification
 
 ```bash
-echo "a5b059b63e4e37d6a5cd1572d59f2fd19352999a1388e97dd7b0fcc8455673e4  mark_slm_v3_150m_iq4_nl.gguf" | sha256sum -c -
+echo "4bbfe2dc3fc7a6ac895d56e30352bda0de1322f9826afa28cafe7d24b0e99632  mark_slm_v3_150m_iq4_nl.gguf" | sha256sum -c -
 ```
 
 ### Ollama
