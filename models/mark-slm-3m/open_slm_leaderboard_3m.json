@@ -1,0 +1,31 @@
+{
+  "benchmark": "Open SLM Leaderboard",
+  "organization": "AxiomicLabs & Miceworks",
+  "model_id": "miceworks/Mark-SLM-3M",
+  "model_parameters": 2885376,
+  "parameter_ceiling": "< 3M (Rule 01)",
+  "category": "Original (<3M parameters)",
+  "intelligence_index": 14.35,
+  "scores_raw": {
+    "hellaswag_acc_norm": 24.4,
+    "arc_easy_acc_norm": 25.6,
+    "arc_challenge_acc_norm": 25.75,
+    "piqa_acc_norm": 47.5,
+    "arithmark3_acc": 84.4
+  },
+  "scores_normalized": {
+    "hellaswag_norm": 0.0,
+    "arc_easy_norm": 0.8,
+    "arc_challenge_norm": 1.0,
+    "piqa_norm": 0.0,
+    "arithmark3_norm": 79.2,
+    "arc_avg_norm": 0.9
+  },
+  "weights": {
+    "hellaswag": 1.0,
+    "arc_avg": 1.0,
+    "piqa": 1.0,
+    "arithmark3": 0.65,
+    "denominator": 3.65
+  }
+}

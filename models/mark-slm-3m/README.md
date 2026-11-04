@@ -43,18 +43,28 @@ Mark-SLM-3M is an ultra-compact language model engineered under the 3,000,000 pa
 
 ## Storage and Container Footprint
 
-- Unquantized PyTorch Weights (FP16): ~5.50 MiB (~5.77 MB)
-- GGUF Container (IQ4_NL): ~1.72 MiB (~1.80 MB)
+- Unquantized PyTorch Weights (model.safetensors): ~62.94 MiB (~66.00 MB)
+- GGUF Container (IQ4_NL): ~2.67 MiB (~2.80 MB)
 - Target Platforms: Embedded Microcontrollers, Edge Devices, Ollama, LM Studio, llama.cpp, PyTorch
 
-## Evaluation Benchmarks
+## Official Benchmark Results (Open SLM Leaderboard)
 
-Mark-SLM-3M is evaluated across the 5 official Open SLM Leaderboard benchmarks:
-1. HellaSwag (Rowan/hellaswag, acc_norm, chance 25.0%)
-2. ARC-Easy (allenai/ai2_arc, acc_norm, chance 25.0%)
-3. ARC-Challenge (allenai/ai2_arc, acc_norm, chance 25.0%)
-4. PIQA (ybisk/piqa, acc_norm, chance 50.0%)
-5. ArithMark-3.0 (1,000 procedural questions, acc, chance 25.0%)
+The model was evaluated on the official Open SLM Leaderboard evaluation suite running on Kaggle (2x Tesla T4).
+
+| Benchmark | Metric | Chance Baseline | Raw Score | Normalized Score (0 to 100) |
+| :--- | :--- | :--- | :--- | :--- |
+| HellaSwag | acc_norm | 25.0% | 24.40% | 0.00 |
+| ARC-Easy | acc_norm | 25.0% | 25.60% | 0.80 |
+| ARC-Challenge | acc_norm | 25.0% | 25.75% | 1.00 |
+| PIQA | acc_norm | 50.0% | 47.50% | 0.00 |
+| ArithMark-3.0 | acc | 25.0% | 84.40% | 79.20 |
+
+### Summary Metrics
+
+- Category: Original (< 3M parameters)
+- Physical Parameters: 2,885,376 (Ceiling: < 3,000,000 parameters)
+- ARC Average Normalized: 0.90
+- Intelligence Index: 14.35
 
 ### AxiomicLabs Intelligence Index Formula
 

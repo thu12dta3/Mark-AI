@@ -73,16 +73,20 @@ def quantize_iq4_nl(arr: np.ndarray) -> np.ndarray:
     return blocks.reshape(out_shape)
 
 def add_iq4_nl(writer: gguf.GGUFWriter, name: str, tensor_data: Any):
-    if isinstance(tensor_data, torch.Tensor):
+    if isinstance(tensor_data, torch.Tensor) or hasattr(tensor_data, 'detach'):
         arr = tensor_data.detach().cpu().float().numpy()
+    elif isinstance(tensor_data, np.ndarray):
+        arr = tensor_data.astype(np.float32)
     else:
         arr = np.asarray(tensor_data, dtype=np.float32)
     q_bytes = quantize_iq4_nl(arr)
     writer.add_tensor(name, q_bytes, raw_dtype=gguf.GGMLQuantizationType.IQ4_NL)
 
 def add_f32(writer: gguf.GGUFWriter, name: str, tensor_data: Any):
-    if isinstance(tensor_data, torch.Tensor):
+    if isinstance(tensor_data, torch.Tensor) or hasattr(tensor_data, 'detach'):
         arr = tensor_data.detach().cpu().float().numpy()
+    elif isinstance(tensor_data, np.ndarray):
+        arr = tensor_data.astype(np.float32)
     else:
         arr = np.asarray(tensor_data, dtype=np.float32)
     writer.add_tensor(name, arr)
@@ -90,7 +94,7 @@ def add_f32(writer: gguf.GGUFWriter, name: str, tensor_data: Any):
 def unpack_tensor(val, lut=lut) -> Optional[torch.Tensor]:
     if isinstance(val, dict) and 'packed' in val:
         packed = val['packed']
-        scales = val['scales'].float().unsqueeze(-1)
+        scales = val['scales'].detach().cpu().float().unsqueeze(-1) if hasattr(val['scales'], 'detach') else val['scales'].float().unsqueeze(-1)
         orig_shape = val['orig_shape']
         low = (packed & 15).long()
         high = (packed >> 4 & 15).long()
@@ -99,12 +103,14 @@ def unpack_tensor(val, lut=lut) -> Optional[torch.Tensor]:
         idx[:, 1::2] = high
         norm_w = lut[idx]
         w = (norm_w * scales).reshape(orig_shape)
-        return w
-    elif isinstance(val, torch.Tensor):
-        return val
+        return w.detach().cpu()
+    elif isinstance(val, torch.Tensor) or hasattr(val, 'detach'):
+        return val.detach().cpu()
     return None
 
 def project_weight_svd(w: torch.Tensor, in_features: int, out_features: int) -> torch.Tensor:
+    if hasattr(w, 'detach'):
+        w = w.detach().cpu()
     if w.shape == (out_features, in_features):
         return w
     cur_out, cur_in = w.shape
@@ -134,15 +140,19 @@ def extract_linear_weight(sd: Dict[str, Any], prefix: str, in_features: int, out
         if k in sd:
             res = unpack_tensor(sd[k])
             if res is not None:
-                w = res.float()
+                w = res.detach().cpu().float()
                 if w.shape != (out_features, in_features):
                     w = project_weight_svd(w, in_features, out_features)
-                return w
+                return w.detach().cpu()
     qw_key = f'{prefix}.qweight'
     sc_key = f'{prefix}.scales'
     if qw_key in sd and sc_key in sd:
         qw = sd[qw_key]
         sc = sd[sc_key]
+        if hasattr(qw, 'detach'):
+            qw = qw.detach().cpu()
+        if hasattr(sc, 'detach'):
+            sc = sc.detach().cpu()
         low = (qw & 15).long()
         high = (qw >> 4 & 15).long()
         idx = torch.zeros((out_features, qw.shape[1], block_size), dtype=torch.long)
@@ -153,7 +163,7 @@ def extract_linear_weight(sd: Dict[str, Any], prefix: str, in_features: int, out
         w = w_blocks.view(out_features, -1)[:, :in_features].float()
         if w.shape != (out_features, in_features):
             w = project_weight_svd(w, in_features, out_features)
-        return w
+        return w.detach().cpu()
     raise KeyError(f'Unable to find tensor for prefix: {prefix}')
 
 def verify_gguf_integrity(gguf_path: Path):
@@ -230,8 +240,10 @@ def export_mmproj_gguf(config: Any, sd: Optional[Dict[str, Any]], output_path: P
                 raw_tensors[k.replace('projector.', 'mm.')] = v
 
     for name, val in raw_tensors.items():
-        if isinstance(val, torch.Tensor):
+        if isinstance(val, torch.Tensor) or hasattr(val, 'detach'):
             arr = val.detach().cpu().float().numpy()
+        elif isinstance(val, np.ndarray):
+            arr = val.astype(np.float32)
         else:
             arr = np.asarray(val, dtype=np.float32)
         if quant_type.lower() == 'q8_0' and arr.ndim == 2 and arr.shape[-1] % 32 == 0:
@@ -335,8 +347,10 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
         if quant_type == 'iq4_nl':
             add_iq4_nl(w_writer, name, data)
         else:
-            if isinstance(data, torch.Tensor):
+            if isinstance(data, torch.Tensor) or hasattr(data, 'detach'):
                 arr = data.detach().cpu().to(torch.float16).numpy()
+            elif isinstance(data, np.ndarray):
+                arr = data.astype(np.float16)
             else:
                 arr = np.asarray(data, dtype=np.float16)
             w_writer.add_tensor(name, arr)
@@ -507,7 +521,7 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
         emb_key = 'tok_embeddings.weight' if 'tok_embeddings.weight' in sd else 'model.embed_tokens.weight'
         w_emb = extract_linear_weight(sd, emb_key.replace('.weight', ''), dim, config.vocab_size)
         norm_key = 'norm.weight' if 'norm.weight' in sd else 'model.norm.weight'
-        norm_raw = sd[norm_key]
+        norm_raw = sd[norm_key].detach().cpu() if hasattr(sd[norm_key], 'detach') else sd[norm_key]
         head_key = 'lm_head.weight'
         if head_key in sd:
             w_out = extract_linear_weight(sd, 'lm_head', dim, config.vocab_size)
@@ -580,7 +594,10 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
         wkv_a = extract_linear_weight(cur_sd, wkv_a_prefix, dim, config.kv_lora_rank + config.qk_rope_head_dim)
 
         kv_norm_key = next((k for k in (f'{pfx}attn.kv_norm.weight', f'{pfx}attn.kv_a_layernorm.weight') if k in cur_sd), None)
-        kv_norm_w = cur_sd[kv_norm_key].float()
+        kv_norm_val = cur_sd[kv_norm_key]
+        if hasattr(kv_norm_val, 'detach'):
+            kv_norm_val = kv_norm_val.detach().cpu()
+        kv_norm_w = kv_norm_val.float()
 
         if f'{pfx}attn.wk_b.weight' in cur_sd and f'{pfx}attn.wv_b.weight' in cur_sd:
             wk_b = extract_linear_weight(cur_sd, f'{pfx}attn.wk_b', config.kv_lora_rank, n_heads * config.qk_nope_head_dim)
@@ -639,6 +656,8 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
                 r_key = next((k for k in (f'{pfx}ffn.router.weight', f'{pfx}ffn.router_gate.weight') if k in cur_sd), None)
                 if r_key:
                     w_router = cur_sd[r_key]
+                    if hasattr(w_router, 'detach'):
+                        w_router = w_router.detach().cpu()
                 else:
                     w_router = torch.zeros((config.n_routed_experts, dim), dtype=torch.float32)
                 add_linear(writer, f'{b_pfx}ffn_gate_inp.weight', w_router)
@@ -657,7 +676,10 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
 
                 bias_key = next((k for k in (f'{pfx}ffn.exp_probs_b', f'{pfx}ffn.expert_bias', f'{pfx}ffn.router_bias') if k in cur_sd), None)
                 if bias_key:
-                    add_f32(writer, f'{b_pfx}exp_probs_b.bias', cur_sd[bias_key])
+                    bias_val = cur_sd[bias_key]
+                    if hasattr(bias_val, 'detach'):
+                        bias_val = bias_val.detach().cpu()
+                    add_f32(writer, f'{b_pfx}exp_probs_b.bias', bias_val)
 
         if block is not None:
             del block, cur_sd

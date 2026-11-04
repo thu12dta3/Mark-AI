@@ -34,7 +34,7 @@
   "torch_dtype": "bfloat16",
   "quantization": "IQ4_NL",
   "total_parameters": 2885376,
-  "weight_state": "UN-TRAINED_ARCHITECTURAL_BASE",
+  "weight_state": "TRAINED_CHECKPOINT",
   "target_platforms": [
     "Ollama",
     "LM Studio",
