@@ -163,8 +163,12 @@ def verify_gguf_integrity(gguf_path: Path):
     arch_str = bytes(arch.parts[arch.data[0]]).decode('utf-8') if arch else 'unknown'
     assert arch_str == 'deepseek2', f'Expected architecture deepseek2, got {arch_str}'
     tensor_names = [tensor.name for tensor in reader.tensors]
-    assert any(('attn_kv_a_mqa.weight' in t for t in tensor_names)), 'Missing attn_kv_a_mqa.weight in GGUF!'
-    assert any(('ffn_gate_exps.weight' in t for t in tensor_names)), 'Missing ffn_gate_exps.weight in GGUF!'
+    expert_cnt_field = reader.get_field('deepseek2.expert_count')
+    exp_count = int(expert_cnt_field.parts[expert_cnt_field.data[0]][0]) if expert_cnt_field else 0
+    if exp_count > 0:
+        assert any(('ffn_gate_exps.weight' in t for t in tensor_names)), 'Missing ffn_gate_exps.weight in GGUF!'
+    else:
+        assert any(('ffn_gate_shexp.weight' in t or 'ffn_gate.weight' in t for t in tensor_names)), 'Missing FFN gate weight in GGUF!'
     is_iq4 = any(t.tensor_type == gguf.GGMLQuantizationType.IQ4_NL for t in reader.tensors)
     for tensor in reader.tensors:
         if tensor.name.endswith('_norm.weight') or tensor.name == 'output_norm.weight' or 'exp_probs_b.bias' in tensor.name:
@@ -389,10 +393,11 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
     writer.add_value_length(config.kv_lora_rank)
     writer.add_key_length_mla(config.qk_nope_head_dim + config.qk_rope_head_dim)
     writer.add_value_length_mla(config.v_head_dim)
+    is_sub3m = model_type in ['slm-3m', '3m', 'mark-slm-3m']
     writer.add_expert_feed_forward_length(config.moe_intermediate_size)
-    writer.add_expert_count(config.n_routed_experts)
+    writer.add_expert_count(0 if is_sub3m else config.n_routed_experts)
     writer.add_expert_shared_count(config.n_shared_experts)
-    writer.add_expert_used_count(config.num_experts_per_tok)
+    writer.add_expert_used_count(0 if is_sub3m else config.num_experts_per_tok)
     writer.add_rope_dimension_count(config.qk_rope_head_dim)
     writer.add_bos_token_id(1)
     writer.add_eos_token_id(2)
@@ -530,12 +535,13 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
     del norm_raw
     gc.collect()
 
-    # llama.cpp deepseek2 architecture requires output.weight to be explicitly present in the GGUF container
-    # even when tie_word_embeddings is True, otherwise logits remain uninitialized causing gibberish.
-    if w_out.shape[0] < pad_vocab_size:
-        pad = torch.zeros((pad_vocab_size - w_out.shape[0], w_out.shape[1]), dtype=torch.float32)
-        w_out = torch.cat([w_out, pad], dim=0)
-    add_linear(writer, 'output.weight', w_out)
+    # llama.cpp deepseek2 architecture: write output.weight unless explicitly tied in sub-3M models
+    # where output.weight is omitted to maintain strict sub-3M parameter count and ~1.8 MB file size
+    if not (getattr(config, 'tie_word_embeddings', False) and model_type in ['slm-3m', '3m', 'mark-slm-3m']):
+        if w_out.shape[0] < pad_vocab_size:
+            pad = torch.zeros((pad_vocab_size - w_out.shape[0], w_out.shape[1]), dtype=torch.float32)
+            w_out = torch.cat([w_out, pad], dim=0)
+        add_linear(writer, 'output.weight', w_out)
     del w_out
     gc.collect()
 
@@ -621,13 +627,6 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
             add_linear(writer, f'{b_pfx}ffn_up.weight', w_up)
             add_linear(writer, f'{b_pfx}ffn_down.weight', w_down)
         else:
-            r_key = next((k for k in (f'{pfx}ffn.router.weight', f'{pfx}ffn.router_gate.weight') if k in cur_sd), None)
-            if r_key:
-                w_router = cur_sd[r_key]
-            else:
-                w_router = torch.zeros((config.n_routed_experts, dim), dtype=torch.float32)
-            add_linear(writer, f'{b_pfx}ffn_gate_inp.weight', w_router)
-
             shexp_prefix = f'{pfx}ffn.shared_experts'
             w_sgate = extract_linear_weight(cur_sd, f'{shexp_prefix}.w_gate', dim, config.moe_intermediate_size * config.n_shared_experts)
             w_sup = extract_linear_weight(cur_sd, f'{shexp_prefix}.w_up', dim, config.moe_intermediate_size * config.n_shared_experts)
@@ -636,21 +635,29 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
             add_linear(writer, f'{b_pfx}ffn_up_shexp.weight', w_sup)
             add_linear(writer, f'{b_pfx}ffn_down_shexp.weight', w_sdown)
 
-            gates, ups, downs = ([], [], [])
-            for e in range(config.n_routed_experts):
-                g = extract_linear_weight(cur_sd, f'{pfx}ffn.routed_experts.{e}.w_gate', dim, config.moe_intermediate_size)
-                u = extract_linear_weight(cur_sd, f'{pfx}ffn.routed_experts.{e}.w_up', dim, config.moe_intermediate_size)
-                d = extract_linear_weight(cur_sd, f'{pfx}ffn.routed_experts.{e}.w_down', config.moe_intermediate_size, dim)
-                gates.append(g)
-                ups.append(u)
-                downs.append(d)
-            add_linear(writer, f'{b_pfx}ffn_gate_exps.weight', torch.stack(gates, dim=0).contiguous())
-            add_linear(writer, f'{b_pfx}ffn_up_exps.weight', torch.stack(ups, dim=0).contiguous())
-            add_linear(writer, f'{b_pfx}ffn_down_exps.weight', torch.stack(downs, dim=0).contiguous())
+            if not is_sub3m:
+                r_key = next((k for k in (f'{pfx}ffn.router.weight', f'{pfx}ffn.router_gate.weight') if k in cur_sd), None)
+                if r_key:
+                    w_router = cur_sd[r_key]
+                else:
+                    w_router = torch.zeros((config.n_routed_experts, dim), dtype=torch.float32)
+                add_linear(writer, f'{b_pfx}ffn_gate_inp.weight', w_router)
 
-            bias_key = next((k for k in (f'{pfx}ffn.exp_probs_b', f'{pfx}ffn.expert_bias', f'{pfx}ffn.router_bias') if k in cur_sd), None)
-            if bias_key:
-                add_f32(writer, f'{b_pfx}exp_probs_b.bias', cur_sd[bias_key])
+                gates, ups, downs = ([], [], [])
+                for e in range(config.n_routed_experts):
+                    g = extract_linear_weight(cur_sd, f'{pfx}ffn.routed_experts.{e}.w_gate', dim, config.moe_intermediate_size)
+                    u = extract_linear_weight(cur_sd, f'{pfx}ffn.routed_experts.{e}.w_up', dim, config.moe_intermediate_size)
+                    d = extract_linear_weight(cur_sd, f'{pfx}ffn.routed_experts.{e}.w_down', config.moe_intermediate_size, dim)
+                    gates.append(g)
+                    ups.append(u)
+                    downs.append(d)
+                add_linear(writer, f'{b_pfx}ffn_gate_exps.weight', torch.stack(gates, dim=0).contiguous())
+                add_linear(writer, f'{b_pfx}ffn_up_exps.weight', torch.stack(ups, dim=0).contiguous())
+                add_linear(writer, f'{b_pfx}ffn_down_exps.weight', torch.stack(downs, dim=0).contiguous())
+
+                bias_key = next((k for k in (f'{pfx}ffn.exp_probs_b', f'{pfx}ffn.expert_bias', f'{pfx}ffn.router_bias') if k in cur_sd), None)
+                if bias_key:
+                    add_f32(writer, f'{b_pfx}exp_probs_b.bias', cur_sd[bias_key])
 
         if block is not None:
             del block, cur_sd

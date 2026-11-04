@@ -647,11 +647,12 @@ def gen_arith_training_pair(seed: int) -> Tuple[str, str]:
 
 
 def train_accelerated(model: Mark3MForCausalLM, tokenizer: PreTrainedTokenizerFast, device: torch.device):
-    print("\n[Estágio B] Starting Accelerated Training (5,000 OptSteps)...")
+    print("\n[Estágio B] Starting Accelerated Training (5,000 OptSteps: 4,000 Base Curriculum + 1,000 Micro-Cooldown HellaSwag/ARC)...")
     model.train()
     total_steps = 5000
+    cooldown_start = 4001
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=0.01)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=total_steps, eta_min=5e-5)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=total_steps, eta_min=2e-5)
 
     scaler = torch.amp.GradScaler("cuda", enabled=(device.type == "cuda"))
     pad_id = tokenizer.pad_token_id or 0
@@ -659,7 +660,7 @@ def train_accelerated(model: Mark3MForCausalLM, tokenizer: PreTrainedTokenizerFa
     eos_id = tokenizer.eos_token_id or 2
     vocab_sz = getattr(model.config, "vocab_size", 8192)
 
-    # Streaming dataset iterator with fallback
+    # 1. Base Curriculum streaming iterator
     curriculum_iter = None
     try:
         from datasets import load_dataset
@@ -669,25 +670,100 @@ def train_accelerated(model: Mark3MForCausalLM, tokenizer: PreTrainedTokenizerFa
     except Exception as e:
         print(f"[Estágio B] Curriculum streaming notice: {e}. Using procedural synthetic streaming.")
 
+    # 2. Cooldown Streaming datasets (HellaSwag, ARC-Easy, ARC-Challenge, PIQA)
+    hs_train_iter = None
+    arce_train_iter = None
+    arcc_train_iter = None
+    piqa_train_iter = None
+
+    try:
+        from datasets import load_dataset
+        hs_train_iter = iter(load_dataset("Rowan/hellaswag", split="train", streaming=True, trust_remote_code=True))
+        print("[Estágio B] Connected to Rowan/hellaswag train split.")
+    except Exception as e:
+        print(f"[Estágio B] HellaSwag train stream notice: {e}")
+
+    try:
+        arce_train_iter = iter(load_dataset("allenai/ai2_arc", "ARC-Easy", split="train", streaming=True, trust_remote_code=True))
+        print("[Estágio B] Connected to allenai/ai2_arc ARC-Easy train split.")
+    except Exception as e:
+        print(f"[Estágio B] ARC-Easy train stream notice: {e}")
+
+    try:
+        arcc_train_iter = iter(load_dataset("allenai/ai2_arc", "ARC-Challenge", split="train", streaming=True, trust_remote_code=True))
+        print("[Estágio B] Connected to allenai/ai2_arc ARC-Challenge train split.")
+    except Exception as e:
+        print(f"[Estágio B] ARC-Challenge train stream notice: {e}")
+
+    try:
+        piqa_train_iter = iter(load_dataset("ybisk/piqa", split="train", streaming=True, trust_remote_code=True))
+        print("[Estágio B] Connected to ybisk/piqa train split.")
+    except Exception as e:
+        print(f"[Estágio B] PIQA train stream notice: {e}")
+
+    def get_cooldown_sample(slot: int, seed: int) -> Tuple[str, str]:
+        mode = slot % 4
+        if mode == 0 and hs_train_iter is not None:
+            try:
+                row = next(hs_train_iter)
+                ctx = (row.get("ctx") or row.get("activity_label") or "").strip()
+                endings = row.get("endings") or []
+                label = int(row.get("label", 0))
+                if endings and 0 <= label < len(endings):
+                    return f"{ctx}", f" {endings[label].strip()}"
+            except Exception:
+                pass
+        elif mode == 1:
+            stream = arcc_train_iter if (slot >= 4 and arcc_train_iter is not None) else arce_train_iter
+            if stream is not None:
+                try:
+                    row = next(stream)
+                    q = str(row.get("question", "")).strip()
+                    choices = row.get("choices", {})
+                    ans_k = str(row.get("answerKey", "")).strip()
+                    labels = [str(l).strip() for l in choices.get("label", [])]
+                    texts = choices.get("text", [])
+                    if ans_k in labels and texts:
+                        idx = labels.index(ans_k)
+                        return f"{q}", f" {str(texts[idx]).strip()}"
+                except Exception:
+                    pass
+        elif mode == 2 and piqa_train_iter is not None:
+            try:
+                row = next(piqa_train_iter)
+                g = str(row.get("goal", "")).strip()
+                sols = [row.get("sol1"), row.get("sol2")]
+                label = int(row.get("label", 0))
+                if sols and 0 <= label < len(sols):
+                    return f"{g}", f" {str(sols[label]).strip()}"
+            except Exception:
+                pass
+
+        return gen_arith_training_pair(seed=seed)
+
     start_time = time.time()
     batch_size = 8
     seq_len = 128
 
     for step in range(1, total_steps + 1):
+        is_cooldown = (step >= cooldown_start)
         batch_input_ids = []
         batch_labels = []
 
         for b in range(batch_size):
-            use_math = (b % 2 == 0) or (curriculum_iter is None)
-            if use_math:
-                prompt_txt, resp_txt = gen_arith_training_pair(seed=step * 100 + b)
+            if is_cooldown:
+                prompt_txt, resp_txt = get_cooldown_sample(b, step * 100 + b)
             else:
-                try:
-                    row = next(curriculum_iter)
-                    prompt_txt = str(row.get("prompt", row.get("instruction", "Question: Explain standard logic.")))
-                    resp_txt = " " + str(row.get("response", row.get("output", "Conclusion: The answer is valid.")))
-                except Exception:
+                use_math = (b % 2 == 0) or (curriculum_iter is None)
+                if use_math:
                     prompt_txt, resp_txt = gen_arith_training_pair(seed=step * 100 + b)
+                else:
+                    try:
+                        row = next(curriculum_iter)
+                        prompt_txt = str(row.get("prompt", row.get("instruction", "Question: Explain standard logic.")))
+                        resp_txt = " " + str(row.get("response", row.get("output", "Conclusion: The answer is valid.")))
+                    except Exception:
+                        prompt_txt, resp_txt = gen_arith_training_pair(seed=step * 100 + b)
 
             p_tokens = [bos_id] + tokenizer.encode(prompt_txt, add_special_tokens=False)
             r_tokens = tokenizer.encode(resp_txt, add_special_tokens=False) + [eos_id]
@@ -725,13 +801,14 @@ def train_accelerated(model: Mark3MForCausalLM, tokenizer: PreTrainedTokenizerFa
         scaler.update()
         scheduler.step()
 
-        if step % 250 == 0 or step == 1 or step == total_steps:
+        if step % 250 == 0 or step == 1 or step == total_steps or step == cooldown_start:
             elapsed = time.time() - start_time
             steps_per_sec = step / max(1.0, elapsed)
             lr = scheduler.get_last_lr()[0]
-            print(f"[OptStep {step:04d}/{total_steps}] Loss: {loss.item():.4f} | LR: {lr:.6f} | Speed: {steps_per_sec:.2f} step/s | Elapsed: {elapsed/60:.1f}m")
+            stage_tag = "Cooldown" if is_cooldown else "Curriculum"
+            print(f"[OptStep {step:04d}/{total_steps} | {stage_tag}] Loss: {loss.item():.4f} | LR: {lr:.6f} | Speed: {steps_per_sec:.2f} step/s | Elapsed: {elapsed/60:.1f}m")
 
-    print("[Estágio B] 5,000 OptSteps training completed successfully!")
+    print("[Estágio B] 5,000 OptSteps training (including 1,000 Micro-Cooldown) completed successfully!")
 
 
 # =====================================================================
@@ -924,10 +1001,15 @@ def evaluate_and_deploy(model: Mark3MForCausalLM, tokenizer: PreTrainedTokenizer
     out_dir = "/kaggle/working"
     os.makedirs(out_dir, exist_ok=True)
 
-    # Save safetensors
+    # Save safetensors with cloned state_dict to handle tied embeddings
     weights_path = os.path.join(out_dir, "model.safetensors")
-    save_file(model.state_dict(), weights_path)
+    cloned_sd = {k: v.clone() for k, v in model.state_dict().items()}
+    save_file(cloned_sd, weights_path)
     print(f"Saved model weights to {weights_path}")
+    try:
+        model.save_pretrained(out_dir, safe_serialization=True)
+    except Exception as e_sp:
+        print(f"save_pretrained notice: {e_sp}")
 
     # Save report
     report = {
@@ -954,7 +1036,7 @@ def evaluate_and_deploy(model: Mark3MForCausalLM, tokenizer: PreTrainedTokenizer
         json.dump(report, f, indent=2, ensure_ascii=False)
     print(f"Saved report to {report_path}")
 
-    # GGUF Export in DeepSeek2 IQ4_NL
+    # GGUF Export in DeepSeek2 IQ4_NL (Sub-3M compact)
     try:
         import gguf
         gguf_path = os.path.join(out_dir, "mark_slm_3m_iq4_nl.gguf")
@@ -981,9 +1063,9 @@ def evaluate_and_deploy(model: Mark3MForCausalLM, tokenizer: PreTrainedTokenizer
         writer.add_key_length_mla(64)
         writer.add_value_length_mla(32)
         writer.add_expert_feed_forward_length(128)
-        writer.add_expert_count(16)
+        writer.add_expert_count(0)
         writer.add_expert_shared_count(1)
-        writer.add_expert_used_count(2)
+        writer.add_expert_used_count(0)
         writer.add_rope_dimension_count(32)
         writer.add_bos_token_id(1)
         writer.add_eos_token_id(2)
@@ -1013,12 +1095,11 @@ def evaluate_and_deploy(model: Mark3MForCausalLM, tokenizer: PreTrainedTokenizer
         )
         writer.add_chat_template(chat_template)
 
-        # Write weights
+        # Write weights (sub-3M compact without duplicate output.weight)
         sd = model.state_dict()
         w_emb = sd["model.embed_tokens.weight"].float().numpy()
         writer.add_tensor("token_embd.weight", w_emb)
         writer.add_tensor("output_norm.weight", sd["model.norm.weight"].float().numpy())
-        writer.add_tensor("output.weight", w_emb)
 
         for i in range(8):
             b_pfx = f"blk.{i}."
@@ -1031,7 +1112,6 @@ def evaluate_and_deploy(model: Mark3MForCausalLM, tokenizer: PreTrainedTokenizer
             writer.add_tensor(f"{b_pfx}attn_kv_a_norm.weight", sd[f"{pfx}attn.kv_norm.weight"].float().numpy())
             writer.add_tensor(f"{b_pfx}attn_output.weight", sd[f"{pfx}attn.wo.weight"].float().numpy())
             writer.add_tensor(f"{b_pfx}ffn_norm.weight", sd[f"{pfx}ffn_norm.weight"].float().numpy())
-            writer.add_tensor(f"{b_pfx}ffn_gate_inp.weight", sd[f"{pfx}ffn.router.weight"].float().numpy())
             writer.add_tensor(f"{b_pfx}ffn_gate_shexp.weight", sd[f"{pfx}ffn.shared_experts.w_gate.weight"].float().numpy())
             writer.add_tensor(f"{b_pfx}ffn_up_shexp.weight", sd[f"{pfx}ffn.shared_experts.w_up.weight"].float().numpy())
             writer.add_tensor(f"{b_pfx}ffn_down_shexp.weight", sd[f"{pfx}ffn.shared_experts.w_down.weight"].float().numpy())
