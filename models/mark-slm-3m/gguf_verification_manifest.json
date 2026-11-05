@@ -1,0 +1,35 @@
+{
+  "model_id": "mark-slm-3m",
+  "model_name": "Mark-SLM-3M",
+  "weight_state": "TRAINED_CHECKPOINT_VALIDATED",
+  "provenance": {
+    "gguf_file": "mark_slm_3m_iq4_nl.gguf",
+    "size_bytes": 3271680,
+    "size_formatted": "3.12 MiB (3.27 MB / 3,271,680 bytes)",
+    "sha256": "c66a0b3b76aba96c64d53d0e8821bd9e6e8bb29dc925890fa3a8efa05b1d1d30",
+    "quantization": "IQ4_NL"
+  },
+  "tensor_architecture": {
+    "physical_total_parameters": 2946008,
+    "physical_active_parameters": 2503640,
+    "total_parameters_formatted": "2,946,008",
+    "active_parameters_formatted": "2,503,640",
+    "total_tensors": 137,
+    "tensor_types": "IQ4_NL, F32"
+  },
+  "vocabulary_alignment": {
+    "config_vocab_size": 4096,
+    "tokenizer_config_vocab_size": 4096,
+    "tokenizer_json_vocab_len": 4096,
+    "gguf_vocab_size": 4096,
+    "vocab_equality_verified": true,
+    "bos_token": "<|bos|>",
+    "eos_token": "<|eos|>",
+    "pad_token": "<|pad|>",
+    "special_tokens_verified": true
+  },
+  "modelfile_alignment": {
+    "stop_token": "<|eos|>",
+    "no_unregistered_tokens": true
+  }
+}

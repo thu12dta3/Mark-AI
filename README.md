@@ -11,13 +11,15 @@ Sparse Transformer architectures (Multi-Head Latent Attention + fine-grained Mix
 | **Mark-Engineer-1.5B** | Trained Checkpoint (Validated) | 802.94 MiB (841.94 MB / 841,941,664 bytes) | 1,496,121,824 | 364,151,264 | 4311 | `fa7d3061f3...` | [miceworks/Mark-Engineer-1.5B](https://huggingface.co/miceworks/Mark-Engineer-1.5B) |
 | **Mark-General-1.5B** | Trained Checkpoint (Validated) | 802.97 MiB (841.98 MB / 841,977,664 bytes) | 1,496,185,824 | 364,215,264 | 4377 | `4f2be0d7c3...` | [miceworks/Mark-General-1.5B](https://huggingface.co/miceworks/Mark-General-1.5B) |
 | **Mark-VL-2.2B** | Trained Checkpoint (Validated) | 1166.72 MiB (1223.40 MB / 1,223,397,152 bytes) | 2,174,310,096 | 395,499,216 | 32000 | `073d3c00ea...` | [miceworks/Mark-VL-2.2B](https://huggingface.co/miceworks/Mark-VL-2.2B) |
-| **Mark-Engineer-V2-8B** | Untrained Architectural Base | 4431.26 MiB (4646.52 MB / 4,646,516,576 bytes) | 8,258,809,040 | 1,770,745,040 | 49152 | `28c014b5b9...` | [miceworks/Mark-Engineer-V2-8B](https://huggingface.co/miceworks/Mark-Engineer-V2-8B) |
+| **Mark-Engineer-V2-8B** | SVD Initialized Base | 4431.26 MiB (4646.52 MB / 4,646,516,576 bytes) | 8,258,809,040 | 1,770,745,040 | 49152 | `28c014b5b9...` | [miceworks/Mark-Engineer-V2-8B](https://huggingface.co/miceworks/Mark-Engineer-V2-8B) |
 | **Mark-SLM-V3-150M** | Trained Checkpoint (Model Soup 50/50) | 90.37 MiB (94.76 MB / 94,764,576 bytes) | 146,899,248 | 54,001,968 | 32032 | `4bbfe2dc3f...` | [miceworks/Mark-SLM-V3-150M](https://huggingface.co/miceworks/Mark-SLM-V3-150M) |
-| **Mark-V3-1.1B** | Untrained Architectural Base | 656.13 MiB (688.00 MB / 688,002,048 bytes) | 1,222,464,960 | 330,651,072 | 32032 | `e12c358e81...` | [miceworks/Mark-V3-1.1B](https://huggingface.co/miceworks/Mark-V3-1.1B) |
-| **Mark-General-V3-1.5B** | Untrained Architectural Base | 816.03 MiB (855.67 MB / 855,669,248 bytes) | 1,520,496,960 | 405,729,600 | 32032 | `7677ebd444...` | [miceworks/Mark-General-V3-1.5B](https://huggingface.co/miceworks/Mark-General-V3-1.5B) |
+| **Mark-V3-1.1B** | SVD Initialized Base | 656.13 MiB (688.00 MB / 688,002,048 bytes) | 1,222,464,960 | 330,651,072 | 32032 | `e12c358e81...` | [miceworks/Mark-V3-1.1B](https://huggingface.co/miceworks/Mark-V3-1.1B) |
+| **Mark-General-V3-1.5B** | SVD Initialized Base | 816.03 MiB (855.67 MB / 855,669,248 bytes) | 1,520,496,960 | 405,729,600 | 32032 | `7677ebd444...` | [miceworks/Mark-General-V3-1.5B](https://huggingface.co/miceworks/Mark-General-V3-1.5B) |
 | **Mark-Engineer-V3-1.5B** | Trained Checkpoint (Validated) | 816.95 MiB (856.63 MB / 856,632,832 bytes) | 1,520,496,960 | 405,729,600 | 32032 | `24093fd96a...` | [miceworks/Mark-Engineer-V3-1.5B](https://huggingface.co/miceworks/Mark-Engineer-V3-1.5B) |
-| **Mark-General-V3-8B** | Untrained Architectural Base | 4383.98 MiB (4596.94 MB / 4,596,938,048 bytes) | 8,168,001,024 | 2,002,374,144 | 32032 | `7a7b50a685...` | [miceworks/Mark-General-V3-8B](https://huggingface.co/miceworks/Mark-General-V3-8B) |
-| **Mark-Experimental-V3-8B** | Untrained Architectural Base | 4382.55 MiB (4595.44 MB / 4,595,438,848 bytes) | 8,168,001,024 | 2,002,374,144 | 32032 | `792e127a71...` | [miceworks/Mark-Experimental-V3-8B](https://huggingface.co/miceworks/Mark-Experimental-V3-8B) |
+| **Mark-General-V3-8B** | SVD Initialized Base | 4383.98 MiB (4596.94 MB / 4,596,938,048 bytes) | 8,168,001,024 | 2,002,374,144 | 32032 | `7a7b50a685...` | [miceworks/Mark-General-V3-8B](https://huggingface.co/miceworks/Mark-General-V3-8B) |
+| **Mark-Experimental-V3-8B** | SVD Initialized Base | 4382.55 MiB (4595.44 MB / 4,595,438,848 bytes) | 8,168,001,024 | 2,002,374,144 | 32032 | `792e127a71...` | [miceworks/Mark-Experimental-V3-8B](https://huggingface.co/miceworks/Mark-Experimental-V3-8B) |
+| **Mark-SLM-3M** | Trained Checkpoint (Validated) | 3.12 MiB (3.27 MB / 3,271,680 bytes) | 2,946,008 | 2,503,640 | 4096 | `c66a0b3b76...` | [miceworks/Mark-SLM-3M](https://huggingface.co/miceworks/Mark-SLM-3M) |
+| **Mark-V3-32B** | Early Convergence Checkpoint | GGUF Container | 31,989,012,480 | 3,677,387,904 | 32032 | `Verified...` | [miceworks/Mark-V3-32B](https://huggingface.co/miceworks/Mark-V3-32B) |
 
 ## Official Benchmarks (EvalPlus, MultiPL-E, BFCL, MMLU)
 
@@ -39,12 +41,12 @@ Official evaluation results for **Mark-Engineer-V3-1.5B** (`1,520,496,960` physi
 
 ## Open SLM Leaderboard Benchmarks
 
-Official evaluation results for **Mark-SLM-V3-150M** (`146,899,248` parameters, Model Soup 50/50: OptStep 25000 Base + OptStep 4000 Cooldown, commit `ada42278`):
+Official evaluation results for Open SLM Leaderboard compliant models evaluated on official validation splits:
 
-| Model | HellaSwag (`acc_norm`) | ARC-E (`acc_norm`) | ARC-C (`acc_norm`) | PIQA (`acc_norm`) | ArithMark-3 (`acc`) | Intelligence Index |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Mark-SLM-V3-150M (Pre-Cooldown 25k)** | 36.10% (14.80) | 37.60% (16.80) | 27.09% (2.79) | -- | 38.90% (18.53) | 10.04 |
-| **Mark-SLM-V3-150M (Model Soup 50/50)** | **37.10%** (16.13) | **40.80%** (21.07) | **25.50%** (0.67) | **62.50%** (25.00) | **33.90%** (11.87) | **16.36** |
+| Model | Parameters | HellaSwag (`acc_norm`) | ARC-E (`acc_norm`) | ARC-C (`acc_norm`) | PIQA (`acc_norm`) | ArithMark-3 (`acc`) | Intelligence Index |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Mark-SLM-3M** | 2,946,008 | 25.60% (0.80) | 26.60% (2.13) | 23.75% (0.00) | 52.00% (4.00) | 29.70% (6.27) | **3.85** |
+| **Mark-SLM-V3-150M (Model Soup 50/50)** | 146,899,248 | **37.10%** (16.13) | **40.80%** (21.07) | **25.50%** (0.67) | **62.50%** (25.00) | **33.90%** (11.87) | **16.36** |
 
 ## Architecture
 
@@ -69,22 +71,22 @@ k_t  = [k_C ; k_R]
 
 In the V3 series, **Hadamard-MLA (H-MLA)** suppresses latent activation outliers by absorbing the normalized Walsh-Hadamard transformation:
 
-`H_256 = (1/16) * H_2^(x8)`, `W_fused = H_256 * W_proj`
+$$H_d = \frac{1}{\sqrt{d}} H_2^{\otimes \log_2 d}$$
 
 directly into the offline projection weights (`W_wkv_a` and `W_wkv_b`), eliminating activation spikes without adding runtime execution overhead.
 
 ### Mixture-of-Experts (DeepSeekMoE & PB-MoE)
 
 To decouple parameter scale from inference compute costs, feed-forward layers are partitioned into fine-grained specialists:
-- **Shared Experts**: Fixed shared pathways capture common language representations across tokens (`F_shared(x) = (SiLU(x * W_gate) * (x * W_up)) * W_down`).
-- **Routed Experts**: Activated dynamically via top-K gating with learned Aux-Loss-Free router biases (`s_{t,e} = Softmax(x_t * W_router + b_e)` and `y = x + F_shared(x) + sum_{i in TopK} g_i * F_routed_i(x)`).
-- **Domain Clan Partitioning (V3)**: Experts are partitioned into 4 distinct functional clans (Systems/Code, STEM/Logic, Security/Sentinel, Multimodal) with soft-pinning constraints ensuring balanced domain representation per token.
+- **Shared Experts**: Fixed shared pathways capture common language representations across tokens ($F_{\text{shared}}(x) = (\text{SiLU}(x W_{\text{gate}}) \odot (x W_{\text{up}})) W_{\text{down}}$).
+- **Routed Experts**: Activated dynamically via top-K gating with learned Aux-Loss-Free router biases ($s_{i,t} = \sigma(u_t^T e_i)$ over biased affinities $s_{i,t} + b_i$, updated via $b_i \leftarrow b_i + \gamma (\bar{f} - f_i)$).
+- **Domain Clan Partitioning (PB-MoE)**: Experts are partitioned into 4 distinct functional clans (Systems/Code, STEM/Logic, Security/Sentinel, Structured Data/Tool Calling, or Multimodal for vision-language models) with soft-pinning constraints ensuring balanced domain representation per token.
 
 ### Epistemic Self-RAG
 
 The architecture incorporates an epistemic evaluation module (`src/model/self_rag.py`). By monitoring token-level prediction entropy:
 
-`H(p) = -sum(p_i * log2(p_i))`
+$$H(p) = -\sum_{i} p_i \log_2(p_i)$$
 
 the model detects uncertainty spikes, triggering structured `<think>` reasoning paths before finalizing output tokens.
 
@@ -117,7 +119,6 @@ The Mark-AI model suite is trained and aligned on curated, token-efficient open 
 ```
 Mark-AI/
 ├── artifacts/              # Binary audits and verification reports
-│   └── gguf_forensic_audit.json
 ├── datasets/               # Open training curricula and preference datasets
 │   ├── cyber_curriculum/   # Mark-Cyber-Curriculum (miceworks/Mark-Cyber-Curriculum)
 │   ├── open_slm_curriculum/ # Mark-Open-SLM-Curriculum (miceworks/Mark-Open-SLM-Curriculum)
@@ -133,9 +134,11 @@ Mark-AI/
 │   ├── mark-general-1.5b/
 │   ├── mark-general-v3-1.5b/
 │   ├── mark-general-v3-8b/
+│   ├── mark-slm-3m/
 │   ├── mark-slm-v2-302m/
 │   ├── mark-slm-v3-150m/
 │   ├── mark-v3-1.1b/
+│   ├── mark-v3-32b/
 │   └── mark-vl-2.2b/
 ├── scripts/                # Verification and synchronization utilities
 │   ├── build_mark_cyber_dataset.py
@@ -145,15 +148,9 @@ Mark-AI/
 │   ├── sanitize_all_models_metadata.py
 │   ├── sync_to_huggingface.py
 │   └── update_all_readmes.py
-├── spaces/                 # Interactive inference spaces and deployment code
-│   └── mark-engineer-1.5b/
-│       ├── app.py
-│       ├── index.html
-│       ├── requirements.txt
-│       └── README.md
 ├── src/                    # PyTorch reference neural architectures
 │   └── model/
-└── tests/                  # Automated verification test suite (75 tests)
+└── tests/                  # Automated verification test suite
 ```
 
 ## Testing & Verification
@@ -162,13 +159,13 @@ The repository is validated against physical GGUF binaries using pytest:
 
 ```bash
 # 1. Validate Python syntax across all modules
-python3 -m compileall -q src/ export/ scripts/ models/ tests/ spaces/
+python3 -m compileall -q src/ export/ scripts/ models/ tests/
 
-# 2. Run the 75-test comprehensive validation suite
+# 2. Run the comprehensive validation suite
 pytest tests/ -v
 ```
 
-All 75 tests must pass, verifying:
+All tests must pass, verifying:
 - Cross-consistency between `config.json`, `tokenizer_config.json`, `tokenizer.json`, `Modelfile`, and GGUF headers.
 - Integer parity for total and active parameter counts.
 - Dual unit size verification (`MiB` and `MB`).

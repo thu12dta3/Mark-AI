@@ -1,0 +1,32 @@
+{
+  "model_id": "mark-v3-32b",
+  "model_name": "Mark-V3-32B",
+  "weight_state": "EARLY_CONVERGENCE_CHECKPOINT",
+  "provenance": {
+    "gguf_file": "mark_v3_32b_iq4_nl.gguf",
+    "quantization": "IQ4_NL"
+  },
+  "tensor_architecture": {
+    "physical_total_parameters": 31989012480,
+    "physical_active_parameters": 3677387904,
+    "total_parameters_formatted": "31,989,012,480",
+    "active_parameters_formatted": "3,677,387,904",
+    "total_tensors": 580,
+    "tensor_types": "IQ4_NL, BF16, F32"
+  },
+  "vocabulary_alignment": {
+    "config_vocab_size": 32032,
+    "tokenizer_config_vocab_size": 32032,
+    "tokenizer_json_vocab_len": 32032,
+    "gguf_vocab_size": 32032,
+    "vocab_equality_verified": true,
+    "bos_token": "<|bos|>",
+    "eos_token": "<|eos|>",
+    "pad_token": "<|pad|>",
+    "special_tokens_verified": true
+  },
+  "modelfile_alignment": {
+    "stop_token": "<|eos|>",
+    "no_unregistered_tokens": true
+  }
+}
