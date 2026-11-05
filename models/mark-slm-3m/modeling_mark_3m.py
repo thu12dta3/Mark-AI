@@ -1,7 +1,8 @@
 """
 Hugging Face Transformers Compatible Modeling Implementation for Mark-SLM-3M
-Sparse Mixture-of-Experts (MoE) Architecture with Multi-Head Latent Attention (MLA).
-Strict parameter ceiling: 2,885,376 parameters (< 3,000,000) with tie_word_embeddings=True.
+Sparse Mixture-of-Experts (MoE) Architecture with Multi-Head Latent Attention (MLA)
+and Loop Recurrent Dynamics (LRD).
+Strict parameter ceiling: 2,946,008 parameters (< 3,000,000) with tie_word_embeddings=True.
 """
 
 import math
@@ -226,12 +227,17 @@ class Mark3MMoE(nn.Module):
 
 
 class Mark3MBlock(nn.Module):
-    def __init__(self, config: Mark3MConfig, layer_idx: int):
+    def __init__(self, config: Mark3MConfig, layer_idx: int, is_moe: bool = True):
         super().__init__()
+        self.layer_idx = layer_idx
+        self.is_moe = is_moe
         self.attn_norm = RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.attn = Mark3MMLA(config, layer_idx=layer_idx)
         self.ffn_norm = RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
-        self.ffn = Mark3MMoE(config)
+        if is_moe:
+            self.ffn = Mark3MMoE(config)
+        else:
+            self.ffn = Mark3MSwiGLU(config.hidden_size, config.intermediate_size)
 
     def forward(
         self,
@@ -267,31 +273,14 @@ class Mark3MModel(Mark3MPreTrainedModel):
         super().__init__(config)
         self.config = config
         self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, padding_idx=config.pad_token_id)
-        self.layers = nn.ModuleList([Mark3MBlock(config, i) for i in range(config.num_hidden_layers)])
+        dense_set = set(config.dense_layer_indices if hasattr(config, "dense_layer_indices") else [0, config.num_hidden_layers - 1])
+        self.layers = nn.ModuleList([
+            Mark3MBlock(config, i, is_moe=(i not in dense_set))
+            for i in range(config.num_hidden_layers)
+        ])
         self.norm = RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.rotary_emb = Mark3MYaRNRotaryEmbedding(config)
         self.post_init()
-
-    def named_parameters(self, prefix: str = "", recurse: bool = True, remove_duplicate: bool = True):
-        pfx = prefix + ("." if prefix else "")
-        yield f"{pfx}embed_tokens.weight", self.embed_tokens.weight
-        for i, layer in enumerate(self.layers):
-            yield f"{pfx}layers.{i}.attn.q_norm.weight", layer.attn.q_norm.weight
-            yield f"{pfx}layers.{i}.attn.kv_norm.weight", layer.attn.kv_norm.weight
-            yield f"{pfx}layers.{i}.ffn.shared_experts.w_gate.weight", layer.ffn.shared_experts.w_gate.weight
-            yield f"{pfx}layers.{i}.ffn.shared_experts.w_up.weight", layer.ffn.shared_experts.w_up.weight
-            yield f"{pfx}layers.{i}.ffn.shared_experts.w_down.weight", layer.ffn.shared_experts.w_down.weight
-        yield f"{pfx}norm.weight", self.norm.weight
-
-    def parameters(self, recurse: bool = True):
-        for _, param in self.named_parameters(recurse=recurse):
-            yield param
-
-    def all_named_parameters(self, prefix: str = "", recurse: bool = True):
-        return super().named_parameters(prefix=prefix, recurse=recurse)
-
-    def all_parameters(self, recurse: bool = True):
-        return super().parameters(recurse=recurse)
 
     def forward(
         self,
@@ -301,8 +290,21 @@ class Mark3MModel(Mark3MPreTrainedModel):
         bsz, seqlen = input_ids.shape
         x = self.embed_tokens(input_ids)
         cos, sin = self.rotary_emb(seqlen, device=input_ids.device)
-        for layer in self.layers:
-            x = layer(x, cos, sin, attention_mask=attention_mask)
+
+        core_loops = getattr(self.config, "core_loops", 1)
+        if core_loops > 1 and len(self.layers) >= 3:
+            # 1. Entrance layer (layer 0)
+            x = self.layers[0](x, cos, sin, attention_mask=attention_mask)
+            # 2. Core reasoning recurrent loops (layers 1..N-2 repeated core_loops times)
+            for _ in range(core_loops):
+                for layer_idx in range(1, len(self.layers) - 1):
+                    x = self.layers[layer_idx](x, cos, sin, attention_mask=attention_mask)
+            # 3. Exit layer (layer N-1)
+            x = self.layers[-1](x, cos, sin, attention_mask=attention_mask)
+        else:
+            for layer in self.layers:
+                x = layer(x, cos, sin, attention_mask=attention_mask)
+
         return self.norm(x)
 
 
@@ -323,27 +325,6 @@ class Mark3MForCausalLM(Mark3MPreTrainedModel):
             self.apply(self._init_weights)
             self.tie_weights()
 
-    def named_parameters(self, prefix: str = "", recurse: bool = True, remove_duplicate: bool = True):
-        pfx = prefix + ("." if prefix else "")
-        yield f"{pfx}model.embed_tokens.weight", self.model.embed_tokens.weight
-        for i, layer in enumerate(self.model.layers):
-            yield f"{pfx}model.layers.{i}.attn.q_norm.weight", layer.attn.q_norm.weight
-            yield f"{pfx}model.layers.{i}.attn.kv_norm.weight", layer.attn.kv_norm.weight
-            yield f"{pfx}model.layers.{i}.ffn.shared_experts.w_gate.weight", layer.ffn.shared_experts.w_gate.weight
-            yield f"{pfx}model.layers.{i}.ffn.shared_experts.w_up.weight", layer.ffn.shared_experts.w_up.weight
-            yield f"{pfx}model.layers.{i}.ffn.shared_experts.w_down.weight", layer.ffn.shared_experts.w_down.weight
-        yield f"{pfx}model.norm.weight", self.model.norm.weight
-
-    def parameters(self, recurse: bool = True):
-        for _, param in self.named_parameters(recurse=recurse):
-            yield param
-
-    def all_named_parameters(self, prefix: str = "", recurse: bool = True):
-        return super().named_parameters(prefix=prefix, recurse=recurse)
-
-    def all_parameters(self, recurse: bool = True):
-        return super().parameters(recurse=recurse)
-
     def tie_weights(self, *args, **kwargs):
         if getattr(self.config, "tie_word_embeddings", True) and hasattr(self, "model") and hasattr(self.model, "embed_tokens"):
             self.lm_head.weight = self.model.embed_tokens.weight
@@ -353,6 +334,8 @@ class Mark3MForCausalLM(Mark3MPreTrainedModel):
 
     def set_input_embeddings(self, value):
         self.model.embed_tokens = value
+        if self.config.tie_word_embeddings:
+            self.lm_head.weight = value
 
     def get_output_embeddings(self):
         return self.lm_head
@@ -365,11 +348,13 @@ class Mark3MForCausalLM(Mark3MPreTrainedModel):
         input_ids: torch.Tensor,
         attention_mask: Optional[torch.Tensor] = None,
         labels: Optional[torch.Tensor] = None,
-        return_dict: Optional[bool] = True,
+        return_dict: Optional[bool] = None,
         **kwargs,
-    ) -> Union[CausalLMOutputWithPast, Tuple[torch.Tensor, ...]]:
-        h = self.model(input_ids, attention_mask=attention_mask)
-        logits = self.lm_head(h)
+    ) -> Union[Tuple, CausalLMOutputWithPast]:
+        return_dict = return_dict if return_dict is not None else getattr(self.config, "return_dict", True)
+
+        hidden_states = self.model(input_ids, attention_mask=attention_mask)
+        logits = self.lm_head(hidden_states)
 
         loss = None
         if labels is not None:

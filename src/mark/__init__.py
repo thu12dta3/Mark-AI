@@ -53,6 +53,8 @@ def load_model(variant: str='302m', checkpoint_path: Optional[str]=None, device:
             candidate_names.extend(['mark_vl_2_2b.pt', 'mark_vl_2_2b_iq4_nl.pt'])
         elif variant_norm in ('vl-v3-4b', 'mark-vl-v3-4b', 'vl_v3_4b', 'v3-4b'):
             candidate_names.extend(['mark_vl_v3_4b.pt', 'mark_vl_v3_4b_iq4_nl.pt'])
+        elif variant_norm in ('v3-32b', 'mark-v3-32b', 'v3_32b', '32b'):
+            candidate_names.extend(['mark_v3_32b.pt', 'mark_v3_32b_iq4_nl.pt', 'model.safetensors'])
         search_dirs = [root_dir / 'checkpoints', Path('checkpoints'), Path('/mnt/ssd_1/mark ai/checkpoints'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v2_8b')]
         for d in search_dirs:
             for name in candidate_names:
@@ -108,6 +110,9 @@ def load_model(variant: str='302m', checkpoint_path: Optional[str]=None, device:
     elif variant_norm in ('vl-v3-4b', 'mark-vl-v3-4b', 'vl_v3_4b', 'v3-4b'):
         config = MarkVLV3Config()
         model_cls = MarkVLV3ForConditionalGeneration
+    elif variant_norm in ('v3-32b', 'mark-v3-32b', 'v3_32b', '32b'):
+        config = MarkV3Config.create_v3_32b()
+        model_cls = MarkV3ForCausalLM
     elif variant_norm in ('primal', 'base', '0.1'):
         config = MarkConfig.create_primal()
         model_cls = MarkModel

@@ -1,23 +1,66 @@
 {
-  "vocab_size": 8192,
-  "bos_token_id": 1,
-  "eos_token_id": 2,
-  "pad_token_id": 0,
-  "bos_token": "<|bos|>",
-  "eos_token": "<|eos|>",
-  "pad_token": "<|pad|>",
-  "model_max_length": 8192,
-  "chat_template": "{% for message in messages %}{% if message['role'] == 'system' %}<|bos|>System: {{ message['content'] }}<|eos|>\n{% elif message['role'] == 'user' %}<|bos|>User: {{ message['content'] }}<|eos|>\n{% elif message['role'] == 'assistant' %}<|bos|>Assistant: {% if message['content'] %}{{ message['content'] }}<|eos|>\n{% endif %}{% endif %}{% endfor %}{% if add_generation_prompt %}<|bos|>Assistant:\n<think>\n{% endif %}",
-  "special_tokens": {
-    "<|pad|>": 0,
-    "<|bos|>": 1,
-    "<|eos|>": 2,
-    "<think>": 8190,
-    "</think>": 8191
+  "added_tokens_decoder": {
+    "0": {
+      "content": "<|pad|>",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "1": {
+      "content": "<|bos|>",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "2": {
+      "content": "<|eos|>",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "3": {
+      "content": "<think>",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "4": {
+      "content": "</think>",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    }
   },
   "additional_special_tokens": [
     "<think>",
     "</think>"
   ],
-  "tokenizer_class": "PreTrainedTokenizerFast"
+  "bos_token": "<|bos|>",
+  "bos_token_id": 1,
+  "clean_up_tokenization_spaces": false,
+  "eos_token": "<|eos|>",
+  "eos_token_id": 2,
+  "extra_special_tokens": {},
+  "model_max_length": 4096,
+  "pad_token": "<|pad|>",
+  "pad_token_id": 0,
+  "special_tokens": {
+    "</think>": 4,
+    "<think>": 3,
+    "<|bos|>": 1,
+    "<|eos|>": 2,
+    "<|pad|>": 0
+  },
+  "tokenizer_class": "PreTrainedTokenizerFast",
+  "vocab_size": 4096
 }

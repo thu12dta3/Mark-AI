@@ -1,0 +1,6 @@
+{% for message in messages %}{% if message['role'] == 'system' %}<|bos|>System: {{ message['content'] }}<|eos|>
+{% elif message['role'] == 'user' %}<|bos|>User: {{ message['content'] }}<|eos|>
+{% elif message['role'] == 'assistant' %}<|bos|>Assistant: {% if message['content'] %}{{ message['content'] }}<|eos|>
+{% endif %}{% endif %}{% endfor %}{% if add_generation_prompt %}<|bos|>Assistant:
+<think>
+{% endif %}

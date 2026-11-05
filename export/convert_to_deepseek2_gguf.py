@@ -293,6 +293,8 @@ def get_model_config(model_type: str) -> Any:
         return MarkV3Config()
     elif m in ('vl-v3-4b', 'mark-vl-v3-4b', 'vl_v3_4b', 'v3-4b'):
         return MarkVLV3Config()
+    elif m in ('v3-32b', 'mark-v3-32b', '32b'):
+        return MarkV3Config.create_v3_32b()
     else:
         raise ValueError(f'Unsupported model type: {model_type}')
 
@@ -409,9 +411,9 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
     writer.add_value_length_mla(config.v_head_dim)
     is_sub3m = model_type in ['slm-3m', '3m', 'mark-slm-3m']
     writer.add_expert_feed_forward_length(config.moe_intermediate_size)
-    writer.add_expert_count(0 if is_sub3m else config.n_routed_experts)
+    writer.add_expert_count(config.n_routed_experts)
     writer.add_expert_shared_count(config.n_shared_experts)
-    writer.add_expert_used_count(0 if is_sub3m else config.num_experts_per_tok)
+    writer.add_expert_used_count(config.num_experts_per_tok)
     writer.add_rope_dimension_count(config.qk_rope_head_dim)
     writer.add_bos_token_id(1)
     writer.add_eos_token_id(2)
@@ -549,13 +551,11 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
     del norm_raw
     gc.collect()
 
-    # llama.cpp deepseek2 architecture: write output.weight unless explicitly tied in sub-3M models
-    # where output.weight is omitted to maintain strict sub-3M parameter count and ~1.8 MB file size
-    if not (getattr(config, 'tie_word_embeddings', False) and model_type in ['slm-3m', '3m', 'mark-slm-3m']):
-        if w_out.shape[0] < pad_vocab_size:
-            pad = torch.zeros((pad_vocab_size - w_out.shape[0], w_out.shape[1]), dtype=torch.float32)
-            w_out = torch.cat([w_out, pad], dim=0)
-        add_linear(writer, 'output.weight', w_out)
+    # llama.cpp deepseek2 architecture: always write output.weight explicitly
+    if w_out.shape[0] < pad_vocab_size:
+        pad = torch.zeros((pad_vocab_size - w_out.shape[0], w_out.shape[1]), dtype=torch.float32)
+        w_out = torch.cat([w_out, pad], dim=0)
+    add_linear(writer, 'output.weight', w_out)
     del w_out
     gc.collect()
 
@@ -652,7 +652,7 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
             add_linear(writer, f'{b_pfx}ffn_up_shexp.weight', w_sup)
             add_linear(writer, f'{b_pfx}ffn_down_shexp.weight', w_sdown)
 
-            if not is_sub3m:
+            if config.n_routed_experts > 0:
                 r_key = next((k for k in (f'{pfx}ffn.router.weight', f'{pfx}ffn.router_gate.weight') if k in cur_sd), None)
                 if r_key:
                     w_router = cur_sd[r_key]
@@ -706,7 +706,7 @@ def export_to_deepseek2_gguf(model_type: str, ckpt_path: Optional[Path], output_
 
 def main():
     parser = argparse.ArgumentParser(description='Universal DeepSeek2 GGUF Exporter for Mark Models (IQ4_NL)')
-    parser.add_argument('--model', type=str, default='1.5b', choices=['302m', 'slm-v2-302m', 'engineer-1.5b', '1.5b', 'general-1.5b', 'vl-2.2b', 'v2-8b', 'v3-1.1b', 'slm-v3-150m', 'slm-3m', 'mark-slm-3m', 'general-v3-1.5b', 'engineer-v3-1.5b', 'general-v3-8b', 'experimental-v3-8b', 'vl-v3-4b', 'mark-vl-v3-4b', 'all'])
+    parser.add_argument('--model', type=str, default='1.5b', choices=['302m', 'slm-v2-302m', 'engineer-1.5b', '1.5b', 'general-1.5b', 'vl-2.2b', 'v2-8b', 'v3-1.1b', 'slm-v3-150m', 'slm-3m', 'mark-slm-3m', 'general-v3-1.5b', 'engineer-v3-1.5b', 'general-v3-8b', 'experimental-v3-8b', 'vl-v3-4b', 'mark-vl-v3-4b', 'v3-32b', 'mark-v3-32b', 'all'])
     parser.add_argument('--ckpt', type=str, default='', help='Path to source .pt checkpoint')
     parser.add_argument('--out', type=str, default='', help='Path to destination .gguf container')
     parser.add_argument('--quant', type=str, default='iq4_nl', choices=['iq4_nl', 'f16'], help='Quantization type')
@@ -731,6 +731,8 @@ def main():
         'experimental-v3-8b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_experimental_v3_8b.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_experimental_v3_8b_iq4_nl.gguf')),
         'vl-v3-4b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_vl_v3_4b/mark_vl_v3_4b.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_vl_v3_4b/mark_vl_v3_4b_iq4_nl.gguf')),
         'mark-vl-v3-4b': (Path('/mnt/ssd_1/mark ai/checkpoints/mark_vl_v3_4b/mark_vl_v3_4b.pt'), Path('/mnt/ssd_1/mark ai/checkpoints/mark_vl_v3_4b/mark_vl_v3_4b_iq4_nl.gguf')),
+        'v3-32b': (Path('models/mark-v3-32b/model.safetensors'), Path('models/mark-v3-32b/mark_v3_32b_iq4_nl.gguf')),
+        'mark-v3-32b': (Path('models/mark-v3-32b/model.safetensors'), Path('models/mark-v3-32b/mark_v3_32b_iq4_nl.gguf')),
     }
 
     models_to_export = list(default_paths.keys()) if args.model == 'all' else ['engineer-1.5b' if args.model == '1.5b' else args.model]

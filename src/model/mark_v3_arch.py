@@ -36,6 +36,8 @@ class MarkV3Config:
     original_max_position_embeddings: int = 4096
     rope_theta: float = 10000.0
     rope_scaling_factor: float = 8.0
+    yarn_scale_factor: float = 8.0
+    sliding_window: int = 8192
     rms_norm_eps: float = 1e-06
     tie_word_embeddings: bool = True
     bos_token_id: int = 1
@@ -214,6 +216,38 @@ class MarkV3Config:
             rope_scaling_factor=8.0,
         )
 
+    @classmethod
+    def create_v3_32b(cls) -> "MarkV3Config":
+        return cls(
+            model_name="Mark-V3-32B",
+            model_type="deepseek2",
+            vocab_size=32032,
+            hidden_size=3072,
+            num_hidden_layers=32,
+            num_attention_heads=32,
+            num_key_value_heads=32,
+            intermediate_size=8192,
+            q_lora_rank=1536,
+            kv_lora_rank=512,
+            qk_nope_head_dim=64,
+            qk_rope_head_dim=32,
+            v_head_dim=96,
+            n_routed_experts=64,
+            num_experts_per_tok=4,
+            n_shared_experts=2,
+            moe_intermediate_size=1600,
+            tie_word_embeddings=True,
+            max_position_embeddings=1048576,
+            original_max_position_embeddings=4096,
+            rope_theta=10000000.0,
+            rope_scaling_factor=256.0,
+            yarn_scale_factor=256.0,
+            sliding_window=8192,
+            bos_token_id=1,
+            eos_token_id=2,
+            pad_token_id=0,
+        )
+
 class MarkV3YaRNRotaryEmbedding(nn.Module):
 
     def __init__(self, config: MarkV3Config):
@@ -273,13 +307,14 @@ class MarkV3MLA(nn.Module):
 
     @torch.no_grad()
     def fuse_hadamard_weights_(self):
-        h256 = get_walsh_hadamard_matrix(self.kv_lora_rank).to(device=self.w_kv_b.weight.device, dtype=self.w_kv_b.weight.dtype)
+        h_dim = self.kv_lora_rank
+        h_mat = get_walsh_hadamard_matrix(h_dim).to(device=self.w_kv_b.weight.device, dtype=self.w_kv_b.weight.dtype)
         self.w_kv_b.weight.copy_(self.w_kv_b.weight * self.kv_norm.weight.unsqueeze(0))
         self.kv_norm.weight.fill_(1.0)
-        self.w_kv_a.weight[:self.kv_lora_rank, :].copy_(h256 @ self.w_kv_a.weight[:self.kv_lora_rank, :])
-        self.w_kv_b.weight.copy_(self.w_kv_b.weight @ h256.T)
+        self.w_kv_a.weight[:h_dim, :].copy_(h_mat @ self.w_kv_a.weight[:h_dim, :])
+        self.w_kv_b.weight.copy_(self.w_kv_b.weight @ h_mat.T)
 
-    def forward(self, x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor, mask: Optional[torch.Tensor]=None) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         bsz, seqlen, _ = x.shape
         q_latent = self.q_norm(self.w_qa(x))
         q = self.w_qb(q_latent).view(bsz, seqlen, self.num_heads, self.qk_head_dim)
@@ -298,8 +333,33 @@ class MarkV3MLA(nn.Module):
         v_trans = v.transpose(1, 2)
         pad_len = max(0, self.qk_head_dim - self.v_head_dim)
         v_pad = F.pad(v_trans, (0, pad_len)) if pad_len > 0 else v_trans
-        is_causal = mask is None and seqlen > 1
-        attn_out = F.scaled_dot_product_attention(q_full, k_full, v_pad, attn_mask=mask, dropout_p=0.0, is_causal=is_causal, scale=self.softmax_scale)
+
+        # Long-Context Log-Scale Temperature Scaling on Query post-QKNorm
+        if seqlen > 4096:
+            log_scale = 1.0 + 0.12 * math.log(max(1.0, seqlen / 4096.0))
+            q_full = q_full * log_scale
+
+        # Interleaved 3:1 Local Sliding Window (8192) vs Global Attention
+        sliding_window = getattr(self.config, 'sliding_window', 8192)
+        is_global_layer = (self.layer_idx % 4 == 3)
+        attn_mask = mask
+        is_causal = (attn_mask is None and seqlen > 1)
+
+        if not is_global_layer and seqlen > sliding_window and attn_mask is None:
+            row_idx = torch.arange(seqlen, device=x.device).unsqueeze(1)
+            col_idx = torch.arange(seqlen, device=x.device).unsqueeze(0)
+            diff = row_idx - col_idx
+            valid = (diff >= 0) & (diff <= sliding_window)
+            attn_mask = torch.where(valid, 0.0, float("-inf")).to(dtype=x.dtype)
+            is_causal = False
+
+        attn_out = F.scaled_dot_product_attention(
+            q_full, k_full, v_pad,
+            attn_mask=attn_mask,
+            dropout_p=0.0,
+            is_causal=is_causal,
+            scale=self.softmax_scale
+        )
         attn_out = attn_out[..., :self.v_head_dim].transpose(1, 2).contiguous().view(bsz, seqlen, -1)
         return self.w_o(attn_out)
 
@@ -363,9 +423,10 @@ class MarkV3MoE(nn.Module):
         router_logits = self.router(x_flat)
         p = torch.sigmoid(router_logits.float())
         s = p + self.exp_probs_b.unsqueeze(0)
-        if clan_id in (1, 2, 3, 4):
-            clan_idx_buf = getattr(self, f'_clan_{clan_id}_indices')
-            other_idx_buf = getattr(self, f'_clan_{clan_id}_other_indices')
+        if clan_id in (0, 1, 2, 3, 4):
+            effective_clan = (clan_id + 1) if clan_id in (0, 1, 2, 3) and not hasattr(self, '_clan_0_indices') else clan_id
+            clan_idx_buf = getattr(self, f'_clan_{effective_clan}_indices')
+            other_idx_buf = getattr(self, f'_clan_{effective_clan}_other_indices')
             s_clan = s[:, clan_idx_buf]
             k_clan = max(1, self.top_k - 1)
             k_other = max(1, self.top_k - k_clan)
@@ -466,14 +527,26 @@ class MarkV3ForCausalLM(nn.Module):
         self.config = config
         self.model = MarkV3Model(config)
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
+        self.apply(self._init_weights)
         if config.tie_word_embeddings:
             self.lm_head.weight = self.model.embed_tokens.weight
+
+    def _init_weights(self, module):
+        std = 0.02
+        if isinstance(module, nn.Linear):
+            torch.nn.init.normal_(module.weight, mean=0.0, std=std)
+            if module.bias is not None:
+                torch.nn.init.zeros_(module.bias)
+        elif isinstance(module, nn.Embedding):
+            torch.nn.init.normal_(module.weight, mean=0.0, std=std)
+            if module.padding_idx is not None:
+                module.weight.data[module.padding_idx].zero_()
 
     @torch.no_grad()
     def fuse_hadamard_weights_(self):
         self.model.fuse_hadamard_weights_()
 
-    def forward(self, input_ids: Optional[torch.Tensor]=None, attention_mask: Optional[torch.Tensor]=None, labels: Optional[torch.Tensor]=None, clan_id: Optional[int]=None, core_loops: int=1, inputs_embeds: Optional[torch.Tensor]=None) -> Union[torch.Tensor, Dict[str, torch.Tensor]]:
+    def forward(self, input_ids: Optional[torch.Tensor]=None, attention_mask: Optional[torch.Tensor]=None, labels: Optional[torch.Tensor]=None, clan_id: Optional[int]=None, core_loops: int=1, inputs_embeds: Optional[torch.Tensor]=None, **kwargs) -> Union[torch.Tensor, Dict[str, torch.Tensor]]:
         hidden_states = self.model(input_ids, attention_mask=attention_mask, clan_id=clan_id, core_loops=core_loops, inputs_embeds=inputs_embeds)
         logits = self.lm_head(hidden_states)
         if labels is not None:

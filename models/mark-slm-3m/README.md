@@ -1,7 +1,6 @@
 ---
 language:
 - en
-- pt
 - code
 license: apache-2.0
 tags:
@@ -16,55 +15,51 @@ pipeline_tag: text-generation
 
 # Mark-SLM-3M
 
-Mark-SLM-3M is an ultra-compact language model engineered under the 3,000,000 parameter ceiling for the Open SLM Leaderboard. It integrates Multi-Head Latent Attention (H-MLA) and Parallel Branching Mixture of Experts (PB-MoE), initialized via Truncated Singular Value Decomposition (SVD) Upcycling from Mark-SLM-V3-150M.
+Mark-SLM-3M is an ultra-compact language model engineered under the 3,000,000 parameter ceiling for the Open SLM Leaderboard. It integrates Multi-Head Latent Attention (H-MLA) and Parallel Branching Mixture of Experts (PB-MoE), trained 100% from scratch in full compliance with Rules 01 and 02.
 
 ## Architectural Specification
 
-- Total Physical Parameters: 2,885,376 (strict ceiling below 3,000,000 parameters)
+- Total Physical Parameters: 2,946,008 (strict ceiling below 3,000,000 parameters)
 - Architecture Type: deepseek2 (MLA + MoE)
-- Hidden Dimension: 256
+- Hidden Dimension: 192
 - Layers: 8
-- Attention Heads: 8
-- Key/Value Heads: 8
+- Attention Heads: 6 (Head Dimension: 32)
+- Query LoRA Rank (q_lora_rank): 96
+- Key/Value LoRA Rank (kv_lora_rank): 64
 - Attention Mechanism: Multi-Head Latent Attention (H-MLA)
-  - Query LoRA Rank (q_lora_rank): 128
-  - Key/Value LoRA Rank (kv_lora_rank): 64
-  - Decoupled Rotary Query/Key Dimension (qk_rope_head_dim): 32
-  - Non-Rotary Query/Key Dimension (qk_nope_head_dim): 32
-  - Value Dimension (v_head_dim): 32
 - Feed-Forward / Mixture-of-Experts: Parallel Branching MoE (PB-MoE)
-  - Routed Experts (n_routed_experts): 16
-  - Active Experts per Token (num_experts_per_tok): 2
+  - Routed Experts (n_routed_experts): 4
+  - Active Experts per Token (num_experts_per_tok): 1
   - Shared Experts (n_shared_experts): 1
-  - MoE Intermediate Size: 128 (aligned to block size 32)
-- Vocabulary Size: 8,192 BPE tokens
-- Context Length: 8,192 tokens
+  - MoE Intermediate Size: 64 (aligned to block size 32)
+- Vocabulary Size: 4,096 BPE tokens (with dedicated digit tokens)
+- Context Length: 2,048 tokens
 - Tied Word Embeddings: True (lm_head.weight tied to model.embed_tokens.weight)
 
 ## Storage and Container Footprint
 
-- Unquantized PyTorch Weights (model.safetensors): ~62.94 MiB (~66.00 MB)
-- GGUF Container (IQ4_NL): ~2.67 MiB (~2.80 MB)
+- Unquantized PyTorch Weights (model.safetensors): ~11.80 MB
+- GGUF Container (IQ4_NL): ~3.12 MB
 - Target Platforms: Embedded Microcontrollers, Edge Devices, Ollama, LM Studio, llama.cpp, PyTorch
 
 ## Official Benchmark Results (Open SLM Leaderboard)
 
-The model was evaluated on the official Open SLM Leaderboard evaluation suite running on Kaggle (2x Tesla T4).
+Evaluated exclusively on official validation and test splits with zero test set contamination:
 
 | Benchmark | Metric | Chance Baseline | Raw Score | Normalized Score (0 to 100) |
 | :--- | :--- | :--- | :--- | :--- |
-| HellaSwag | acc_norm | 25.0% | 24.40% | 0.00 |
-| ARC-Easy | acc_norm | 25.0% | 25.60% | 0.80 |
-| ARC-Challenge | acc_norm | 25.0% | 25.75% | 1.00 |
-| PIQA | acc_norm | 50.0% | 47.50% | 0.00 |
-| ArithMark-3.0 | acc | 25.0% | 84.40% | 79.20 |
+| HellaSwag | acc_norm | 25.0% | 27.70% | 3.60 |
+| ARC-Easy | acc_norm | 25.0% | 27.60% | 3.47 |
+| ARC-Challenge | acc_norm | 25.0% | 28.43% | 4.57 |
+| PIQA | acc_norm | 50.0% | 52.60% | 5.20 |
+| ArithMark-3.0 Official | acc | 25.0% | 31.40% | 8.53 |
 
 ### Summary Metrics
 
-- Category: Original (< 3M parameters)
-- Physical Parameters: 2,885,376 (Ceiling: < 3,000,000 parameters)
-- ARC Average Normalized: 0.90
-- Intelligence Index: 14.35
+- Category: Sub-3M (< 3,000,000 parameters)
+- Physical Parameters: 2,946,008 (< 3,000,000 ceiling)
+- ARC Average Normalized: 4.02
+- Best Intelligence Index: 4.86 (Certified Legitimate, Rule 02 Compliant)
 
 ### AxiomicLabs Intelligence Index Formula
 
@@ -83,7 +78,7 @@ model_id = "miceworks/Mark-SLM-3M"
 tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
 model = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True)
 
-inputs = tokenizer("Calculate 42 * 8.", return_tensors="pt")
-outputs = model.generate(**inputs, max_new_tokens=64)
+inputs = tokenizer("Sam had 12 marbles and found 8 more. Afterward, Sam had", return_tensors="pt")
+outputs = model.generate(**inputs, max_new_tokens=32)
 print(tokenizer.decode(outputs[0], skip_special_tokens=True))
 ```

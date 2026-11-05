@@ -9,13 +9,17 @@ def test_mark_slm_3m_parameter_ceiling():
     total_params = sum(p.numel() for p in model.parameters())
 
     assert total_params < 3_000_000, f"Parameter ceiling violated: {total_params} >= 3,000,000"
-    assert total_params == 2_885_376, f"Expected exact parameter count of 2,885,376, got {total_params}"
+    assert total_params == 2_946_008, f"Expected exact parameter count of 2,946,008, got {total_params}"
 
 
-def test_mark_slm_3m_moe_intermediate_size_divisibility():
+def test_mark_slm_3m_block_size_divisibility():
     cfg = Mark3MConfig()
-    assert cfg.moe_intermediate_size == 128
+    assert cfg.moe_intermediate_size == 64
     assert cfg.moe_intermediate_size % 32 == 0, f"moe_intermediate_size ({cfg.moe_intermediate_size}) must be divisible by block size 32"
+    assert cfg.intermediate_size == 160
+    assert cfg.intermediate_size % 32 == 0, f"intermediate_size ({cfg.intermediate_size}) must be divisible by block size 32"
+    assert cfg.hidden_size == 192
+    assert cfg.hidden_size % 32 == 0, f"hidden_size ({cfg.hidden_size}) must be divisible by block size 32"
 
 
 def test_mark_slm_3m_forward_pass_clean():

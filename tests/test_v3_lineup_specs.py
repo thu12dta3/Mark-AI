@@ -85,3 +85,31 @@ def test_v3_lineup_initial_forward():
         )
         assert not torch.isnan(logits).any(), f"NaN detectado nos logits de {cfg.model_name}"
         assert not torch.isinf(logits).any(), f"Inf detectado nos logits de {cfg.model_name}"
+
+
+def test_v3_32b_specs_and_long_context():
+    cfg_32b = MarkV3Config.create_v3_32b()
+    assert cfg_32b.model_name == "Mark-V3-32B"
+    assert cfg_32b.model_type == "deepseek2"
+    assert cfg_32b.vocab_size == 32032
+    assert cfg_32b.hidden_size == 3072
+    assert cfg_32b.num_hidden_layers == 32
+    assert cfg_32b.q_lora_rank == 1536
+    assert cfg_32b.kv_lora_rank == 512
+    assert cfg_32b.qk_nope_head_dim == 64
+    assert cfg_32b.qk_rope_head_dim == 32
+    assert cfg_32b.v_head_dim == 96
+    assert cfg_32b.n_routed_experts == 64
+    assert cfg_32b.num_experts_per_tok == 4
+    assert cfg_32b.n_shared_experts == 2
+    assert cfg_32b.moe_intermediate_size == 1600
+    assert cfg_32b.moe_intermediate_size % 32 == 0
+    assert cfg_32b.max_position_embeddings == 1048576
+    assert cfg_32b.rope_theta == 10000000.0
+    assert cfg_32b.yarn_scale_factor == 256.0
+
+    with torch.device("meta"):
+        m_32b = MarkV3ForCausalLM(cfg_32b)
+        tot_32b = sum(p.numel() for p in m_32b.parameters())
+
+    assert 31_000_000_000 <= tot_32b <= 33_000_000_000, f"Mark-V3-32B fora da faixa de 32B: {tot_32b}"

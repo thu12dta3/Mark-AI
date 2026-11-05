@@ -23,6 +23,7 @@ wheels/
 .venv/
 env/
 venv/
+*.log
 
 # Sensitive Architecture, Training Pipelines & Internal Formulations
 src/training/
