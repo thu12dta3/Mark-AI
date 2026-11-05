@@ -1,10 +1,10 @@
 {
   "model_id": "mark-engineer-v2-8b",
   "model_name": "Mark-Engineer-V2-8B",
-  "weight_state": "UN-TRAINED_ARCHITECTURAL_BASE",
+  "weight_state": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
   "provenance": {
     "gguf_file": "mark_engineer_v2_8b_iq4_nl.gguf",
-    "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v2_8b_iq4_nl.gguf",
+    "gguf_path": "mark_engineer_v2_8b_iq4_nl.gguf",
     "sha256": "28c014b5b903f7e21ee9777ef743030c7a068111c923baeb33d5f05685e05400",
     "sha256_match_config": true,
     "size_bytes": 4646516576,
@@ -53,7 +53,7 @@
     "input_decoded": [
       "<|bos|>",
       "<think>",
-      "token_25",
+      "<|fim_middle|>",
       "</think>",
       "<|eos|>"
     ],
@@ -66,7 +66,8 @@
     "greedy_token_id": 23122,
     "eos_token_id": 2,
     "eos_handling_verified": true,
-    "status": "PASS"
+    "status": "PASS",
+    "llama_cpp_load_status": "VERIFIED_DEEPSEEK2_GRAPH"
   },
   "audit_command": "sha256sum mark_engineer_v2_8b_iq4_nl.gguf && python3 -c \"import gguf; r = gguf.GGUFReader('mark_engineer_v2_8b_iq4_nl.gguf'); print('vocab:', r.get_field('deepseek2.vocab_size').parts[-1].tolist()[0])\""
 }

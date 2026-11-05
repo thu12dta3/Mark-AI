@@ -355,8 +355,8 @@ def build_mark_cyber_dataset():
     print("\n[Source 3] Loading local high-assurance systems/kernel secops curriculum...")
     local_files = [
         PROJECT_ROOT / "models" / "mark_engineer_v2_8b_extended_master_train.jsonl",
-        Path("/home/thu12/hd_1tb/mark_training_hub/04_master_curriculum/mark_engineer_v2_8b_extended_master_train.jsonl"),
-        Path("/home/thu12/hd_1tb/mark_training_hub/01_code_systems_corpus/systems_real_code_curriculum.jsonl")
+        Path("./data/04_master_curriculum/mark_engineer_v2_8b_extended_master_train.jsonl"),
+        Path("./data/01_code_systems_corpus/systems_real_code_curriculum.jsonl")
     ]
     
     for lf in local_files:

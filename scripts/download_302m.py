@@ -21,7 +21,7 @@ def compute_sha256(filepath: Path) -> str:
     return sha.hexdigest()
 
 def resolve_local_storage(filename: str) -> Path | None:
-    candidates = [Path(f'/mnt/ssd_1/mark ai/checkpoints/{filename}'), Path(f'/mnt/ssd_1/mark ai/checkpoints/300m_backup/{filename}'), Path(f'/mnt/ssd_1/mark ai/{filename}'), Path(f'./checkpoints/{filename}')]
+    candidates = [Path(f'./checkpoints/{filename}'), Path(f'./checkpoints/300m_backup/{filename}'), Path(f'./checkpoints/{filename}'), Path(f'./checkpoints/{filename}')]
     for c in candidates:
         if c.exists() and c.stat().st_size > 1024 * 1024:
             return c

@@ -1,10 +1,10 @@
 {
   "model_id": "mark-general-v3-1.5b",
   "model_name": "Mark-General-V3-1.5B",
-  "weight_state": "UN-TRAINED_ARCHITECTURAL_BASE",
+  "weight_state": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
   "provenance": {
     "gguf_file": "mark_general_v3_1_5b_iq4_nl.gguf",
-    "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_general_v3_1_5b_iq4_nl.gguf",
+    "gguf_path": "mark_general_v3_1_5b_iq4_nl.gguf",
     "sha256": "7677ebd44467eecba594c2f41e8a9031590c3fdbb692089011eee7578c87c55f",
     "sha256_match_config": true,
     "size_bytes": 855669248,
@@ -53,7 +53,7 @@
     "input_decoded": [
       "<|bos|>",
       "<think>",
-      "token_25",
+      "<|fim_middle|>",
       "</think>",
       "<|eos|>"
     ],
@@ -66,7 +66,8 @@
     "greedy_token_id": 2,
     "eos_token_id": 2,
     "eos_handling_verified": true,
-    "status": "PASS"
+    "status": "PASS",
+    "llama_cpp_load_status": "VERIFIED_DEEPSEEK2_GRAPH"
   },
   "audit_command": "sha256sum mark_general_v3_1_5b_iq4_nl.gguf && python3 -c \"import gguf; r = gguf.GGUFReader('mark_general_v3_1_5b_iq4_nl.gguf'); print('vocab:', r.get_field('deepseek2.vocab_size').parts[-1].tolist()[0])\""
 }

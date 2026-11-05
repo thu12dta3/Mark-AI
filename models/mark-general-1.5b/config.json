@@ -41,6 +41,6 @@
     "pt_url": "https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-general-1.5b/mark_general_1_5b_iq4_nl.pt",
     "sha256": "4f2be0d7c3445333c3b35f4ff1ec5d4303de3cfbe6d1b6a01a2dd8efa09fab4b"
   },
-  "weight_state": "TRAINED_CHECKPOINT_VALIDATED",
+  "weight_state": "EXPERIMENTAL_NARROW_CHECKPOINT",
   "sha256": "4f2be0d7c3445333c3b35f4ff1ec5d4303de3cfbe6d1b6a01a2dd8efa09fab4b"
 }

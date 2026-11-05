@@ -9,7 +9,7 @@ sys.path.insert(0, str(REPO_ROOT / "models" / "mark-slm-v2-302m"))
 from configuration_mark_slm_v2 import MarkSLMV2Config
 from modeling_mark_slm_v2 import MarkSLMV2ForCausalLM
 
-CKPT_PATH = Path("/mnt/ssd_1/mark ai/checkpoints/colab_302m/mark_slm_v2_302m_step_10000.pt")
+CKPT_PATH = Path("./checkpoints/colab_302m/mark_slm_v2_302m_step_10000.pt")
 OUTPUT_SAFETENSORS = REPO_ROOT / "models" / "mark-slm-v2-302m" / "model.safetensors"
 
 def project_weight_svd(w: torch.Tensor, in_features: int, out_features: int) -> torch.Tensor:

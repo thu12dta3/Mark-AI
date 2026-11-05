@@ -35,7 +35,7 @@
     "pt_url": "https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-302m/mark_engineer_302m_iq4_nl.pt",
     "sha256": "5e9d7d6feb9bc0b6ad5da98e444e3e083a1936e58ad6091230ee674d1ef714b0"
   },
-  "weight_state": "TRAINED_CHECKPOINT_VALIDATED",
+  "weight_state": "EXPERIMENTAL_NARROW_CHECKPOINT",
   "sha256": "5e9d7d6feb9bc0b6ad5da98e444e3e083a1936e58ad6091230ee674d1ef714b0",
   "target_platforms": [
     "Ollama",

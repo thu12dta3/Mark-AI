@@ -7,5 +7,5 @@
   "format": "IQ4_NL",
   "size_formatted": "4431.26 MiB (4646.52 MB / 4,646,516,576 bytes)",
   "sha256": "28c014b5b903f7e21ee9777ef743030c7a068111c923baeb33d5f05685e05400",
-  "weight_state": "UN-TRAINED_ARCHITECTURAL_BASE"
+  "weight_state": "UNTRAINED_ARCHITECTURAL_SCAFFOLD"
 }

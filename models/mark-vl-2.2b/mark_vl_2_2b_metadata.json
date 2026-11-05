@@ -7,6 +7,6 @@
   "format": "IQ4_NL",
   "size_formatted": "1166.72 MiB (1223.40 MB / 1,223,397,152 bytes)",
   "sha256": "073d3c00eaadfb98ef7c8b5276e355db134b4b1282ea74d8ce3d6116535cf354",
-  "weight_state": "TRAINED_CHECKPOINT_VALIDATED",
+  "weight_state": "EXPERIMENTAL_NARROW_CHECKPOINT",
   "multimodal_projector": "mmproj_mark_vl_2_2b.gguf"
 }

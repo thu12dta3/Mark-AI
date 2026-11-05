@@ -19,7 +19,7 @@ tags:
 
 ## Overview
 
-Mark-General-V3-1.5B is an untrained architectural scaffold with 1,520,496,960 total physical parameters and 405.73M active parameters per token across 18 layers. It features 32 routed experts, 2 shared experts, and H-MLA.
+Mark-General-V3-1.5B is an untrained architectural scaffold with 1,520,496,960 total physical parameters and 405.73M active parameters per token across 18 layers. It features 32 routed experts, 2 shared experts, and MLA.
 
 Quantized in IQ4_NL, the container occupies 816.03 MiB (855.67 MB / 855,669,248 bytes) and operates comfortably within 8 GB VRAM budgets.
 
@@ -31,7 +31,7 @@ Quantized in IQ4_NL, the container occupies 816.03 MiB (855.67 MB / 855,669,248 
 | Training Status | `UNTRAINED_ARCHITECTURAL_SCAFFOLD` |
 | Weight State Label | `Untrained Architectural Scaffold` |
 | Binary Size | `816.03 MiB (855.67 MB / 855,669,248 bytes)` |
-| Total Parameters | `1,520,496,960` (1520496960 physical) |
+| Total Parameters | `1,520,496,960` (1520496960 physical across 327 tensors) |
 | Active Parameters | `405,729,600` (405729600 active) |
 | Vocabulary Size | `32032` |
 | Layers | `18` |
@@ -46,7 +46,7 @@ Quantized in IQ4_NL, the container occupies 816.03 MiB (855.67 MB / 855,669,248 
 
 ## Architecture
 
-### Multi-Head Latent Attention (MLA & H-MLA)
+### Multi-Head Latent Attention (MLA)
 
 The model projects key and value states into a shared low-rank latent representation to decouple memory scaling from context length:
 
@@ -67,7 +67,7 @@ k_t  = [k_C ; k_R]
 
 ### KV Cache Memory Usage
 
-Physical memory consumption of the KV cache per token:
+Physical memory consumption of the KV cache per token in FP16:
 
 `KV_bytes_per_token = 18 * (256 + 64) * 2 = 11,520 bytes/token`
 
@@ -77,7 +77,7 @@ Physical memory consumption of the KV cache per token:
 | 8,192 tokens | 90.00 MiB | 720.00 MiB | 8.0x |
 | 32,768 tokens | 360.00 MiB | 2880.00 MiB | 8.0x |
 
-### Mixture-of-Experts (PB-MoE & Aux-Loss-Free Routing)
+### Mixture-of-Experts (Aux-Loss-Free Routing)
 
 - **Shared Experts (2S)**: Constantly active path for common representations:
   $$F_{\text{shared}}(x) = (\text{SiLU}(x W_{\text{gate}}) \odot (x W_{\text{up}})) W_{\text{down}}$$
@@ -117,7 +117,7 @@ The following architectural mechanisms are research extensions implemented in th
 ## Training Pipeline and Reproducibility
 
 - Training Code: Official pipelines and architecture implementations are maintained in the [Mark-AI scripts directory](https://github.com/thu12dta3/Mark-AI/tree/main/scripts).
-- Curricula and Datasets: Trained on open datasets hosted on the Hugging Face Hub, including [miceworks/Mark-Ultra-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Ultra-Curriculum), [miceworks/Mark-Open-SLM-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Open-SLM-Curriculum), and [miceworks/Mark-Cyber-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Cyber-Curriculum).
+- Curricula and Datasets: Trained on open datasets hosted on the Hugging Face Hub, including [miceworks/Mark-Open-SLM-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Open-SLM-Curriculum), [miceworks/Mark-Cyber-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Cyber-Curriculum), and [miceworks/Mark-Ultra-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Ultra-Curriculum).
 - Optimization Settings: AdamW optimizer ($\beta_1 = 0.9, \beta_2 = 0.95$, weight decay $0.1$, gradient clipping $1.0$).
 - Training Scope: Untrained architectural base scaffold (UNTRAINED_ARCHITECTURAL_SCAFFOLD). Built for testing binary graph compatibility with llama.cpp, measuring memory usage on target hardware, and serving as a base for downstream pre-training.
 
@@ -138,27 +138,23 @@ Forward pass and structural verification confirms stable numerical dynamics acro
 
 ## Limitations and Intended Use
 
-- Parameter Scale Constraints: While sparse MoE routing enables execution within consumer VRAM budgets, absolute capacity is bounded by physical parameter counts.
-- Recommended Deployment: For mission-critical production environments, deploy alongside external verification mechanisms such as compiler validation or unit test runners.
-- Safety and Boundary Enforcement: Models trained on systems and cybersecurity datasets are intended for defensive research, vulnerability auditing, patch validation, and systems engineering.
+- Architectural Research Scope: This model is an experimental architectural testbed for Multi-Head Latent Attention (MLA) and fine-grained MoE on 8 GB GPUs such as NVIDIA GeForce RTX 2060 Super (8 GB GDDR6, 256-bit, 448 GB/s), NOT a general-purpose conversational or multilingual assistant.
+- In-Distribution Curriculum Learning: Benchmark scores on `Mark-SLM-V3-150M` measure in-distribution learning on `miceworks/Mark-Open-SLM-Curriculum` (which includes official benchmark training splits permitted under Open SLM Leaderboard rules) rather than open-ended out-of-distribution generalization.
+- Parameter Scale Constraints: Absolute world knowledge and zero-shot reasoning capacity are bounded by compact parameter counts.
 
 ### Running Benchmarks on TPN Workbench and lm-evaluation-harness
 
 When running automated benchmarks on TPN Workbench, lm-evaluation-harness, LM Studio, or Hugging Face evaluation runners:
 - Select **Format: gguf** (or **Backend: llama.cpp**).
-- Do not evaluate via raw Python `transformers` with `safetensors` or `trust_remote_code=True`, because the native `deepseek2` H-MLA and fine-grained 3D MoE graph executes directly inside the optimized C++/CUDA kernels of `llama.cpp`. Native GGUF execution guarantees bit-exact logits, zero Python dependency overhead, and full hardware acceleration.
+- Do not evaluate via raw Python `transformers` with `safetensors` or `trust_remote_code=True`, because the native `deepseek2` MLA and fine-grained 3D MoE graph executes directly inside the C++/CUDA kernels of `llama.cpp`.
 
 ## Usage: Runtime Graph, Memory & Latency Verification
 
 This checkpoint is an untrained architectural base scaffold. Usage below is configured for binary graph verification, memory allocation profiling, and hardware latency benchmarking:
 
-### Download and Checksum Verification
+### Cryptographic Verification
 
 ```bash
-# Using huggingface-cli
-huggingface-cli download miceworks/Mark-General-V3-1.5B mark_general_v3_1_5b_iq4_nl.gguf --local-dir .
-
-# Cryptographic verification
 echo "7677ebd44467eecba594c2f41e8a9031590c3fdbb692089011eee7578c87c55f  mark_general_v3_1_5b_iq4_nl.gguf" | sha256sum -c -
 ```
 

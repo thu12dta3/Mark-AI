@@ -34,6 +34,7 @@ FILES_TO_SYNC = [
     "config.json",
     "tokenizer_config.json",
     "gguf_verification_manifest.json",
+    "Modelfile",
 ]
 
 
@@ -57,7 +58,7 @@ def sync_all(api: HfApi):
                         path_or_fileobj=str(fpath),
                         path_in_repo=fname,
                         repo_id=repo_id,
-                        commit_message=f"Audit fix: update {fname} with verified benchmarks, PB-MoE clans, and GGUF metadata",
+                        commit_message=f"fix(audit): update {fname} with verified forensic metadata",
                     )
                     print(f"  [OK] Uploaded {fname}")
                 except Exception as e:

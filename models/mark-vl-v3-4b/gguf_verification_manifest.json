@@ -1,11 +1,12 @@
 {
   "model_id": "mark-vl-v3-4b",
   "model_name": "Mark-VL-V3-4B",
-  "weight_state": "UN-TRAINED_ARCHITECTURAL_BASE",
+  "weight_state": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
   "provenance": {
     "gguf_file": "mark_vl_v3_4b_iq4_nl.gguf",
     "mmproj_file": "mmproj-mark_vl_v3_4b.gguf",
-    "quantization": "IQ4_NL"
+    "quantization": "IQ4_NL",
+    "gguf_path": "mark_vl_v3_4b_iq4_nl.gguf"
   },
   "tensor_architecture": {
     "physical_total_parameters": 4134688769,

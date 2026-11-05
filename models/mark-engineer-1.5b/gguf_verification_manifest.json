@@ -1,10 +1,10 @@
 {
   "model_id": "mark-engineer-1.5b",
   "model_name": "Mark-Engineer-1.5B",
-  "weight_state": "TRAINED_CHECKPOINT_VALIDATED",
+  "weight_state": "EXPERIMENTAL_NARROW_CHECKPOINT",
   "provenance": {
     "gguf_file": "mark_engineer_1_5b_iq4_nl.gguf",
-    "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_engineer_1_5b_iq4_nl.gguf",
+    "gguf_path": "mark_engineer_1_5b_iq4_nl.gguf",
     "sha256": "fa7d3061f33a20beaae5c2b85aceaf720c75b811efd8bceae0c57c57037e838e",
     "sha256_match_config": true,
     "size_bytes": 841941664,
@@ -53,7 +53,7 @@
     "input_decoded": [
       "<|bos|>",
       "<think>",
-      "token_25",
+      "<|fim_middle|>",
       "</think>",
       "<|eos|>"
     ],
@@ -66,7 +66,8 @@
     "greedy_token_id": 357,
     "eos_token_id": 2,
     "eos_handling_verified": true,
-    "status": "PASS"
+    "status": "PASS",
+    "llama_cpp_load_status": "VERIFIED_DEEPSEEK2_GRAPH"
   },
   "audit_command": "sha256sum mark_engineer_1_5b_iq4_nl.gguf && python3 -c \"import gguf; r = gguf.GGUFReader('mark_engineer_1_5b_iq4_nl.gguf'); print('vocab:', r.get_field('deepseek2.vocab_size').parts[-1].tolist()[0])\""
 }

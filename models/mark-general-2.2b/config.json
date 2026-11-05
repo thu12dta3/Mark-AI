@@ -41,7 +41,10 @@
     "vision_pixel_shuffle_scale": 2,
     "spatial_2d_rope": true,
     "dynamic_resolution_anyres": true,
-    "max_image_resolution": [2048, 2048],
+    "max_image_resolution": [
+      2048,
+      2048
+    ],
     "cold_start_reasoning": true
   },
   "target_platforms": [
@@ -56,5 +59,6 @@
     "vram_occupancy_iq4_nl": "1.85 GB",
     "vram_remaining_free": "6.15 GB",
     "estimated_throughput": "95 a 125 tokens/s"
-  }
+  },
+  "weight_state": "EXPERIMENTAL_NARROW_CHECKPOINT"
 }

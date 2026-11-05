@@ -35,5 +35,6 @@
   "vocab_size": 4096,
   "total_parameters": 2946008,
   "active_parameters_per_token": 2503640,
-  "sha256": "c66a0b3b76aba96c64d53d0e8821bd9e6e8bb29dc925890fa3a8efa05b1d1d30"
+  "sha256": "c66a0b3b76aba96c64d53d0e8821bd9e6e8bb29dc925890fa3a8efa05b1d1d30",
+  "weight_state": "TRAINED_CHECKPOINT"
 }

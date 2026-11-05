@@ -1,13 +1,14 @@
 {
   "model_id": "mark-slm-3m",
   "model_name": "Mark-SLM-3M",
-  "weight_state": "TRAINED_CHECKPOINT_VALIDATED",
+  "weight_state": "TRAINED_CHECKPOINT",
   "provenance": {
     "gguf_file": "mark_slm_3m_iq4_nl.gguf",
     "size_bytes": 3271680,
     "size_formatted": "3.12 MiB (3.27 MB / 3,271,680 bytes)",
     "sha256": "c66a0b3b76aba96c64d53d0e8821bd9e6e8bb29dc925890fa3a8efa05b1d1d30",
-    "quantization": "IQ4_NL"
+    "quantization": "IQ4_NL",
+    "gguf_path": "mark_slm_3m_iq4_nl.gguf"
   },
   "tensor_architecture": {
     "physical_total_parameters": 2946008,

@@ -57,10 +57,19 @@ FORBIDDEN_FABRICATIONS = [
     "5.5T",
     "SVD_INITIALIZED_BASE",
     "51.80%",
+    "51.8%",
+    "58.5%",
     "46.8",
-    "< 4.2%",
+    "4.2%",
     "[EVIDENT]",
     "[REFUTE]",
+    "pollinations",
+    "openai-fast",
+    "/mnt/ssd_1",
+    "/home/thu12",
+    "ollama run miceworks/",
+    "FACS Facial Decoding",
+    "TRAINED_CHECKPOINT_VALIDATED",
 ]
 
 @pytest.mark.parametrize("model_id", OFFICIAL_14_MODELS)
@@ -73,17 +82,10 @@ def test_library_name_gguf_and_tags(model_id):
     assert len(parts) >= 3, f"{model_id}/README.md malformed YAML frontmatter"
     fm = parts[1]
 
-    # library_name: gguf
     assert "library_name: gguf" in fm, f"Missing library_name: gguf in {model_id} YAML frontmatter"
-
-    # tags contain gguf and llama.cpp
     assert "gguf" in fm, f"Missing gguf tag in {model_id} YAML frontmatter"
     assert "llama.cpp" in fm, f"Missing llama.cpp tag in {model_id} YAML frontmatter"
-
-    # NO conversational tag across any model
     assert "conversational" not in fm, f"Forbidden conversational tag found in {model_id} YAML frontmatter"
-
-    # NO pt or Portuguese language tags across any model (must be language: [en])
     assert "- pt" not in fm, f"Forbidden pt tag found in {model_id} YAML frontmatter"
     assert "portuguese" not in fm.lower(), f"Forbidden Portuguese tag found in {model_id} YAML frontmatter"
 
@@ -92,7 +94,6 @@ def test_training_status_integrity(model_id):
     model_dir = REPO_ROOT / "models" / model_id
     readme = (model_dir / "README.md").read_text(encoding="utf-8")
 
-    # No model may contain UN-TRAINED_ARCHITECTURAL_BASE
     assert "UN-TRAINED_ARCHITECTURAL_BASE" not in readme, (
         f"{model_id}/README.md contains legacy UN-TRAINED_ARCHITECTURAL_BASE"
     )
@@ -127,6 +128,14 @@ def test_expert_count_and_clan_ranges(model_id):
     cfg = json.loads((model_dir / "config.json").read_text(encoding="utf-8"))
     readme = (model_dir / "README.md").read_text(encoding="utf-8")
 
+    if model_id == "mark-slm-v3-150m":
+        # Block 5: Mark-SLM-V3-150M must NOT claim LRD recurrent loops or PB-MoE clan soft-pinning
+        assert "Latent Recursive Depth" not in readme
+        assert "PB-MoE" not in readme
+        assert "146,899,248" in readme
+        assert "165,349,680" in readme
+        return
+
     n_routed = cfg.get("n_routed_experts")
     assert n_routed is not None
 
@@ -158,6 +167,9 @@ def test_expert_count_and_clan_ranges(model_id):
 
 @pytest.mark.parametrize("model_id", OFFICIAL_14_MODELS)
 def test_text_only_models_no_multimodal_in_clan3(model_id):
+    if model_id == "mark-slm-v3-150m":
+        return
+
     model_dir = REPO_ROOT / "models" / model_id
     readme = (model_dir / "README.md").read_text(encoding="utf-8")
 
@@ -200,7 +212,6 @@ def test_zero_emojis_checkboxes_and_heading_dashes(model_id):
     model_dir = REPO_ROOT / "models" / model_id
     readme = (model_dir / "README.md").read_text(encoding="utf-8")
 
-    # Check for emojis
     for char in readme:
         code = ord(char)
         assert not (
@@ -209,23 +220,20 @@ def test_zero_emojis_checkboxes_and_heading_dashes(model_id):
             or code in [0x26A0, 0x26A1, 0x2600, 0x2601, 0x2602, 0x2705, 0x274C, 0x2728]
         ), f"Emoji character '{char}' (code {hex(code)}) found in {model_id}/README.md"
 
-    # Check for checkboxes
     assert "[ ]" not in readme, f"Checkbox '[ ]' found in {model_id}/README.md"
     assert "[x]" not in readme, f"Checkbox '[x]' found in {model_id}/README.md"
 
-    # Check for '--' in headings
     for line in readme.splitlines():
         if line.startswith("#"):
             assert "--" not in line, f"Double hyphen '--' found in heading: '{line}' in {model_id}/README.md"
 
-def test_root_readme_has_all_14_models():
+def test_root_readme_has_all_14_models_and_no_private_links():
     root_readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
     for m in OFFICIAL_14_MODELS:
         assert m.lower() in root_readme.lower() or m.replace("-", " ").lower() in root_readme.lower(), (
             f"Model {m} missing from root README.md"
         )
 
-    # Check for checkboxes and emojis in root README
     assert "[ ]" not in root_readme
     assert "[x]" not in root_readme
     for char in root_readme:
@@ -236,14 +244,31 @@ def test_root_readme_has_all_14_models():
             or code in [0x26A0, 0x26A1, 0x2600, 0x2601, 0x2602, 0x2705, 0x274C, 0x2728]
         ), f"Emoji character '{char}' found in root README.md"
 
-    # Check for '--' in headings in root README
     for line in root_readme.splitlines():
         if line.startswith("#"):
             assert "--" not in line, f"Double hyphen '--' found in heading: '{line}' in root README.md"
 
-    # Assert no fake benchmarks in root README
     for forbidden in FORBIDDEN_FABRICATIONS:
         assert forbidden not in root_readme, f"Forbidden string '{forbidden}' found in root README.md"
+
+    # Root README must NOT link to the 13 private Hugging Face model repos
+    private_repos = [
+        "https://huggingface.co/miceworks/Mark-Engineer-302M",
+        "https://huggingface.co/miceworks/Mark-SLM-V2-302M",
+        "https://huggingface.co/miceworks/Mark-Engineer-1.5B",
+        "https://huggingface.co/miceworks/Mark-General-1.5B",
+        "https://huggingface.co/miceworks/Mark-VL-2.2B",
+        "https://huggingface.co/miceworks/Mark-Engineer-V2-8B",
+        "https://huggingface.co/miceworks/Mark-V3-1.1B",
+        "https://huggingface.co/miceworks/Mark-General-V3-1.5B",
+        "https://huggingface.co/miceworks/Mark-Engineer-V3-1.5B",
+        "https://huggingface.co/miceworks/Mark-General-V3-8B",
+        "https://huggingface.co/miceworks/Mark-Experimental-V3-8B",
+        "https://huggingface.co/miceworks/Mark-SLM-3M",
+        "https://huggingface.co/miceworks/Mark-V3-32B",
+    ]
+    for pr in private_repos:
+        assert pr not in root_readme, f"Private HF repo link {pr} found in root README.md"
 
 def test_eval_open_slm_script_no_manual_overrides():
     script_path = REPO_ROOT / "scripts" / "eval_open_slm_leaderboard.py"
@@ -269,3 +294,38 @@ def test_router_bias_sign_rule_documented():
         assert "operatorname{sign}" in readme or "\\operatorname{{sign}}" in readme or "sign" in readme, (
             f"Sign-based router bias update rule not documented in {m}/README.md"
         )
+
+def test_block7_global_forbidden_strings_absent():
+    """
+    Assert zero occurrences of pollinations, openai-fast, 51.8%, 58.5%, 46.8, 4.2%,
+    /mnt/ssd_1, /home/thu12, ollama run miceworks/, or FACS Facial Decoding
+    anywhere in README.md, models/, or scripts/.
+    """
+    banned = [
+        "pollinations",
+        "openai-fast",
+        "51.8%",
+        "58.5%",
+        "46.8",
+        "4.2%",
+        "/mnt/ssd_1",
+        "/home/thu12",
+        "ollama run miceworks/",
+        "FACS Facial Decoding",
+        "TRAINED_CHECKPOINT_VALIDATED",
+        '"token_25"',
+    ]
+    targets = [REPO_ROOT / "README.md"]
+    for folder in [REPO_ROOT / "models", REPO_ROOT / "scripts", REPO_ROOT / "spaces"]:
+        if folder.exists():
+            for p in folder.rglob("*"):
+                if p.is_file() and "__pycache__" not in str(p) and not p.name.endswith((".gguf", ".safetensors", ".pt", ".bin")):
+                    targets.append(p)
+
+    for p in targets:
+        try:
+            txt = p.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        for b in banned:
+            assert b not in txt, f"Forbidden string '{b}' found in {p.relative_to(REPO_ROOT)}"

@@ -23,7 +23,7 @@ tags:
 
 Mark-Engineer-302M is an experimental narrow checkpoint in the 302M family naming convention. It contains 251,452,544 total physical parameters and activates 119.33M parameters per token across 16 layers. It uses a native DeepSeek2 Mixture-of-Experts (MoE) topology with Multi-Head Latent Attention (MLA), quantized to 4-bit non-linear GGUF (IQ4_NL).
 
-The container occupies 135.12 MiB (141.69 MB / 141,686,432 bytes) of storage and runs on low-power edge devices, Raspberry Pi 5 (8 GB), or entry-level consumer GPUs (such as NVIDIA RTX 2060/3060 8 GB, 256-bit GDDR6, 448 GB/s bandwidth), consuming less than 2% of an 8 GB VRAM allocation.
+The container occupies 135.12 MiB (141.69 MB / 141,686,432 bytes) of storage and runs on low-power edge devices, Raspberry Pi 5 (8 GB), or entry-level consumer GPUs such as NVIDIA GeForce RTX 2060 Super (8 GB GDDR6, 256-bit, 448 GB/s), consuming less than 2% of an 8 GB VRAM allocation.
 
 ## Specifications
 
@@ -33,7 +33,7 @@ The container occupies 135.12 MiB (141.69 MB / 141,686,432 bytes) of storage and
 | Training Status | `EXPERIMENTAL_NARROW_CHECKPOINT` |
 | Weight State Label | `Experimental Narrow Checkpoint` |
 | Binary Size | `135.12 MiB (141.69 MB / 141,686,432 bytes)` |
-| Total Parameters | `251,452,416` (251452416 physical) |
+| Total Parameters | `251,452,416` (251452416 physical across 115 tensors) |
 | Active Parameters | `119,331,840` (119331840 active) |
 | Vocabulary Size | `4311` |
 | Layers | `8` |
@@ -48,7 +48,7 @@ The container occupies 135.12 MiB (141.69 MB / 141,686,432 bytes) of storage and
 
 ## Architecture
 
-### Multi-Head Latent Attention (MLA & H-MLA)
+### Multi-Head Latent Attention (MLA)
 
 The model projects key and value states into a shared low-rank latent representation to decouple memory scaling from context length:
 
@@ -69,7 +69,7 @@ k_t  = [k_C ; k_R]
 
 ### KV Cache Memory Usage
 
-Physical memory consumption of the KV cache per token:
+Physical memory consumption of the KV cache per token in FP16:
 
 `KV_bytes_per_token = 8 * (256 + 32) * 2 = 4,608 bytes/token`
 
@@ -79,7 +79,7 @@ Physical memory consumption of the KV cache per token:
 | 8,192 tokens | 36.00 MiB | 256.00 MiB | 7.1x |
 | 32,768 tokens | 144.00 MiB | 1024.00 MiB | 7.1x |
 
-### Mixture-of-Experts (PB-MoE & Aux-Loss-Free Routing)
+### Mixture-of-Experts (Aux-Loss-Free Routing)
 
 - **Shared Experts (1S)**: Constantly active path for common representations:
   $$F_{\text{shared}}(x) = (\text{SiLU}(x W_{\text{gate}}) \odot (x W_{\text{up}})) W_{\text{down}}$$
@@ -106,7 +106,7 @@ The 16 routed experts are partitioned into 4 functional clans (4 experts per cla
 ## Training Pipeline and Reproducibility
 
 - Training Code: Official pipelines and architecture implementations are maintained in the [Mark-AI scripts directory](https://github.com/thu12dta3/Mark-AI/tree/main/scripts).
-- Curricula and Datasets: Trained on open datasets hosted on the Hugging Face Hub, including [miceworks/Mark-Ultra-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Ultra-Curriculum), [miceworks/Mark-Open-SLM-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Open-SLM-Curriculum), and [miceworks/Mark-Cyber-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Cyber-Curriculum).
+- Curricula and Datasets: Trained on open datasets hosted on the Hugging Face Hub, including [miceworks/Mark-Open-SLM-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Open-SLM-Curriculum), [miceworks/Mark-Cyber-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Cyber-Curriculum), and [miceworks/Mark-Ultra-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Ultra-Curriculum).
 - Optimization Settings: AdamW optimizer ($\beta_1 = 0.9, \beta_2 = 0.95$, weight decay $0.1$, gradient clipping $1.0$).
 - Training Scope: Experimental narrow checkpoint (EXPERIMENTAL_NARROW_CHECKPOINT). Trained on POSIX C interfaces, Linux system call stubs, memory barrier semantics, and bare-metal linker scripts from miceworks/Mark-Ultra-Curriculum.
 
@@ -127,34 +127,29 @@ Validated on low-level systems engineering interfaces with syntactic schema vali
 
 ## Limitations and Intended Use
 
-- Parameter Scale Constraints: While sparse MoE routing enables execution within consumer VRAM budgets, absolute capacity is bounded by physical parameter counts.
-- Recommended Deployment: For mission-critical production environments, deploy alongside external verification mechanisms such as compiler validation or unit test runners.
-- Safety and Boundary Enforcement: Models trained on systems and cybersecurity datasets are intended for defensive research, vulnerability auditing, patch validation, and systems engineering.
+- Architectural Research Scope: This model is an experimental architectural testbed for Multi-Head Latent Attention (MLA) and fine-grained MoE on 8 GB GPUs such as NVIDIA GeForce RTX 2060 Super (8 GB GDDR6, 256-bit, 448 GB/s), NOT a general-purpose conversational or multilingual assistant.
+- In-Distribution Curriculum Learning: Benchmark scores on `Mark-SLM-V3-150M` measure in-distribution learning on `miceworks/Mark-Open-SLM-Curriculum` (which includes official benchmark training splits permitted under Open SLM Leaderboard rules) rather than open-ended out-of-distribution generalization.
+- Parameter Scale Constraints: Absolute world knowledge and zero-shot reasoning capacity are bounded by compact parameter counts.
 
 ### Running Benchmarks on TPN Workbench and lm-evaluation-harness
 
 When running automated benchmarks on TPN Workbench, lm-evaluation-harness, LM Studio, or Hugging Face evaluation runners:
 - Select **Format: gguf** (or **Backend: llama.cpp**).
-- Do not evaluate via raw Python `transformers` with `safetensors` or `trust_remote_code=True`, because the native `deepseek2` H-MLA and fine-grained 3D MoE graph executes directly inside the optimized C++/CUDA kernels of `llama.cpp`. Native GGUF execution guarantees bit-exact logits, zero Python dependency overhead, and full hardware acceleration.
+- Do not evaluate via raw Python `transformers` with `safetensors` or `trust_remote_code=True`, because the native `deepseek2` MLA and fine-grained 3D MoE graph executes directly inside the C++/CUDA kernels of `llama.cpp`.
 
 ## Usage: Narrow Domain and Systems Engineering Verification
 
-This checkpoint is an experimental narrow checkpoint trained on specific low-level or systems engineering distributions. Outside its narrow domain, greedy inference may produce fragmented outputs.
+This checkpoint is an experimental narrow checkpoint trained on specific low-level or systems engineering distributions. Outside its narrow domain, greedy inference produces fragmented outputs.
 
-### Download and Checksum Verification
+### Cryptographic Verification
 
 ```bash
-# Using huggingface-cli
-huggingface-cli download miceworks/Mark-Engineer-302M mark_engineer_302m_iq4_nl.gguf --local-dir .
-
-# Cryptographic verification
 echo "5e9d7d6feb9bc0b6ad5da98e444e3e083a1936e58ad6091230ee674d1ef714b0  mark_engineer_302m_iq4_nl.gguf" | sha256sum -c -
 ```
 
 ### Execution with llama.cpp
 
 ```bash
-# Systems prompt execution
 llama-cli -m mark_engineer_302m_iq4_nl.gguf \
   -p "Systems engineering stub: Implement a POSIX mutex initialization routine.\nCode:" \
   -n 128 --temp 0.2

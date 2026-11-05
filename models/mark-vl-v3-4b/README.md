@@ -21,7 +21,7 @@ tags:
 
 ## Overview
 
-Mark-VL-V3-4B is a third-generation multimodal vision-language model architecture scaffold integrating a 16-layer Vision Transformer (ViT) with Spatial 2D-RoPE, a 2x2 PixelShuffle projection adapter with non-linear outlier limiting, and a 24-layer DeepSeek2 H-MLA and PB-MoE language backbone.
+Mark-VL-V3-4B is a third-generation multimodal vision-language model architecture scaffold integrating a 16-layer Vision Transformer (ViT) with Spatial 2D-RoPE, a 2x2 PixelShuffle projection adapter, and a 24-layer DeepSeek2 MLA and MoE language backbone.
 
 The model comprises 4,134,688,769 total physical parameters and 824,483,584 active parameters per token across 24 language layers and 16 vision layers.
 
@@ -33,7 +33,7 @@ The model comprises 4,134,688,769 total physical parameters and 824,483,584 acti
 | Training Status | `UNTRAINED_ARCHITECTURAL_SCAFFOLD` |
 | Weight State Label | `Untrained Architectural Scaffold` |
 | Binary Size | `IQ4_NL Container` |
-| Total Parameters | `4,134,688,769` (4134688769 physical) |
+| Total Parameters | `4,134,688,769` (4134688769 physical across 273 tensors) |
 | Active Parameters | `824,483,584` (824483584 active) |
 | Vocabulary Size | `32032` |
 | Layers | `24` |
@@ -44,11 +44,11 @@ The model comprises 4,134,688,769 total physical parameters and 824,483,584 acti
 | Expert FFN Dim | `832` |
 | Context Length | `32768` tokens |
 | Quantization Type | `IQ4_NL` (4-bit non-linear) |
-| SHA-256 | `Verified against container` |
+| SHA-256 | `N/A` |
 
 ## Architecture
 
-### Multi-Head Latent Attention (MLA & H-MLA)
+### Multi-Head Latent Attention (MLA)
 
 The model projects key and value states into a shared low-rank latent representation to decouple memory scaling from context length:
 
@@ -69,7 +69,7 @@ k_t  = [k_C ; k_R]
 
 ### KV Cache Memory Usage
 
-Physical memory consumption of the KV cache per token:
+Physical memory consumption of the KV cache per token in FP16:
 
 `KV_bytes_per_token = 24 * (256 + 64) * 2 = 15,360 bytes/token`
 
@@ -79,7 +79,7 @@ Physical memory consumption of the KV cache per token:
 | 8,192 tokens | 120.00 MiB | 1344.00 MiB | 11.2x |
 | 32,768 tokens | 480.00 MiB | 5376.00 MiB | 11.2x |
 
-### Mixture-of-Experts (PB-MoE & Aux-Loss-Free Routing)
+### Mixture-of-Experts (Aux-Loss-Free Routing)
 
 - **Shared Experts (2S)**: Constantly active path for common representations:
   $$F_{\text{shared}}(x) = (\text{SiLU}(x W_{\text{gate}}) \odot (x W_{\text{up}})) W_{\text{down}}$$
@@ -126,7 +126,7 @@ The visual architecture integrates an AnyRes SigLIP visual encoder with Spatial 
 ## Training Pipeline and Reproducibility
 
 - Training Code: Official pipelines and architecture implementations are maintained in the [Mark-AI scripts directory](https://github.com/thu12dta3/Mark-AI/tree/main/scripts).
-- Curricula and Datasets: Trained on open datasets hosted on the Hugging Face Hub, including [miceworks/Mark-Ultra-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Ultra-Curriculum), [miceworks/Mark-Open-SLM-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Open-SLM-Curriculum), and [miceworks/Mark-Cyber-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Cyber-Curriculum).
+- Curricula and Datasets: Trained on open datasets hosted on the Hugging Face Hub, including [miceworks/Mark-Open-SLM-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Open-SLM-Curriculum), [miceworks/Mark-Cyber-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Cyber-Curriculum), and [miceworks/Mark-Ultra-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Ultra-Curriculum).
 - Optimization Settings: AdamW optimizer ($\beta_1 = 0.9, \beta_2 = 0.95$, weight decay $0.1$, gradient clipping $1.0$).
 - Training Scope: Untrained multimodal architectural scaffold (UNTRAINED_ARCHITECTURAL_SCAFFOLD). Built for multimodal graph verification and spatial 2D-RoPE alignment testing.
 
@@ -147,28 +147,24 @@ Projector and attention alignment verified with spatial 2D-RoPE coordinate prese
 
 ## Limitations and Intended Use
 
-- Parameter Scale Constraints: While sparse MoE routing enables execution within consumer VRAM budgets, absolute capacity is bounded by physical parameter counts.
-- Recommended Deployment: For mission-critical production environments, deploy alongside external verification mechanisms such as compiler validation or unit test runners.
-- Safety and Boundary Enforcement: Models trained on systems and cybersecurity datasets are intended for defensive research, vulnerability auditing, patch validation, and systems engineering.
+- Architectural Research Scope: This model is an experimental architectural testbed for Multi-Head Latent Attention (MLA) and fine-grained MoE on 8 GB GPUs such as NVIDIA GeForce RTX 2060 Super (8 GB GDDR6, 256-bit, 448 GB/s), NOT a general-purpose conversational or multilingual assistant.
+- In-Distribution Curriculum Learning: Benchmark scores on `Mark-SLM-V3-150M` measure in-distribution learning on `miceworks/Mark-Open-SLM-Curriculum` (which includes official benchmark training splits permitted under Open SLM Leaderboard rules) rather than open-ended out-of-distribution generalization.
+- Parameter Scale Constraints: Absolute world knowledge and zero-shot reasoning capacity are bounded by compact parameter counts.
 
 ### Running Benchmarks on TPN Workbench and lm-evaluation-harness
 
 When running automated benchmarks on TPN Workbench, lm-evaluation-harness, LM Studio, or Hugging Face evaluation runners:
 - Select **Format: gguf** (or **Backend: llama.cpp**).
-- Do not evaluate via raw Python `transformers` with `safetensors` or `trust_remote_code=True`, because the native `deepseek2` H-MLA and fine-grained 3D MoE graph executes directly inside the optimized C++/CUDA kernels of `llama.cpp`. Native GGUF execution guarantees bit-exact logits, zero Python dependency overhead, and full hardware acceleration.
+- Do not evaluate via raw Python `transformers` with `safetensors` or `trust_remote_code=True`, because the native `deepseek2` MLA and fine-grained 3D MoE graph executes directly inside the C++/CUDA kernels of `llama.cpp`.
 
 ## Usage: Runtime Graph, Memory & Latency Verification
 
 This checkpoint is an untrained architectural base scaffold. Usage below is configured for binary graph verification, memory allocation profiling, and hardware latency benchmarking:
 
-### Download and Checksum Verification
+### Cryptographic Verification
 
 ```bash
-# Using huggingface-cli
-huggingface-cli download miceworks/Mark-VL-V3-4B mark_vl_v3_4b_iq4_nl.gguf --local-dir .
-
-# Cryptographic verification
-echo "Verified against container  mark_vl_v3_4b_iq4_nl.gguf" | sha256sum -c -
+echo "N/A  mark_vl_v3_4b_iq4_nl.gguf" | sha256sum -c -
 ```
 
 ### Graph and Memory Profiling with llama.cpp

@@ -1,10 +1,10 @@
 {
   "model_id": "mark-slm-v2-302m",
   "model_name": "Mark-SLM-V2-302M",
-  "weight_state": "TRAINED_CHECKPOINT_VALIDATED",
+  "weight_state": "EXPERIMENTAL_NARROW_CHECKPOINT",
   "provenance": {
     "gguf_file": "mark_slm_v2_302m_iq4_nl.gguf",
-    "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_slm_v2_302m_iq4_nl.gguf",
+    "gguf_path": "mark_slm_v2_302m_iq4_nl.gguf",
     "sha256": "34a3e0e39cd02cd6a12345b9558ea094877530ef3bde52e64552f20ca48ce38e",
     "sha256_match_config": true,
     "size_bytes": 186394944,
@@ -53,7 +53,7 @@
     "input_decoded": [
       "<|bos|>",
       "<think>",
-      "token_25",
+      "<|fim_middle|>",
       "</think>",
       "<|eos|>"
     ],
@@ -66,7 +66,9 @@
     "greedy_token_id": 5411,
     "eos_token_id": 2,
     "eos_handling_verified": true,
-    "status": "PASS"
+    "status": "PASS",
+    "llama_cpp_load_status": "SHAPE_MISMATCH_LEGACY_EXPORT",
+    "llama_cpp_load_note": "Legacy export shape mismatch: GGUF header vocab_size / leading_dense_block_count mismatch in llama.cpp deepseek2 loader."
   },
   "audit_command": "sha256sum mark_slm_v2_302m_iq4_nl.gguf && python3 -c \"import gguf; r = gguf.GGUFReader('mark_slm_v2_302m_iq4_nl.gguf'); print('vocab:', r.get_field('deepseek2.vocab_size').parts[-1].tolist()[0])\""
 }

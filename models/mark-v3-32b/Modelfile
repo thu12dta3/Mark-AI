@@ -1,18 +1,9 @@
 FROM ./mark_v3_32b_iq4_nl.gguf
 
-TEMPLATE """{{ if .System }}<|bos|>System: {{ .System }}<|eos|>
-{{ end }}{{ if .Prompt }}<|bos|>User: {{ .Prompt }}<|eos|>
-{{ end }}<|bos|>Assistant:
-<think>
-"""
+TEMPLATE """{{ .Prompt }}"""
 
 PARAMETER stop "<|eos|>"
 PARAMETER stop "<|pad|>"
-PARAMETER stop "<|user|>"
-PARAMETER stop "<|assistant|>"
-PARAMETER stop "</think>"
-PARAMETER num_ctx 131072
-PARAMETER temperature 0.3
-PARAMETER top_p 0.95
-PARAMETER repeat_penalty 1.15
-SYSTEM """You are Mark-V3-32B, the flagship native DeepSeek2 sparse MoE model with 32B physical parameters, 3.68B active parameters, and 1M context window powered by 3:1 Hybrid H-MLA and 64R+2S PB-MoE."""
+PARAMETER temperature 0.2
+PARAMETER top_p 0.9
+PARAMETER repeat_penalty 1.1

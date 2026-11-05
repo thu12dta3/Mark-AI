@@ -7,5 +7,5 @@
   "format": "IQ4_NL",
   "size_formatted": "802.94 MiB (841.94 MB / 841,941,664 bytes)",
   "sha256": "fa7d3061f33a20beaae5c2b85aceaf720c75b811efd8bceae0c57c57037e838e",
-  "weight_state": "TRAINED_CHECKPOINT_VALIDATED"
+  "weight_state": "EXPERIMENTAL_NARROW_CHECKPOINT"
 }

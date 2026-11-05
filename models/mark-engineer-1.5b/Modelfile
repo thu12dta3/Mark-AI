@@ -1,14 +1,9 @@
 FROM ./mark_engineer_1_5b_iq4_nl.gguf
 
-TEMPLATE """{{ if .System }}<|bos|>System: {{ .System }}<|eos|>
-{{ end }}{{ if .Prompt }}<|bos|>User: {{ .Prompt }}<|eos|>
-{{ end }}<|bos|>Assistant:
-<think>
-"""
+TEMPLATE """{{ .Prompt }}"""
 
 PARAMETER stop "<|eos|>"
+PARAMETER stop "<|pad|>"
 PARAMETER temperature 0.2
-PARAMETER top_p 0.95
+PARAMETER top_p 0.9
 PARAMETER repeat_penalty 1.1
-
-SYSTEM """You are Mark-Engineer-1.5B, a language model built on native DeepSeek2 MoE and MLA architecture."""

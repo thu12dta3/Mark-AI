@@ -22,9 +22,9 @@ tags:
 
 ## Overview
 
-Mark-SLM-3M is an ultra-compact language model engineered under the strict 3,000,000 parameter ceiling for the Open SLM Leaderboard. It integrates Multi-Head Latent Attention (H-MLA) and Parallel Branching Mixture of Experts (PB-MoE), trained 100% from scratch in full compliance with Rules 01 and 02.
+Mark-SLM-3M is an ultra-compact language model engineered under the strict 3,000,000 parameter ceiling for the Open SLM Leaderboard. It integrates Multi-Head Latent Attention (MLA) and Mixture of Experts (MoE), trained 100% from scratch in full compliance with Rules 01 and 02.
 
-The model contains exactly 2,946,008 total physical parameters and 2,503,640 active parameters per token across 8 layers. Quantized to IQ4_NL, the container occupies 3.12 MiB (3.27 MB / 3,271,680 bytes) and runs on embedded microcontrollers, mobile processors, or desktop environments with minimal resource consumption.
+The model contains 2,946,008 unique physical parameters and 2,503,640 active parameters per token across 8 layers. Quantized to IQ4_NL, the container occupies 3.12 MiB (3.27 MB / 3,271,680 bytes) and runs on embedded microcontrollers, mobile processors, or desktop environments with minimal resource consumption.
 
 ## Specifications
 
@@ -34,7 +34,7 @@ The model contains exactly 2,946,008 total physical parameters and 2,503,640 act
 | Training Status | `TRAINED_CHECKPOINT` |
 | Weight State Label | `Trained Checkpoint (From Scratch)` |
 | Binary Size | `3.12 MiB (3.27 MB / 3,271,680 bytes)` |
-| Total Parameters | `2,946,008` (2946008 physical) |
+| Total Parameters | `2,946,008` (2946008 physical across 137 tensors) |
 | Active Parameters | `2,503,640` (2503640 active) |
 | Vocabulary Size | `4096` |
 | Layers | `8` |
@@ -49,7 +49,7 @@ The model contains exactly 2,946,008 total physical parameters and 2,503,640 act
 
 ## Architecture
 
-### Multi-Head Latent Attention (MLA & H-MLA)
+### Multi-Head Latent Attention (MLA)
 
 The model projects key and value states into a shared low-rank latent representation to decouple memory scaling from context length:
 
@@ -70,7 +70,7 @@ k_t  = [k_C ; k_R]
 
 ### KV Cache Memory Usage
 
-Physical memory consumption of the KV cache per token:
+Physical memory consumption of the KV cache per token in FP16:
 
 `KV_bytes_per_token = 8 * (64 + 16) * 2 = 1,280 bytes/token`
 
@@ -80,7 +80,7 @@ Physical memory consumption of the KV cache per token:
 | 8,192 tokens | 10.00 MiB | 48.00 MiB | 4.8x |
 | 32,768 tokens | 40.00 MiB | 192.00 MiB | 4.8x |
 
-### Mixture-of-Experts (PB-MoE & Aux-Loss-Free Routing)
+### Mixture-of-Experts (Aux-Loss-Free Routing)
 
 - **Shared Experts (1S)**: Constantly active path for common representations:
   $$F_{\text{shared}}(x) = (\text{SiLU}(x W_{\text{gate}}) \odot (x W_{\text{up}})) W_{\text{down}}$$
@@ -122,9 +122,9 @@ The following architectural mechanisms are research extensions implemented in th
 ## Training Pipeline and Reproducibility
 
 - Training Code: Official pipelines and architecture implementations are maintained in the [Mark-AI scripts directory](https://github.com/thu12dta3/Mark-AI/tree/main/scripts).
-- Curricula and Datasets: Trained on open datasets hosted on the Hugging Face Hub, including [miceworks/Mark-Ultra-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Ultra-Curriculum), [miceworks/Mark-Open-SLM-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Open-SLM-Curriculum), and [miceworks/Mark-Cyber-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Cyber-Curriculum).
+- Curricula and Datasets: Trained on open datasets hosted on the Hugging Face Hub, including [miceworks/Mark-Open-SLM-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Open-SLM-Curriculum), [miceworks/Mark-Cyber-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Cyber-Curriculum), and [miceworks/Mark-Ultra-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Ultra-Curriculum).
 - Optimization Settings: AdamW optimizer ($\beta_1 = 0.9, \beta_2 = 0.95$, weight decay $0.1$, gradient clipping $1.0$).
-- Training Scope: Trained 100% from scratch (Gaussian normal std=0.02 initialization, zero external checkpoints) for 3,000 optimization steps on miceworks/Mark-Open-SLM-Curriculum, Cosmopedia-v2 STEM, and AxiomicLabs/ArithMark-3.0 in strict compliance with Open SLM Leaderboard Rules 01 and 02.
+- Training Scope: Trained 100% from scratch (Gaussian normal std=0.02 initialization, zero external checkpoints) for 3,000 optimization steps on miceworks/Mark-Open-SLM-Curriculum, Cosmopedia-v2 STEM, and procedural arithmetic in strict compliance with Open SLM Leaderboard Rules 01 and 02.
 
 ## Evaluation and Benchmark Results
 
@@ -150,25 +150,25 @@ Official Open SLM Leaderboard Scores (Sub-3M Category, Rule 01 and Rule 02 Compl
 
 ## Limitations and Intended Use
 
-- Parameter Scale Constraints: While sparse MoE routing enables execution within consumer VRAM budgets, absolute capacity is bounded by physical parameter counts.
-- Recommended Deployment: For mission-critical production environments, deploy alongside external verification mechanisms such as compiler validation or unit test runners.
-- Safety and Boundary Enforcement: Models trained on systems and cybersecurity datasets are intended for defensive research, vulnerability auditing, patch validation, and systems engineering.
+- Architectural Research Scope: This model is an experimental architectural testbed for Multi-Head Latent Attention (MLA) and fine-grained MoE on 8 GB GPUs such as NVIDIA GeForce RTX 2060 Super (8 GB GDDR6, 256-bit, 448 GB/s), NOT a general-purpose conversational or multilingual assistant.
+- In-Distribution Curriculum Learning: Benchmark scores on `Mark-SLM-V3-150M` measure in-distribution learning on `miceworks/Mark-Open-SLM-Curriculum` (which includes official benchmark training splits permitted under Open SLM Leaderboard rules) rather than open-ended out-of-distribution generalization.
+- Parameter Scale Constraints: Absolute world knowledge and zero-shot reasoning capacity are bounded by compact parameter counts.
 
 ### Running Benchmarks on TPN Workbench and lm-evaluation-harness
 
 When running automated benchmarks on TPN Workbench, lm-evaluation-harness, LM Studio, or Hugging Face evaluation runners:
 - Select **Format: gguf** (or **Backend: llama.cpp**).
-- Do not evaluate via raw Python `transformers` with `safetensors` or `trust_remote_code=True`, because the native `deepseek2` H-MLA and fine-grained 3D MoE graph executes directly inside the optimized C++/CUDA kernels of `llama.cpp`. Native GGUF execution guarantees bit-exact logits, zero Python dependency overhead, and full hardware acceleration.
+- Do not evaluate via raw Python `transformers` with `safetensors` or `trust_remote_code=True`, because the native `deepseek2` MLA and fine-grained 3D MoE graph executes directly inside the C++/CUDA kernels of `llama.cpp`.
 
 ## Usage
 
 ### Download
 
 ```bash
-# Using huggingface-cli
-huggingface-cli download miceworks/Mark-SLM-3M mark_slm_3m_iq4_nl.gguf --local-dir .
+# Download GGUF and Modelfile using huggingface-cli
+huggingface-cli download miceworks/Mark-SLM-3M mark_slm_3m_iq4_nl.gguf Modelfile --local-dir .
 
-# Using Python
+# Or using Python
 from huggingface_hub import hf_hub_download
 hf_hub_download(repo_id="miceworks/Mark-SLM-3M", filename="mark_slm_3m_iq4_nl.gguf")
 ```
@@ -179,16 +179,24 @@ hf_hub_download(repo_id="miceworks/Mark-SLM-3M", filename="mark_slm_3m_iq4_nl.gg
 echo "c66a0b3b76aba96c64d53d0e8821bd9e6e8bb29dc925890fa3a8efa05b1d1d30  mark_slm_3m_iq4_nl.gguf" | sha256sum -c -
 ```
 
-### llama.cpp
+### llama.cpp Execution
 
 ```bash
-# CLI text completion
+# Direct CLI completion
 llama-cli -m mark_slm_3m_iq4_nl.gguf \
   -p "Question: What is 12 * 12?\nAnswer:" \
-  -n 128 --temp 0.2
+  -n 64 --temp 0.2
 
-# HTTP server
+# Local HTTP server
 llama-server -m mark_slm_3m_iq4_nl.gguf --port 8080 -c 4096
+```
+
+### Local Ollama Registration
+
+```bash
+# Create local model from downloaded Modelfile
+ollama create mark-slm-3m -f Modelfile
+ollama run mark-slm-3m "Question: What is 12 * 12? Answer:"
 ```
 
 ### Python Inspection
@@ -200,5 +208,5 @@ reader = gguf.GGUFReader("mark_slm_3m_iq4_nl.gguf")
 print("Architecture:", reader.get_field("general.architecture"))
 print("Total Tensors:", len(reader.tensors))
 total_params = sum(int(t.shape.prod()) for t in reader.tensors)
-print(f"Total Parameters: {total_params:,}")
+print(f"Materialized GGUF Parameters: {total_params:,}")
 ```

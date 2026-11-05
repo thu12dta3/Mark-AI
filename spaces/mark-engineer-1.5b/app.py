@@ -94,7 +94,7 @@ class MarkEngineerEngine:
         local_ckpt = Path("mark_engineer_1_5b_iq4_nl.pt")
         candidates = [
             local_ckpt,
-            Path("/mnt/ssd_1/mark ai/checkpoints/mark_engineer_1_5b_iq4_nl.pt"),
+            Path("./checkpoints/mark_engineer_1_5b_iq4_nl.pt"),
             Path("/run/media/thu12/hd 1tb/mark_checkpoints/mark_engineer_1_5b_iq4_nl.pt"),
         ]
         found = next((p for p in candidates if p.exists()), None)

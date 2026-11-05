@@ -31,7 +31,7 @@
   "quantization": "IQ4_NL",
   "total_parameters": 8168001024,
   "active_parameters_per_token": 2002374144,
-  "weight_state": "UN-TRAINED_ARCHITECTURAL_BASE",
+  "weight_state": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
   "sha256": "792e127a71f62145f87c3775c4a03a0dc7bb68b8ee355acb74602348cf748b4a",
   "target_platforms": [
     "Ollama",

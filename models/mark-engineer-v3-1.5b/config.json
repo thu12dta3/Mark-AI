@@ -36,7 +36,7 @@
   "specialization": "low-level software engineering, Rust, C++, Linux, Assembly",
   "total_parameters": 1520496960,
   "active_parameters_per_token": 405729600,
-  "weight_state": "TRAINED_CHECKPOINT",
+  "weight_state": "EXPERIMENTAL_NARROW_CHECKPOINT",
   "sha256": "24093fd96a22c7b4b19e85df2fb0d4e1757361d6f58baa4f36ad0285fa29ac68",
   "target_platforms": [
     "Ollama",

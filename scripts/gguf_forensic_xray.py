@@ -10,17 +10,17 @@ import numpy as np
 import gguf
 
 MODELS_LIST = [
-    ("Mark-Engineer-302M", Path("/mnt/ssd_1/mark ai/checkpoints/mark_engineer_302m_iq4_nl.gguf"), True),
-    ("Mark-SLM-V2-302M", Path("/mnt/ssd_1/mark ai/checkpoints/mark_slm_v2_302m_iq4_nl.gguf"), True),
-    ("Mark-Engineer-1.5B", Path("/mnt/ssd_1/mark ai/checkpoints/mark_engineer_1_5b_iq4_nl.gguf"), True),
-    ("Mark-General-1.5B", Path("/mnt/ssd_1/mark ai/checkpoints/mark_general_1_5b_iq4_nl.gguf"), True),
-    ("Mark-VL-2.2B", Path("/mnt/ssd_1/mark ai/checkpoints/mark_vl_2_2b_iq4_nl.gguf"), True),
-    ("Mark-Engineer-V2-8B", Path("/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v2_8b_iq4_nl.gguf"), False),
-    ("Mark-SLM-V3-150M", Path("/mnt/ssd_1/mark ai/checkpoints/mark_slm_v3_150m_iq4_nl.gguf"), False),
-    ("Mark-V3-1.1B", Path("/mnt/ssd_1/mark ai/checkpoints/mark_v3_1_1b_iq4_nl.gguf"), False),
-    ("Mark-General-V3-1.5B", Path("/mnt/ssd_1/mark ai/checkpoints/mark_general_v3_1_5b_iq4_nl.gguf"), False),
-    ("Mark-Engineer-V3-1.5B", Path("/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v3_1_5b_iq4_nl.gguf"), False),
-    ("Mark-Experimental-V3-8B", Path("/mnt/ssd_1/mark ai/checkpoints/mark_experimental_v3_8b_iq4_nl.gguf"), False),
+    ("Mark-Engineer-302M", Path("./checkpoints/mark_engineer_302m_iq4_nl.gguf"), True),
+    ("Mark-SLM-V2-302M", Path("./checkpoints/mark_slm_v2_302m_iq4_nl.gguf"), True),
+    ("Mark-Engineer-1.5B", Path("./checkpoints/mark_engineer_1_5b_iq4_nl.gguf"), True),
+    ("Mark-General-1.5B", Path("./checkpoints/mark_general_1_5b_iq4_nl.gguf"), True),
+    ("Mark-VL-2.2B", Path("./checkpoints/mark_vl_2_2b_iq4_nl.gguf"), True),
+    ("Mark-Engineer-V2-8B", Path("./checkpoints/mark_engineer_v2_8b_iq4_nl.gguf"), False),
+    ("Mark-SLM-V3-150M", Path("./checkpoints/mark_slm_v3_150m_iq4_nl.gguf"), False),
+    ("Mark-V3-1.1B", Path("./checkpoints/mark_v3_1_1b_iq4_nl.gguf"), False),
+    ("Mark-General-V3-1.5B", Path("./checkpoints/mark_general_v3_1_5b_iq4_nl.gguf"), False),
+    ("Mark-Engineer-V3-1.5B", Path("./checkpoints/mark_engineer_v3_1_5b_iq4_nl.gguf"), False),
+    ("Mark-Experimental-V3-8B", Path("./checkpoints/mark_experimental_v3_8b_iq4_nl.gguf"), False),
 ]
 
 def compute_sha256(filepath: Path) -> str:

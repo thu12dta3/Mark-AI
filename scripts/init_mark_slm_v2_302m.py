@@ -25,7 +25,7 @@ def main():
     print(f'      MTP Logits shape: {mtp_logits.shape}')
     assert logits.shape == (2, 64, config.vocab_size)
     assert mtp_logits.shape == (2, 63, config.vocab_size)
-    ssd_ckpt_dir = Path('/mnt/ssd_1/mark ai/checkpoints')
+    ssd_ckpt_dir = Path('./checkpoints')
     ssd_ckpt_dir.mkdir(parents=True, exist_ok=True)
     pt_path = ssd_ckpt_dir / 'mark_slm_v2_302m_init.pt'
     print(f'[3/5] Saving initial untrained PyTorch checkpoint to: {pt_path}...')

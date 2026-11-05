@@ -21,9 +21,9 @@ tags:
 
 ## Overview
 
-Mark-SLM-V3-150M is a compact edge model engineered strictly under the 150M parameter ceiling (Rule 01 of Open SLM Leaderboard). By using tied word embeddings (reusing token_embd.weight as the language model output projection), the GGUF file contains 272 tensors and exactly 146,899,248 parameters (54.00M active per token across 15 layers).
+**`Mark-SLM-V3-150M` is a 150M-parameter experimental sparse language model trained on 3.47M tokens (`miceworks/Mark-Open-SLM-Curriculum`), achieving an in-distribution Intelligence Index of `16.36` on the Open SLM Leaderboard (PR #291). It is an architectural research testbed for Multi-Head Latent Attention (MLA) and fine-grained MoE on 8 GB GPUs, NOT a general-purpose conversational or multilingual assistant.**
 
-Quantized in IQ4_NL, the container occupies 90.37 MiB (94.76 MB / 94,764,576 bytes), making it suitable for low-power edge microcontrollers, mobile devices, and embedded systems.
+The exported GGUF container (`mark_slm_v3_150m_iq4_nl.gguf`, 90.37 MiB / 94.76 MB / 94,764,576 bytes) implements 15 physical `deepseek2` blocks (layers 0-1 dense, layers 2-14 MoE with 16 routed + 1 shared expert, top-2 active). The architecture comprises **146,899,248 unique parameters** (excluding tied `output.weight`) and **165,349,680 materialized GGUF parameters across 273 tensors** (including the materialized `output.weight` copy).
 
 ## Specifications
 
@@ -33,10 +33,10 @@ Quantized in IQ4_NL, the container occupies 90.37 MiB (94.76 MB / 94,764,576 byt
 | Training Status | `TRAINED_CHECKPOINT` |
 | Weight State Label | `Trained Checkpoint (Model Soup 50/50)` |
 | Binary Size | `90.37 MiB (94.76 MB / 94,764,576 bytes)` |
-| Total Parameters | `146,899,248` (146899248 physical) |
+| Total Parameters | `146,899,248` unique parameters (`165,349,680` materialized GGUF parameters across 273 tensors) |
 | Active Parameters | `54,001,968` (54001968 active) |
 | Vocabulary Size | `32032` |
-| Layers | `15` |
+| Layers | `15` physical `deepseek2` blocks (layers 0-1 dense, layers 2-14 MoE) |
 | Hidden Dimension | `576` |
 | Attention Heads | `9` |
 | MLA Ranks | `q_lora_rank=256`, `kv_lora_rank=128`, `qk_rope_head_dim=64` |
@@ -48,7 +48,7 @@ Quantized in IQ4_NL, the container occupies 90.37 MiB (94.76 MB / 94,764,576 byt
 
 ## Architecture
 
-### Multi-Head Latent Attention (MLA & H-MLA)
+### Multi-Head Latent Attention (MLA)
 
 The model projects key and value states into a shared low-rank latent representation to decouple memory scaling from context length:
 
@@ -69,7 +69,7 @@ k_t  = [k_C ; k_R]
 
 ### KV Cache Memory Usage
 
-Physical memory consumption of the KV cache per token:
+Physical memory consumption of the KV cache per token in FP16:
 
 `KV_bytes_per_token = 15 * (128 + 64) * 2 = 5,760 bytes/token`
 
@@ -79,7 +79,7 @@ Physical memory consumption of the KV cache per token:
 | 8,192 tokens | 45.00 MiB | 270.00 MiB | 6.0x |
 | 32,768 tokens | 180.00 MiB | 1080.00 MiB | 6.0x |
 
-### Mixture-of-Experts (PB-MoE & Aux-Loss-Free Routing)
+### Mixture-of-Experts (Aux-Loss-Free Routing)
 
 - **Shared Experts (1S)**: Constantly active path for common representations:
   $$F_{\text{shared}}(x) = (\text{SiLU}(x W_{\text{gate}}) \odot (x W_{\text{up}})) W_{\text{down}}$$
@@ -94,40 +94,19 @@ $$b_i \leftarrow b_i + \gamma \cdot \operatorname{sign}(\bar{f} - f_i)$$
 where $\gamma = 0.001$, $f_i$ is empirical expert frequency within the batch, and $\bar{f}$ is target uniform frequency.
 
 Router bias vectors (`blk.{l}.exp_probs_b.bias`) are stored in FP32 precision. Measured disk telemetry from the IQ4_NL container:
-- Bias Parameters: 240 FP32 parameters across 15 MoE layers (16 routed experts each)
+- Bias Parameters: 208 FP32 parameters across 13 MoE layers (layers 2 to 14, 16 routed experts each; layers 0 and 1 are dense SwiGLU blocks)
 - Measured Values: min = 0.8677, mean = 1.3500, max = 2.0547
-
-#### Domain Clan Partitioning
-
-The 16 routed experts are partitioned into 4 functional clans (4 experts per clan):
-- **Clan 0 (Experts 0-3)**: Systems code, kernel semantics, and concurrency.
-- **Clan 1 (Experts 4-7)**: Mathematics, formal logic, and STEM reasoning.
-- **Clan 2 (Experts 8-11)**: Security boundaries, protocols, and validation.
-- **Clan 3 (Experts 12-15)**: Structured Data, Tool Calling, and Symbolic Logic.
-
-### Experimental PyTorch Research Extensions (Not Active in llama.cpp GGUF Runtime)
-
-The following architectural mechanisms are research extensions implemented in the PyTorch reference codebase (`src/model/mark_v3_arch.py`) and are not active in the compiled C++/CUDA feed-forward DAG of the `llama.cpp` GGUF runtime:
-
-1. **Latent Recursive Depth (LRD)**:
-   In PyTorch, intermediate core layers (layers $s..e-1$) execute across $L_{\text{core}} = 2$ recurrent iterations using residual anchoring:
-   $$h^{(r+1)}_l = \text{Block}_l(h^{(r)}_l + 0.5 \cdot h_{\text{stem}})$$
-   In `llama.cpp`, GGUF execution is strictly feed-forward (single sequential pass through layers $0..N-1$).
-
-2. **PB-MoE Soft-Pinning Constraints**:
-   During PyTorch curriculum training, clan logit constraints reserve routing slots for domain specialists. In `llama.cpp`, routing executes via standard Top-K selection over the learned router bias affinities:
-   $$s_{i,t} = \sigma(u_t^T e_i) + b_i$$
 
 ## Training Pipeline and Reproducibility
 
 - Training Code: Official pipelines and architecture implementations are maintained in the [Mark-AI scripts directory](https://github.com/thu12dta3/Mark-AI/tree/main/scripts).
-- Curricula and Datasets: Trained on open datasets hosted on the Hugging Face Hub, including [miceworks/Mark-Ultra-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Ultra-Curriculum), [miceworks/Mark-Open-SLM-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Open-SLM-Curriculum), and [miceworks/Mark-Cyber-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Cyber-Curriculum).
+- Curricula and Datasets: Trained on open datasets hosted on the Hugging Face Hub, including [miceworks/Mark-Open-SLM-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Open-SLM-Curriculum), [miceworks/Mark-Cyber-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Cyber-Curriculum), and [miceworks/Mark-Ultra-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Ultra-Curriculum).
 - Optimization Settings: AdamW optimizer ($\beta_1 = 0.9, \beta_2 = 0.95$, weight decay $0.1$, gradient clipping $1.0$).
-- Training Scope: Trained model checkpoint (TRAINED_CHECKPOINT). The model was trained through 25,000 optimization steps of pre-training followed by 4,000 steps of Phase 2 Cooldown on miceworks/Mark-Open-SLM-Curriculum, consolidated via 50/50 Model Soup (Weight Averaging). Note: The training dataset miceworks/Mark-Open-SLM-Curriculum contains benchmark training splits (in-distribution learning). Evaluated on the official Open SLM Leaderboard benchmark suite (Rule 01 and Rule 02 compliant), achieving an official AxiomicLabs Intelligence Index of 16.36, merged in PR #291 (https://github.com/AxiomicLabs/open-slm-leaderboard/pull/291).
+- Training Scope: Trained model checkpoint (TRAINED_CHECKPOINT). The model was trained through 25,000 optimization steps of pre-training followed by 4,000 steps of Phase 2 Cooldown on miceworks/Mark-Open-SLM-Curriculum (3.47M tokens), consolidated via 50/50 Model Soup (Weight Averaging). Disclosure: `miceworks/Mark-Open-SLM-Curriculum` contains training splits from HellaSwag, PIQA, ARC, SciQ, and ArithMark (permitted by Open SLM Leaderboard rules), so the reported scores measure in-distribution curriculum learning rather than general out-of-distribution capability. Evaluated on the official Open SLM Leaderboard benchmark suite, achieving an Intelligence Index of 16.36 in PR #291 (https://huggingface.co/spaces/AxiomicLabs/Open_SLM_Leaderboard/discussions/291).
 
 ## Evaluation and Benchmark Results
 
-Official Open SLM Leaderboard Scores (PR #291 merged, Rule 01 and Rule 02 compliant):
+Official Open SLM Leaderboard Scores ([PR #291](https://huggingface.co/spaces/AxiomicLabs/Open_SLM_Leaderboard/discussions/291), Rule 01 and Rule 02 compliant):
 - PIQA: 62.50% (Norm: 25.00%)
 - ARC-Easy: 40.80% (Norm: 21.07%)
 - HellaSwag: 37.10% (Norm: 16.13%)
@@ -136,10 +115,12 @@ Official Open SLM Leaderboard Scores (PR #291 merged, Rule 01 and Rule 02 compli
 - ARC-Average (Norm): 10.87%
 - AxiomicLabs Intelligence Index: 16.36
 
+ Note: Because `miceworks/Mark-Open-SLM-Curriculum` incorporates official training splits from HellaSwag, PIQA, ARC, SciQ, and procedural ArithMark, these scores reflect in-distribution curriculum learning rather than broad zero-shot out-of-distribution generalization.
+
 Checkpoint Revision Changelog:
 - Revision 1 (Step 25,000 Base Checkpoint): Intelligence Index 10.04
 - Revision 2 (Step 4,000 Cooldown Checkpoint): Intelligence Index 14.35
-- Revision 3 (Model Soup 50/50 Final): Intelligence Index 16.36 (Official submission merged in PR #291)
+- Revision 3 (Model Soup 50/50 Final, 25k Base + 4k Cooldown): Intelligence Index 16.36 (Submitted in PR #291)
 
 ## Tokenizer and Vocabulary Specification
 
@@ -154,25 +135,25 @@ Checkpoint Revision Changelog:
 
 ## Limitations and Intended Use
 
-- Parameter Scale Constraints: While sparse MoE routing enables execution within consumer VRAM budgets, absolute capacity is bounded by physical parameter counts.
-- Recommended Deployment: For mission-critical production environments, deploy alongside external verification mechanisms such as compiler validation or unit test runners.
-- Safety and Boundary Enforcement: Models trained on systems and cybersecurity datasets are intended for defensive research, vulnerability auditing, patch validation, and systems engineering.
+- Architectural Research Scope: This model is an experimental architectural testbed for Multi-Head Latent Attention (MLA) and fine-grained MoE on 8 GB GPUs such as NVIDIA GeForce RTX 2060 Super (8 GB GDDR6, 256-bit, 448 GB/s), NOT a general-purpose conversational or multilingual assistant.
+- In-Distribution Curriculum Learning: Benchmark scores on `Mark-SLM-V3-150M` measure in-distribution learning on `miceworks/Mark-Open-SLM-Curriculum` (which includes official benchmark training splits permitted under Open SLM Leaderboard rules) rather than open-ended out-of-distribution generalization.
+- Parameter Scale Constraints: Absolute world knowledge and zero-shot reasoning capacity are bounded by compact parameter counts.
 
 ### Running Benchmarks on TPN Workbench and lm-evaluation-harness
 
 When running automated benchmarks on TPN Workbench, lm-evaluation-harness, LM Studio, or Hugging Face evaluation runners:
 - Select **Format: gguf** (or **Backend: llama.cpp**).
-- Do not evaluate via raw Python `transformers` with `safetensors` or `trust_remote_code=True`, because the native `deepseek2` H-MLA and fine-grained 3D MoE graph executes directly inside the optimized C++/CUDA kernels of `llama.cpp`. Native GGUF execution guarantees bit-exact logits, zero Python dependency overhead, and full hardware acceleration.
+- Do not evaluate via raw Python `transformers` with `safetensors` or `trust_remote_code=True`, because the native `deepseek2` MLA and fine-grained 3D MoE graph executes directly inside the C++/CUDA kernels of `llama.cpp`.
 
 ## Usage
 
 ### Download
 
 ```bash
-# Using huggingface-cli
-huggingface-cli download miceworks/Mark-SLM-V3-150M mark_slm_v3_150m_iq4_nl.gguf --local-dir .
+# Download GGUF and Modelfile using huggingface-cli
+huggingface-cli download miceworks/Mark-SLM-V3-150M mark_slm_v3_150m_iq4_nl.gguf Modelfile --local-dir .
 
-# Using Python
+# Or using Python
 from huggingface_hub import hf_hub_download
 hf_hub_download(repo_id="miceworks/Mark-SLM-V3-150M", filename="mark_slm_v3_150m_iq4_nl.gguf")
 ```
@@ -183,16 +164,24 @@ hf_hub_download(repo_id="miceworks/Mark-SLM-V3-150M", filename="mark_slm_v3_150m
 echo "4bbfe2dc3fc7a6ac895d56e30352bda0de1322f9826afa28cafe7d24b0e99632  mark_slm_v3_150m_iq4_nl.gguf" | sha256sum -c -
 ```
 
-### llama.cpp
+### llama.cpp Execution
 
 ```bash
-# CLI text completion
+# Direct CLI completion
 llama-cli -m mark_slm_v3_150m_iq4_nl.gguf \
   -p "Question: What is 12 * 12?\nAnswer:" \
-  -n 128 --temp 0.2
+  -n 64 --temp 0.2
 
-# HTTP server
+# Local HTTP server
 llama-server -m mark_slm_v3_150m_iq4_nl.gguf --port 8080 -c 8192
+```
+
+### Local Ollama Registration
+
+```bash
+# Create local model from downloaded Modelfile
+ollama create mark-slm-150m -f Modelfile
+ollama run mark-slm-150m "Question: What is 12 * 12? Answer:"
 ```
 
 ### Python Inspection
@@ -204,5 +193,5 @@ reader = gguf.GGUFReader("mark_slm_v3_150m_iq4_nl.gguf")
 print("Architecture:", reader.get_field("general.architecture"))
 print("Total Tensors:", len(reader.tensors))
 total_params = sum(int(t.shape.prod()) for t in reader.tensors)
-print(f"Total Parameters: {total_params:,}")
+print(f"Materialized GGUF Parameters: {total_params:,}")
 ```

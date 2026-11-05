@@ -1,10 +1,11 @@
 {
   "model_id": "mark-v3-32b",
   "model_name": "Mark-V3-32B",
-  "weight_state": "EARLY_CONVERGENCE_CHECKPOINT",
+  "weight_state": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
   "provenance": {
     "gguf_file": "mark_v3_32b_iq4_nl.gguf",
-    "quantization": "IQ4_NL"
+    "quantization": "IQ4_NL",
+    "gguf_path": "mark_v3_32b_iq4_nl.gguf"
   },
   "tensor_architecture": {
     "physical_total_parameters": 31989012480,

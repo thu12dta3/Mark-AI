@@ -1,140 +1,91 @@
 # Mark-AI
 
-Sparse Transformer architectures (Multi-Head Latent Attention + fine-grained Mixture-of-Experts) exported to native `deepseek2` GGUF containers in 4-bit non-linear quantization (`IQ4_NL`). Designed for local inference on 8 GB consumer GPUs.
+Sparse Transformer research codebase exploring Multi-Head Latent Attention (MLA) and fine-grained Mixture-of-Experts (MoE) exported to native `deepseek2` GGUF containers in 4-bit non-linear quantization (`IQ4_NL`). Engineered and profiled on consumer 8 GB hardware (`NVIDIA GeForce RTX 2060 Super (8 GB GDDR6, 256-bit, 448 GB/s)`).
 
-## Models
+## Public Research Checkpoint: Mark-SLM-V3-150M
 
-| Model Name | Weight State | Binary Size | Total Parameters | Active Parameters | Vocab Size | SHA-256 | Hugging Face Repository |
-| :--- | :--- | :--- | :---: | :---: | :---: | :--- | :--- |
-| **Mark-Engineer-302M** | Experimental Narrow Checkpoint | 135.12 MiB (141.69 MB / 141,686,432 bytes) | 251,452,416 | 119,331,840 | 4311 | `5e9d7d6feb...` | [miceworks/Mark-Engineer-302M](https://huggingface.co/miceworks/Mark-Engineer-302M) |
-| **Mark-SLM-V2-302M** | Experimental Narrow Checkpoint | 177.76 MiB (186.39 MB / 186,394,944 bytes) | 329,132,000 | 155,723,744 | 49152 | `34a3e0e39c...` | [miceworks/Mark-SLM-V2-302M](https://huggingface.co/miceworks/Mark-SLM-V2-302M) |
-| **Mark-Engineer-1.5B** | Experimental Narrow Checkpoint | 802.94 MiB (841.94 MB / 841,941,664 bytes) | 1,496,121,824 | 364,151,264 | 4311 | `fa7d3061f3...` | [miceworks/Mark-Engineer-1.5B](https://huggingface.co/miceworks/Mark-Engineer-1.5B) |
-| **Mark-General-1.5B** | Experimental Narrow Checkpoint | 802.97 MiB (841.98 MB / 841,977,664 bytes) | 1,496,185,824 | 364,215,264 | 4377 | `4f2be0d7c3...` | [miceworks/Mark-General-1.5B](https://huggingface.co/miceworks/Mark-General-1.5B) |
-| **Mark-VL-2.2B** | Experimental Narrow Checkpoint | 1166.72 MiB (1223.40 MB / 1,223,397,152 bytes) | 2,174,310,096 | 395,499,216 | 32000 | `073d3c00ea...` | [miceworks/Mark-VL-2.2B](https://huggingface.co/miceworks/Mark-VL-2.2B) |
-| **Mark-Engineer-V2-8B** | Untrained Architectural Scaffold | 4431.26 MiB (4646.52 MB / 4,646,516,576 bytes) | 8,258,809,040 | 1,770,745,040 | 49152 | `28c014b5b9...` | [miceworks/Mark-Engineer-V2-8B](https://huggingface.co/miceworks/Mark-Engineer-V2-8B) |
-| **Mark-SLM-V3-150M** | Trained Checkpoint (Model Soup 50/50) | 90.37 MiB (94.76 MB / 94,764,576 bytes) | 146,899,248 | 54,001,968 | 32032 | `4bbfe2dc3f...` | [miceworks/Mark-SLM-V3-150M](https://huggingface.co/miceworks/Mark-SLM-V3-150M) |
-| **Mark-V3-1.1B** | Untrained Architectural Scaffold | 656.13 MiB (688.00 MB / 688,002,048 bytes) | 1,222,464,960 | 330,651,072 | 32032 | `e12c358e81...` | [miceworks/Mark-V3-1.1B](https://huggingface.co/miceworks/Mark-V3-1.1B) |
-| **Mark-General-V3-1.5B** | Untrained Architectural Scaffold | 816.03 MiB (855.67 MB / 855,669,248 bytes) | 1,520,496,960 | 405,729,600 | 32032 | `7677ebd444...` | [miceworks/Mark-General-V3-1.5B](https://huggingface.co/miceworks/Mark-General-V3-1.5B) |
-| **Mark-Engineer-V3-1.5B** | Experimental Narrow Checkpoint | 816.95 MiB (856.63 MB / 856,632,832 bytes) | 1,520,496,960 | 405,729,600 | 32032 | `24093fd96a...` | [miceworks/Mark-Engineer-V3-1.5B](https://huggingface.co/miceworks/Mark-Engineer-V3-1.5B) |
-| **Mark-General-V3-8B** | Untrained Architectural Scaffold | 4383.98 MiB (4596.94 MB / 4,596,938,048 bytes) | 8,168,001,024 | 2,002,374,144 | 32032 | `7a7b50a685...` | [miceworks/Mark-General-V3-8B](https://huggingface.co/miceworks/Mark-General-V3-8B) |
-| **Mark-Experimental-V3-8B** | Untrained Architectural Scaffold | 4382.55 MiB (4595.44 MB / 4,595,438,848 bytes) | 8,168,001,024 | 2,002,374,144 | 32032 | `792e127a71...` | [miceworks/Mark-Experimental-V3-8B](https://huggingface.co/miceworks/Mark-Experimental-V3-8B) |
-| **Mark-SLM-3M** | Trained Checkpoint (From Scratch) | 3.12 MiB (3.27 MB / 3,271,680 bytes) | 2,946,008 | 2,503,640 | 4096 | `c66a0b3b76...` | [miceworks/Mark-SLM-3M](https://huggingface.co/miceworks/Mark-SLM-3M) |
-| **Mark-V3-32B** | Untrained Architectural Scaffold | GGUF Container | 31,989,012,480 | 3,677,387,904 | 32032 | `Verified...` | [miceworks/Mark-V3-32B](https://huggingface.co/miceworks/Mark-V3-32B) |
+**`Mark-SLM-V3-150M` is a 150M-parameter experimental sparse language model trained on 3.47M tokens (`miceworks/Mark-Open-SLM-Curriculum`), achieving an in-distribution Intelligence Index of `16.36` on the Open SLM Leaderboard ([PR #291](https://huggingface.co/spaces/AxiomicLabs/Open_SLM_Leaderboard/discussions/291)). It is an architectural research testbed for Multi-Head Latent Attention (MLA) and fine-grained MoE on 8 GB GPUs, NOT a general-purpose conversational or multilingual assistant.**
 
-## Open SLM Leaderboard Benchmarks
+- **Public Hugging Face Repository:** [`miceworks/Mark-SLM-V3-150M`](https://huggingface.co/miceworks/Mark-SLM-V3-150M)
+- **GGUF Container:** `mark_slm_v3_150m_iq4_nl.gguf` (`90.37 MiB / 94.76 MB / 94,764,576 bytes`)
+- **SHA-256:** `4bbfe2dc3fc7a6ac895d56e30352bda0de1322f9826afa28cafe7d24b0e99632`
+- **Unique Architectural Parameters:** `146,899,248` (`54,001,968` active per token across 15 layers: 2 dense + 13 MoE)
+- **Materialized GGUF Parameters:** `165,349,680` across `273` tensors (including materialized `output.weight`)
 
-Official evaluation results for Open SLM Leaderboard compliant models evaluated on official benchmark datasets under Rules 01 and 02:
+### Open SLM Leaderboard Evaluation (In-Distribution Curriculum Learning)
 
-| Model | Parameters | HellaSwag (`acc_norm`) | ARC-E (`acc_norm`) | ARC-C (`acc_norm`) | PIQA (`acc_norm`) | ArithMark-3 (`acc`) | Intelligence Index |
+| Model | Unique Parameters | HellaSwag (`acc_norm`) | ARC-E (`acc_norm`) | ARC-C (`acc_norm`) | PIQA (`acc_norm`) | ArithMark-3 (`acc`) | Intelligence Index |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Mark-SLM-3M** | 2,946,008 | 25.60% (0.80) | 26.60% (2.13) | 23.75% (0.00) | 52.00% (4.00) | 29.70% (6.27) | **3.85** |
-| **Mark-SLM-V3-150M (Model Soup 50/50)** | 146,899,248 | **37.10%** (16.13) | **40.80%** (21.07) | **25.50%** (0.67) | **62.50%** (25.00) | **33.90%** (11.87) | **16.36** |
+| **Mark-SLM-V3-150M (Model Soup 50/50)** | 146,899,248 | 37.10% (16.13) | 40.80% (21.07) | 25.50% (0.67) | 62.50% (25.00) | 33.90% (11.87) | **16.36** |
+| **Mark-SLM-3M (Local Sub-3M Experiment)** | 2,946,008 | 25.60% (0.80) | 26.60% (2.13) | 23.75% (0.00) | 52.00% (4.00) | 29.70% (6.27) | **3.85** |
 
-Official submission for Mark-SLM-V3-150M merged in AxiomicLabs/open-slm-leaderboard PR #291. Note: The training curriculum miceworks/Mark-Open-SLM-Curriculum incorporates benchmark training splits (in-distribution learning).
+Disclosure: `miceworks/Mark-Open-SLM-Curriculum` incorporates official training splits from HellaSwag, PIQA, ARC, SciQ, and procedural ArithMark (permitted under Open SLM Leaderboard Rules 01 and 02), so these scores measure in-distribution curriculum learning rather than broad out-of-distribution generalization.
 
-## Architecture
+## Public Datasets on Hugging Face
 
-### Multi-Head Latent Attention (MLA & H-MLA)
+All three public training datasets have been deduplicated, decontaminated against evaluation splits, stripped of local filesystem paths, and released under the `apache-2.0` license:
 
-Standard Multi-Head Attention (MHA) creates a memory bottleneck during long-context generation due to linear expansion of stored Key-Value caches. Mark AI implements Multi-Head Latent Attention (MLA), projecting keys and values into a shared low-rank latent representation:
+| Dataset | Type | Unique Samples | Primary Focus | Hugging Face Repository |
+| :--- | :--- | :---: | :--- | :--- |
+| **Mark-Open-SLM-Curriculum** | Pretraining / SLM | 11,990 (3.47M tokens) | Rule 02 compliant pretraining splits from HellaSwag, ARC, PIQA, SciQ, ArithMark-3, and Cosmopedia STEM (decontaminated against ARC val/test) | [miceworks/Mark-Open-SLM-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Open-SLM-Curriculum) |
+| **Mark-Cyber-Curriculum** | SFT / DPO | 4,613 | Strictly 3-field deduplicated vulnerability research (CWE/CVE), Red/Blue Team SecOps, and eBPF security (`CyberNative`, `Trendyol`, `neuralchemy`) | [miceworks/Mark-Cyber-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Cyber-Curriculum) |
+| **Mark-Ultra-Curriculum** | Systems SFT | 1,131 | Deduplicated Rust/C++ concurrency, Linux eBPF, robotics kinematics, and STEM reasoning | [miceworks/Mark-Ultra-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Ultra-Curriculum) |
+
+## Architectural Definitions and Local Configurations (`src/model/` & `models/`)
+
+Alongside the public `Mark-SLM-V3-150M` checkpoint, this repository defines local PyTorch reference modules (`src/model/`) and GGUF export configurations (`models/`) used to test `deepseek2` tensor packing, KV cache scaling, and narrow curriculum convergence:
+
+| Architecture Configuration | Status | GGUF Footprint | Unique Parameters | Active Parameters | Vocab Size | Availability |
+| :--- | :--- | :--- | :---: | :---: | :---: | :--- |
+| **Mark-Engineer-302M** | `EXPERIMENTAL_NARROW_CHECKPOINT` | 135.12 MiB (141.69 MB / 141,686,432 bytes) | 251,452,416 | 119,331,840 | 4311 | Local Config (`models/mark-engineer-302m/`) |
+| **Mark-SLM-V2-302M** | `EXPERIMENTAL_NARROW_CHECKPOINT` | 177.76 MiB (186.39 MB / 186,394,944 bytes) | 329,132,000 | 155,723,744 | 49152 | Local Config (`models/mark-slm-v2-302m/`) |
+| **Mark-Engineer-1.5B** | `EXPERIMENTAL_NARROW_CHECKPOINT` | 802.94 MiB (841.94 MB / 841,941,664 bytes) | 1,496,121,824 | 364,151,264 | 4311 | Local Config (`models/mark-engineer-1.5b/`) |
+| **Mark-General-1.5B** | `EXPERIMENTAL_NARROW_CHECKPOINT` | 802.97 MiB (841.98 MB / 841,977,664 bytes) | 1,496,185,824 | 364,215,264 | 4377 | Local Config (`models/mark-general-1.5b/`) |
+| **Mark-VL-2.2B** | `EXPERIMENTAL_NARROW_CHECKPOINT` | 1166.72 MiB (1223.40 MB / 1,223,397,152 bytes) | 2,174,310,096 | 395,499,216 | 32000 | Local Config (`models/mark-vl-2.2b/`) |
+| **Mark-Engineer-V2-8B** | `UNTRAINED_ARCHITECTURAL_SCAFFOLD` | 4431.26 MiB (4646.52 MB / 4,646,516,576 bytes) | 8,258,809,040 | 1,770,745,040 | 49152 | Local Config (`models/mark-engineer-v2-8b/`) |
+| **Mark-SLM-V3-150M** | `TRAINED_CHECKPOINT` | 90.37 MiB (94.76 MB / 94,764,576 bytes) | 146,899,248 | 54,001,968 | 32032 | [Public Checkpoint (`miceworks/Mark-SLM-V3-150M`)](https://huggingface.co/miceworks/Mark-SLM-V3-150M) |
+| **Mark-V3-1.1B** | `UNTRAINED_ARCHITECTURAL_SCAFFOLD` | 656.13 MiB (688.00 MB / 688,002,048 bytes) | 1,222,464,960 | 330,651,072 | 32032 | Local Config (`models/mark-v3-1.1b/`) |
+| **Mark-General-V3-1.5B** | `UNTRAINED_ARCHITECTURAL_SCAFFOLD` | 816.03 MiB (855.67 MB / 855,669,248 bytes) | 1,520,496,960 | 405,729,600 | 32032 | Local Config (`models/mark-general-v3-1.5b/`) |
+| **Mark-Engineer-V3-1.5B** | `EXPERIMENTAL_NARROW_CHECKPOINT` | 816.95 MiB (856.63 MB / 856,632,832 bytes) | 1,520,496,960 | 405,729,600 | 32032 | Local Config (`models/mark-engineer-v3-1.5b/`) |
+| **Mark-General-V3-8B** | `UNTRAINED_ARCHITECTURAL_SCAFFOLD` | 4383.98 MiB (4596.94 MB / 4,596,938,048 bytes) | 8,168,001,024 | 2,002,374,144 | 32032 | Local Config (`models/mark-general-v3-8b/`) |
+| **Mark-Experimental-V3-8B** | `UNTRAINED_ARCHITECTURAL_SCAFFOLD` | 4382.55 MiB (4595.44 MB / 4,595,438,848 bytes) | 8,168,001,024 | 2,002,374,144 | 32032 | Local Config (`models/mark-experimental-v3-8b/`) |
+| **Mark-SLM-3M** | `TRAINED_CHECKPOINT` | 3.12 MiB (3.27 MB / 3,271,680 bytes) | 2,946,008 | 2,503,640 | 4096 | Local Config (`models/mark-slm-3m/`) |
+| **Mark-V3-32B** | `UNTRAINED_ARCHITECTURAL_SCAFFOLD` | PyTorch / GGUF Config | 31,989,012,480 | 3,677,387,904 | 32032 | Local Config (`models/mark-v3-32b/`) |
+| **Mark-VL-V3-4B** | `UNTRAINED_ARCHITECTURAL_SCAFFOLD` | PyTorch / GGUF Config | 4,134,688,769 | 824,483,584 | 32032 | Local Config (`models/mark-vl-v3-4b/`) |
+| **Mark-General-2.2B** | `EXPERIMENTAL_NARROW_CHECKPOINT` | PyTorch / GGUF Config | 2,223,906,816 | 375M FLOPs (Top-2 routed + 1 shared) | 32000 | Local Config (`models/mark-general-2.2b/`) |
+
+## Architecture Details
+
+### Multi-Head Latent Attention (MLA)
+
+To reduce Key-Value cache memory during long-context inference on 8 GB GPUs (`NVIDIA GeForce RTX 2060 Super (8 GB GDDR6, 256-bit, 448 GB/s)`), keys and values are compressed into a shared low-rank latent vector:
 
 ```text
 c_KV = h_t * W_DKV          (dim: kv_lora_rank)
 c_Q  = h_t * W_DQ           (dim: q_lora_rank)
 q_C  = RMSNorm(c_Q * W_UQ)
 k_C  = RMSNorm(c_KV * W_UK)
-```
-
-To maintain positional awareness without expanding the cached latent vector, decoupled rotary position embeddings are concatenated along a separate dimension:
-
-```text
 k_R  = RoPE(h_t * W_KR)     (dim: qk_rope_head_dim)
 q_t  = [q_C ; q_R]
 k_t  = [k_C ; k_R]
 ```
 
-### Mixture-of-Experts (DeepSeekMoE & PB-MoE)
+### Mixture-of-Experts and Sign-Based Router Bias
 
-To decouple parameter scale from inference compute costs, feed-forward layers are partitioned into fine-grained specialists:
-- **Shared Experts**: Fixed shared pathways capture common language representations across tokens ($F_{\text{shared}}(x) = (\text{SiLU}(x W_{\text{gate}}) \odot (x W_{\text{up}})) W_{\text{down}}$).
-- **Routed Experts**: Activated dynamically via top-K gating with learned router biases ($s_{i,t} = \sigma(u_t^T e_i)$ over biased affinities $s_{i,t} + b_i$, updated via $b_i \leftarrow b_i + \gamma \cdot \operatorname{sign}(\bar{f} - f_i)$).
-- **Domain Clan Partitioning (PB-MoE)**: Experts are partitioned into 4 distinct functional clans (Systems/Code, STEM/Logic, Security/Sentinel, Structured Data/Tool Calling, or Multimodal for vision-language models).
+Feed-forward layers combine shared experts with top-K routed experts gated via sigmoid affinities $s_{i,t} = \sigma(u_t^T e_i)$ plus learned FP32 bias $b_i$ (`blk.{l}.exp_probs_b.bias`), updated during training via the sign-based load-balancing rule:
 
-### Experimental PyTorch Research Extensions
+$$b_i \leftarrow b_i + \gamma \cdot \operatorname{sign}(\bar{f} - f_i)$$
 
-Research mechanisms such as Latent Recursive Depth (LRD) and PB-MoE curriculum soft-pinning are implemented in PyTorch (`src/model/mark_v3_arch.py`) and are active during research training, while the compiled GGUF containers execute as feed-forward DAGs in `llama.cpp`.
+### Experimental PyTorch Research Extensions (Not Active in llama.cpp GGUF Runtime)
 
-## Quantization (IQ4_NL)
+Research extensions implemented in `src/model/mark_v3_arch.py` (such as Latent Recursive Depth when `core_loops > 1` and domain clan soft-pinning during PyTorch training) are PyTorch-only modules; exported GGUF files execute as standard sequential `deepseek2` graphs in `llama.cpp`.
 
-### Native DeepSeek2 GGUF Graph
-
-The models preserve native 3D tensor layouts (`blk.{i}.ffn_gate_exps.weight`, `blk.{i}.ffn_up_exps.weight`, `blk.{i}.ffn_down_exps.weight`) within the `deepseek2` GGUF container, bypassing the memory fragmentation associated with 2D tensor flattening.
-
-### Super-Block Structure (GGML_TYPE_IQ4_NL)
-
-- Linear weight matrices are compressed into 18-byte blocks per 32 weights:
-  - 2 bytes: Half-precision scale factor `d`.
-  - 16 bytes: 32 four-bit nibbles mapped onto the non-linear 16-level quantization grid:
-    `[-127, -104, -83, -65, -49, -35, -22, -10, 1, 13, 25, 38, 53, 69, 89, 113]`
-- 1D RMSNorm tensors and router bias vectors remain in full precision `FP32`, ensuring numerical stability at layer boundaries.
-
-## Training Curricula and Datasets
-
-The Mark-AI model suite is trained and aligned on curated, token-efficient open datasets hosted on the Hugging Face Hub:
-
-| Dataset | Type | Samples | Primary Focus | Hugging Face Repository |
-| :--- | :--- | :---: | :--- | :--- |
-| **Mark-Ultra-Curriculum** | SFT / Master Corpus | 4,821 | Systems programming, Linux kernel stubs, eBPF, POSIX C, and robotics | [miceworks/Mark-Ultra-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Ultra-Curriculum) |
-| **Mark-Cyber-Curriculum** | SFT / DPO / ORPO | 6,122 | Deduplicated vulnerability audit (CVE/CWE), red-teaming, SIEM/YARA, eBPF secops | [miceworks/Mark-Cyber-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Cyber-Curriculum) |
-| **Mark-Open-SLM-Curriculum** | Pretraining / SLM | 12,000 | Open SLM Rule 02 compliant pretraining: HellaSwag, ARC, PIQA, SciQ, ArithMark-3, and Cosmopedia STEM | [miceworks/Mark-Open-SLM-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Open-SLM-Curriculum) |
-
-## Repository Structure
-
-```
-Mark-AI/
-├── artifacts/              # Binary audits and verification reports
-├── datasets/               # Open training curricula and preference datasets
-│   ├── cyber_curriculum/   # Mark-Cyber-Curriculum (miceworks/Mark-Cyber-Curriculum)
-│   ├── open_slm_curriculum/ # Mark-Open-SLM-Curriculum (miceworks/Mark-Open-SLM-Curriculum)
-│   └── ultra_curriculum/   # Mark-Ultra-Curriculum (miceworks/Mark-Ultra-Curriculum)
-├── export/                 # DeepSeek2 GGUF export and quantization pipelines
-│   └── convert_to_deepseek2_gguf.py
-├── models/                 # Model configs, tokenizers and Modelfiles
-│   ├── mark-engineer-1.5b/
-│   ├── mark-engineer-302m/
-│   ├── mark-engineer-v2-8b/
-│   ├── mark-engineer-v3-1.5b/
-│   ├── mark-experimental-v3-8b/
-│   ├── mark-general-1.5b/
-│   ├── mark-general-v3-1.5b/
-│   ├── mark-general-v3-8b/
-│   ├── mark-slm-3m/
-│   ├── mark-slm-v2-302m/
-│   ├── mark-slm-v3-150m/
-│   ├── mark-v3-1.1b/
-│   ├── mark-v3-32b/
-│   └── mark-vl-2.2b/
-├── scripts/                # Verification and synchronization utilities
-│   ├── build_mark_cyber_dataset.py
-│   ├── build_open_slm_curriculum.py
-│   ├── eval_open_slm_leaderboard.py
-│   ├── generate_verification_manifests.py
-│   ├── gguf_forensic_xray.py
-│   ├── sync_to_huggingface.py
-│   └── update_all_readmes.py
-├── src/                    # PyTorch reference neural architectures
-│   └── model/
-└── tests/                  # Automated verification test suite
-```
-
-## Testing & Verification
-
-The repository is validated against physical GGUF binaries using pytest:
+## Testing and Verification
 
 ```bash
 # 1. Validate Python syntax across all modules
 python3 -m compileall -q src/ export/ scripts/ models/ tests/
 
-# 2. Run the comprehensive validation suite
+# 2. Run the automated verification suite
 pytest tests/ -v
 ```

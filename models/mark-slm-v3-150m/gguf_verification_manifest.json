@@ -1,10 +1,10 @@
 {
   "model_id": "mark-slm-v3-150m",
   "model_name": "Mark-SLM-V3-150M",
-  "weight_state": "TRAINED_MODEL_SOUP_25K_BASE_4K_COOLDOWN",
+  "weight_state": "TRAINED_CHECKPOINT",
   "provenance": {
     "gguf_file": "mark_slm_v3_150m_iq4_nl.gguf",
-    "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_slm_v3_150m_iq4_nl.gguf",
+    "gguf_path": "mark_slm_v3_150m_iq4_nl.gguf",
     "sha256": "4bbfe2dc3fc7a6ac895d56e30352bda0de1322f9826afa28cafe7d24b0e99632",
     "sha256_match_config": true,
     "size_bytes": 94764576,
@@ -23,7 +23,9 @@
     "physical_total_parameters": 146899248,
     "physical_active_parameters": 54001968,
     "total_parameters_formatted": "146,899,248",
-    "active_parameters_formatted": "54,001,968"
+    "active_parameters_formatted": "54,001,968",
+    "unique_architectural_parameters": 146899248,
+    "materialized_gguf_parameters": 165349680
   },
   "vocabulary_alignment": {
     "gguf_vocab_size": 32032,
@@ -53,7 +55,7 @@
     "input_decoded": [
       "<|bos|>",
       "<think>",
-      "token_25",
+      "<0x16>",
       "</think>",
       "<|eos|>"
     ],
@@ -66,7 +68,8 @@
     "greedy_token_id": 2,
     "eos_token_id": 2,
     "eos_handling_verified": true,
-    "status": "PASS"
+    "status": "PASS",
+    "llama_cpp_load_status": "VERIFIED_DEEPSEEK2_GRAPH"
   },
   "audit_command": "sha256sum mark_slm_v3_150m_iq4_nl.gguf && python3 -c \"import gguf; r = gguf.GGUFReader('mark_slm_v3_150m_iq4_nl.gguf'); print('vocab:', r.get_field('deepseek2.vocab_size').parts[-1].tolist()[0])\""
 }

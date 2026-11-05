@@ -15,7 +15,7 @@ MODEL_CONFIGS = [
         "name": "Mark-Engineer-302M",
         "slug": "mark-engineer-302m",
         "hf_repo": "miceworks/Mark-Engineer-302M",
-        "gguf_path": Path("/mnt/ssd_1/mark ai/checkpoints/mark_engineer_302m_iq4_nl.gguf"),
+        "gguf_path": Path("./checkpoints/mark_engineer_302m_iq4_nl.gguf"),
         "role": "Edge experimental systems micro-model",
         "trained": True,
         "description": "Compact edge testbed featuring DeepSeek2 native MoE (16 routed, 1 shared, top-2 active) and Multi-Head Latent Attention (MLA).",
@@ -24,7 +24,7 @@ MODEL_CONFIGS = [
         "name": "Mark-SLM-V2-302M",
         "slug": "mark-slm-v2-302m",
         "hf_repo": "miceworks/Mark-SLM-V2-302M",
-        "gguf_path": Path("/mnt/ssd_1/mark ai/checkpoints/mark_slm_v2_302m_iq4_nl.gguf"),
+        "gguf_path": Path("./checkpoints/mark_slm_v2_302m_iq4_nl.gguf"),
         "role": "Small Language Model base",
         "trained": False,
         "description": "Architectural base container featuring 16 layers of DeepSeek2 MoE and MLA for small language model exploration.",
@@ -33,7 +33,7 @@ MODEL_CONFIGS = [
         "name": "Mark-Engineer-1.5B",
         "slug": "mark-engineer-1.5b",
         "hf_repo": "miceworks/Mark-Engineer-1.5B",
-        "gguf_path": Path("/mnt/ssd_1/mark ai/checkpoints/mark_engineer_1_5b_iq4_nl.gguf"),
+        "gguf_path": Path("./checkpoints/mark_engineer_1_5b_iq4_nl.gguf"),
         "role": "Systems engineering and low-level software design",
         "trained": True,
         "description": "Foundational systems engineering model trained on low-level kernels, concurrency primitives, and systems code.",
@@ -42,7 +42,7 @@ MODEL_CONFIGS = [
         "name": "Mark-General-1.5B",
         "slug": "mark-general-1.5b",
         "hf_repo": "miceworks/Mark-General-1.5B",
-        "gguf_path": Path("/mnt/ssd_1/mark ai/checkpoints/mark_general_1_5b_iq4_nl.gguf"),
+        "gguf_path": Path("./checkpoints/mark_general_1_5b_iq4_nl.gguf"),
         "role": "General reasoning and STEM baseline",
         "trained": True,
         "description": "General domain reasoning model integrating DeepSeek2 MoE and compressed KV cache via MLA.",
@@ -51,19 +51,19 @@ MODEL_CONFIGS = [
         "name": "Mark-VL-2.2B",
         "slug": "mark-vl-2.2b",
         "hf_repo": "miceworks/Mark-VL-2.2B",
-        "gguf_path": Path("/mnt/ssd_1/mark ai/checkpoints/mark_vl_2_2b_iq4_nl.gguf"),
+        "gguf_path": Path("./checkpoints/mark_vl_2_2b_iq4_nl.gguf"),
         "role": "Multimodal vision-language model",
         "trained": True,
         "description": "Vision-language model combining DeepSeek2 language backbone with multimodal projector (mmproj).",
         "extra_hf_files": [
-            (Path("/mnt/ssd_1/mark ai/checkpoints/mark_vl_2_2b/mmproj_mark_vl_2_2b.gguf"), "mmproj_mark_vl_2_2b.gguf")
+            (Path("./checkpoints/mark_vl_2_2b/mmproj_mark_vl_2_2b.gguf"), "mmproj_mark_vl_2_2b.gguf")
         ],
     },
     {
         "name": "Mark-Engineer-V2-8B",
         "slug": "mark-engineer-v2-8b",
         "hf_repo": "miceworks/Mark-Engineer-V2-8B",
-        "gguf_path": Path("/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v2_8b_iq4_nl.gguf"),
+        "gguf_path": Path("./checkpoints/mark_engineer_v2_8b_iq4_nl.gguf"),
         "role": "High-capacity systems engineering base",
         "trained": False,
         "description": "8.26B parameter DeepSeek2 MoE architectural base with 32 layers and 24 routed experts.",
@@ -72,7 +72,7 @@ MODEL_CONFIGS = [
         "name": "Mark-SLM-V3-150M",
         "slug": "mark-slm-v3-150m",
         "hf_repo": "miceworks/Mark-SLM-V3-150M",
-        "gguf_path": Path("/mnt/ssd_1/mark ai/checkpoints/mark_slm_v3_150m_iq4_nl.gguf"),
+        "gguf_path": Path("./checkpoints/mark_slm_v3_150m_iq4_nl.gguf"),
         "role": "Ultra-lightweight edge V3 base",
         "trained": False,
         "description": "Mark V3 generation micro-model with Hadamard-fused projections and DeepSeek2 MoE routing.",
@@ -81,7 +81,7 @@ MODEL_CONFIGS = [
         "name": "Mark-V3-1.1B",
         "slug": "mark-v3-1.1b",
         "hf_repo": "miceworks/Mark-V3-1.1B",
-        "gguf_path": Path("/mnt/ssd_1/mark ai/checkpoints/mark_v3_1_1b_iq4_nl.gguf"),
+        "gguf_path": Path("./checkpoints/mark_v3_1_1b_iq4_nl.gguf"),
         "role": "Balanced V3 foundation base",
         "trained": False,
         "description": "Mark V3 architecture base with 32 routed experts, 2 shared experts, and top-4 routing.",
@@ -90,7 +90,7 @@ MODEL_CONFIGS = [
         "name": "Mark-General-V3-1.5B",
         "slug": "mark-general-v3-1.5b",
         "hf_repo": "miceworks/Mark-General-V3-1.5B",
-        "gguf_path": Path("/mnt/ssd_1/mark ai/checkpoints/mark_general_v3_1_5b_iq4_nl.gguf"),
+        "gguf_path": Path("./checkpoints/mark_general_v3_1_5b_iq4_nl.gguf"),
         "role": "General cognitive V3 base",
         "trained": False,
         "description": "1.52B parameter V3 base with 18 layers, 32 routed experts, and 2 shared experts.",
@@ -99,7 +99,7 @@ MODEL_CONFIGS = [
         "name": "Mark-Engineer-V3-1.5B",
         "slug": "mark-engineer-v3-1.5b",
         "hf_repo": "miceworks/Mark-Engineer-V3-1.5B",
-        "gguf_path": Path("/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v3_1_5b_iq4_nl.gguf"),
+        "gguf_path": Path("./checkpoints/mark_engineer_v3_1_5b_iq4_nl.gguf"),
         "role": "Advanced systems engineering V3 base",
         "trained": False,
         "description": "1.52B parameter V3 engineering base with clan-scoped routing and DeepSeek2 compatibility.",
@@ -108,7 +108,7 @@ MODEL_CONFIGS = [
         "name": "Mark-Experimental-V3-8B",
         "slug": "mark-experimental-v3-8b",
         "hf_repo": "miceworks/Mark-Experimental-V3-8B",
-        "gguf_path": Path("/mnt/ssd_1/mark ai/checkpoints/mark_experimental_v3_8b_iq4_nl.gguf"),
+        "gguf_path": Path("./checkpoints/mark_experimental_v3_8b_iq4_nl.gguf"),
         "role": "Large-scale V3 experimental base",
         "trained": False,
         "description": "8.17B parameter V3 flagship base featuring 32 layers, 32 routed experts, 2 shared experts, and top-4 routing.",
@@ -370,7 +370,7 @@ def create_hf_space():
     space_id = "miceworks/Mark-Engineer-1.5B-Space"
     api.create_repo(repo_id=space_id, repo_type="space", space_sdk="static", exist_ok=True)
 
-    space_dir = Path("/home/thu12/.cache/mark_hf_space")
+    space_dir = Path("./.cache/mark_hf_space")
     space_dir.mkdir(parents=True, exist_ok=True)
 
     index_html = """<!DOCTYPE html>
@@ -514,7 +514,7 @@ cat mark_experimental_v3_8b_iq4_nl.gguf.part-* > mark_experimental_v3_8b_iq4_nl.
                 p.unlink()
 
     # Also upload mmproj for Mark-VL if available
-    mmproj = Path("/mnt/ssd_1/mark ai/checkpoints/mark_vl_2_2b/mmproj_mark_vl_2_2b.gguf")
+    mmproj = Path("./checkpoints/mark_vl_2_2b/mmproj_mark_vl_2_2b.gguf")
     if mmproj.exists():
         print(f"     Uploading {mmproj.name}...")
         subprocess.run(["gh", "release", "upload", tag, str(mmproj), "--clobber"], check=True)

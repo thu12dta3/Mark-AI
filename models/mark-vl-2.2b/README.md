@@ -23,9 +23,9 @@ tags:
 
 ## Overview
 
-Mark-VL-2.2B is an experimental vision-language model pairing an AnyRes SigLIP vision encoder with a 14-layer DeepSeek2 MoE language model backbone. It uses 2D Rotary Position Embeddings (2D-RoPE) and a 2x2 PixelShuffle projection adapter to process images alongside text.
+Mark-VL-2.2B is an experimental vision-language architecture pairing an AnyRes SigLIP vision encoder definition with a 14-layer DeepSeek2 MoE language model backbone. It uses 2D Rotary Position Embeddings (2D-RoPE) and a 2x2 PixelShuffle projection adapter in its PyTorch architectural formulation.
 
-The model contains 2,174,310,096 total parameters and 395.50M active parameters per token. The language model binary occupies 1166.72 MiB (1223.40 MB / 1,223,397,152 bytes) in IQ4_NL, operating within 8 GB VRAM limits alongside the mmproj visual adapter (800.44 MiB / 839.33 MB / 839,325,760 bytes).
+The model contains 2,174,310,096 total parameters and 395.50M active parameters per token. The language model binary occupies 1166.72 MiB (1223.40 MB / 1,223,397,152 bytes) in IQ4_NL.
 
 ## Specifications
 
@@ -35,7 +35,7 @@ The model contains 2,174,310,096 total parameters and 395.50M active parameters 
 | Training Status | `EXPERIMENTAL_NARROW_CHECKPOINT` |
 | Weight State Label | `Experimental Narrow Checkpoint` |
 | Binary Size | `1166.72 MiB (1223.40 MB / 1,223,397,152 bytes)` |
-| Total Parameters | `2,174,310,096` (2174310096 physical) |
+| Total Parameters | `2,174,310,096` (2174310096 physical across 255 tensors) |
 | Active Parameters | `395,499,216` (395499216 active) |
 | Vocabulary Size | `32000` |
 | Layers | `14` |
@@ -50,7 +50,7 @@ The model contains 2,174,310,096 total parameters and 395.50M active parameters 
 
 ## Architecture
 
-### Multi-Head Latent Attention (MLA & H-MLA)
+### Multi-Head Latent Attention (MLA)
 
 The model projects key and value states into a shared low-rank latent representation to decouple memory scaling from context length:
 
@@ -71,7 +71,7 @@ k_t  = [k_C ; k_R]
 
 ### KV Cache Memory Usage
 
-Physical memory consumption of the KV cache per token:
+Physical memory consumption of the KV cache per token in FP16:
 
 `KV_bytes_per_token = 14 * (320 + 32) * 2 = 9,856 bytes/token`
 
@@ -81,7 +81,7 @@ Physical memory consumption of the KV cache per token:
 | 8,192 tokens | 77.00 MiB | 672.00 MiB | 8.7x |
 | 32,768 tokens | 308.00 MiB | 2688.00 MiB | 8.7x |
 
-### Mixture-of-Experts (PB-MoE & Aux-Loss-Free Routing)
+### Mixture-of-Experts (Aux-Loss-Free Routing)
 
 - **Shared Experts (1S)**: Constantly active path for common representations:
   $$F_{\text{shared}}(x) = (\text{SiLU}(x W_{\text{gate}}) \odot (x W_{\text{up}})) W_{\text{down}}$$
@@ -115,13 +115,13 @@ The visual architecture integrates an AnyRes SigLIP visual encoder with Spatial 
 ## Training Pipeline and Reproducibility
 
 - Training Code: Official pipelines and architecture implementations are maintained in the [Mark-AI scripts directory](https://github.com/thu12dta3/Mark-AI/tree/main/scripts).
-- Curricula and Datasets: Trained on open datasets hosted on the Hugging Face Hub, including [miceworks/Mark-Ultra-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Ultra-Curriculum), [miceworks/Mark-Open-SLM-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Open-SLM-Curriculum), and [miceworks/Mark-Cyber-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Cyber-Curriculum).
+- Curricula and Datasets: Trained on open datasets hosted on the Hugging Face Hub, including [miceworks/Mark-Open-SLM-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Open-SLM-Curriculum), [miceworks/Mark-Cyber-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Cyber-Curriculum), and [miceworks/Mark-Ultra-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Ultra-Curriculum).
 - Optimization Settings: AdamW optimizer ($\beta_1 = 0.9, \beta_2 = 0.95$, weight decay $0.1$, gradient clipping $1.0$).
-- Training Scope: Experimental narrow multimodal checkpoint (EXPERIMENTAL_NARROW_CHECKPOINT). Trained on diagrammatic pairs and technical schematics from miceworks/Mark-Ultra-Curriculum. The repository provides the primary IQ4_NL language container (mark_vl_2_2b_iq4_nl.gguf), the vision adapter (mmproj_mark_vl_2_2b.gguf), and the legacy Q4_K_M artifact.
+- Training Scope: Experimental narrow multimodal checkpoint (EXPERIMENTAL_NARROW_CHECKPOINT). Trained on narrow diagrammatic pairs and technical schematics from miceworks/Mark-Ultra-Curriculum.
 
 ## Evaluation and Benchmark Results
 
-Evaluated on OCR, schematic reading, and diagram analysis with spatial 2D-RoPE coordinate alignment.
+Evaluated on narrow schematic reading and spatial 2D-RoPE coordinate alignment in PyTorch.
 
 ## Tokenizer and Vocabulary Specification
 
@@ -136,34 +136,29 @@ Evaluated on OCR, schematic reading, and diagram analysis with spatial 2D-RoPE c
 
 ## Limitations and Intended Use
 
-- Parameter Scale Constraints: While sparse MoE routing enables execution within consumer VRAM budgets, absolute capacity is bounded by physical parameter counts.
-- Recommended Deployment: For mission-critical production environments, deploy alongside external verification mechanisms such as compiler validation or unit test runners.
-- Safety and Boundary Enforcement: Models trained on systems and cybersecurity datasets are intended for defensive research, vulnerability auditing, patch validation, and systems engineering.
+- Architectural Research Scope: This model is an experimental architectural testbed for Multi-Head Latent Attention (MLA) and fine-grained MoE on 8 GB GPUs such as NVIDIA GeForce RTX 2060 Super (8 GB GDDR6, 256-bit, 448 GB/s), NOT a general-purpose conversational or multilingual assistant.
+- In-Distribution Curriculum Learning: Benchmark scores on `Mark-SLM-V3-150M` measure in-distribution learning on `miceworks/Mark-Open-SLM-Curriculum` (which includes official benchmark training splits permitted under Open SLM Leaderboard rules) rather than open-ended out-of-distribution generalization.
+- Parameter Scale Constraints: Absolute world knowledge and zero-shot reasoning capacity are bounded by compact parameter counts.
 
 ### Running Benchmarks on TPN Workbench and lm-evaluation-harness
 
 When running automated benchmarks on TPN Workbench, lm-evaluation-harness, LM Studio, or Hugging Face evaluation runners:
 - Select **Format: gguf** (or **Backend: llama.cpp**).
-- Do not evaluate via raw Python `transformers` with `safetensors` or `trust_remote_code=True`, because the native `deepseek2` H-MLA and fine-grained 3D MoE graph executes directly inside the optimized C++/CUDA kernels of `llama.cpp`. Native GGUF execution guarantees bit-exact logits, zero Python dependency overhead, and full hardware acceleration.
+- Do not evaluate via raw Python `transformers` with `safetensors` or `trust_remote_code=True`, because the native `deepseek2` MLA and fine-grained 3D MoE graph executes directly inside the C++/CUDA kernels of `llama.cpp`.
 
 ## Usage: Narrow Domain and Systems Engineering Verification
 
-This checkpoint is an experimental narrow checkpoint trained on specific low-level or systems engineering distributions. Outside its narrow domain, greedy inference may produce fragmented outputs.
+This checkpoint is an experimental narrow checkpoint trained on specific low-level or systems engineering distributions. Outside its narrow domain, greedy inference produces fragmented outputs.
 
-### Download and Checksum Verification
+### Cryptographic Verification
 
 ```bash
-# Using huggingface-cli
-huggingface-cli download miceworks/Mark-VL-2.2B mark_vl_2_2b_iq4_nl.gguf --local-dir .
-
-# Cryptographic verification
 echo "073d3c00eaadfb98ef7c8b5276e355db134b4b1282ea74d8ce3d6116535cf354  mark_vl_2_2b_iq4_nl.gguf" | sha256sum -c -
 ```
 
 ### Execution with llama.cpp
 
 ```bash
-# Systems prompt execution
 llama-cli -m mark_vl_2_2b_iq4_nl.gguf \
   -p "Systems engineering stub: Implement a POSIX mutex initialization routine.\nCode:" \
   -n 128 --temp 0.2

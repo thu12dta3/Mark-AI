@@ -1,14 +1,9 @@
 FROM ./mark_slm_3m_iq4_nl.gguf
 
-TEMPLATE """{{ if .System }}System: {{ .System }}
-{{ end }}{{ if .Prompt }}User: {{ .Prompt }}
-{{ end }}Assistant: {{ .Response }}"""
+TEMPLATE """{{ .Prompt }}"""
 
 PARAMETER stop "<|eos|>"
 PARAMETER stop "<|pad|>"
-PARAMETER stop "<|bos|>"
-PARAMETER temperature 0.6
+PARAMETER temperature 0.2
 PARAMETER top_p 0.9
-PARAMETER repeat_penalty 1.15
-
-SYSTEM """You are Mark-SLM-3M, an ultra-compact language model under 3 million parameters based on DeepSeek2 architecture."""
+PARAMETER repeat_penalty 1.1

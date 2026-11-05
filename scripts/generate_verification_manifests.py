@@ -30,9 +30,9 @@ MODELS = [
     {
         "id": "mark-engineer-302m",
         "name": "Mark-Engineer-302M",
-        "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_engineer_302m_iq4_nl.gguf",
+        "gguf_path": "./checkpoints/mark_engineer_302m_iq4_nl.gguf",
         "gguf_filename": "mark_engineer_302m_iq4_nl.gguf",
-        "weight_state": "TRAINED_CHECKPOINT_VALIDATED",
+        "weight_state": "EXPERIMENTAL_NARROW_CHECKPOINT",
         "pt_class": "MarkModel",
         "pt_cfg_fn": lambda: MarkConfig.create_engineer_300m(vocab_size=4311),
         "is_vl": False,
@@ -40,9 +40,9 @@ MODELS = [
     {
         "id": "mark-slm-v2-302m",
         "name": "Mark-SLM-V2-302M",
-        "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_slm_v2_302m_iq4_nl.gguf",
+        "gguf_path": "./checkpoints/mark_slm_v2_302m_iq4_nl.gguf",
         "gguf_filename": "mark_slm_v2_302m_iq4_nl.gguf",
-        "weight_state": "TRAINED_CHECKPOINT_VALIDATED",
+        "weight_state": "EXPERIMENTAL_NARROW_CHECKPOINT",
         "pt_class": "MarkSLMV2Model",
         "pt_cfg_fn": lambda: MarkSLMV2Config(),
         "is_vl": False,
@@ -50,9 +50,9 @@ MODELS = [
     {
         "id": "mark-engineer-1.5b",
         "name": "Mark-Engineer-1.5B",
-        "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_engineer_1_5b_iq4_nl.gguf",
+        "gguf_path": "./checkpoints/mark_engineer_1_5b_iq4_nl.gguf",
         "gguf_filename": "mark_engineer_1_5b_iq4_nl.gguf",
-        "weight_state": "TRAINED_CHECKPOINT_VALIDATED",
+        "weight_state": "EXPERIMENTAL_NARROW_CHECKPOINT",
         "pt_class": "MarkModel",
         "pt_cfg_fn": lambda: MarkConfig.create_engineer_1_5b(vocab_size=4311),
         "is_vl": False,
@@ -60,9 +60,9 @@ MODELS = [
     {
         "id": "mark-general-1.5b",
         "name": "Mark-General-1.5B",
-        "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_general_1_5b_iq4_nl.gguf",
+        "gguf_path": "./checkpoints/mark_general_1_5b_iq4_nl.gguf",
         "gguf_filename": "mark_general_1_5b_iq4_nl.gguf",
-        "weight_state": "TRAINED_CHECKPOINT_VALIDATED",
+        "weight_state": "EXPERIMENTAL_NARROW_CHECKPOINT",
         "pt_class": "MarkModel",
         "pt_cfg_fn": lambda: MarkConfig.create_general_1_5b(vocab_size=4377),
         "is_vl": False,
@@ -70,9 +70,9 @@ MODELS = [
     {
         "id": "mark-vl-2.2b",
         "name": "Mark-VL-2.2B",
-        "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_vl_2_2b_iq4_nl.gguf",
+        "gguf_path": "./checkpoints/mark_vl_2_2b_iq4_nl.gguf",
         "gguf_filename": "mark_vl_2_2b_iq4_nl.gguf",
-        "weight_state": "TRAINED_CHECKPOINT_VALIDATED",
+        "weight_state": "EXPERIMENTAL_NARROW_CHECKPOINT",
         "pt_class": "MarkVLForCausalLM",
         "pt_cfg_fn": lambda: MarkVL2_2BConfig(),
         "is_vl": True,
@@ -80,9 +80,9 @@ MODELS = [
     {
         "id": "mark-engineer-v2-8b",
         "name": "Mark-Engineer-V2-8B",
-        "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v2_8b_iq4_nl.gguf",
+        "gguf_path": "./checkpoints/mark_engineer_v2_8b_iq4_nl.gguf",
         "gguf_filename": "mark_engineer_v2_8b_iq4_nl.gguf",
-        "weight_state": "UN-TRAINED_ARCHITECTURAL_BASE",
+        "weight_state": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
         "pt_class": "MarkEngineerV2Model",
         "pt_cfg_fn": lambda: MarkEngineerV2Config(),
         "is_vl": False,
@@ -90,7 +90,7 @@ MODELS = [
     {
         "id": "mark-slm-v3-150m",
         "name": "Mark-SLM-V3-150M",
-        "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_slm_v3_150m_iq4_nl.gguf",
+        "gguf_path": "./checkpoints/mark_slm_v3_150m_iq4_nl.gguf",
         "gguf_filename": "mark_slm_v3_150m_iq4_nl.gguf",
         "weight_state": "TRAINED_MODEL_SOUP_25K_BASE_4K_COOLDOWN",
         "pt_class": "MarkV3ForCausalLM",
@@ -100,9 +100,9 @@ MODELS = [
     {
         "id": "mark-v3-1.1b",
         "name": "Mark-V3-1.1B",
-        "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_v3_1_1b_iq4_nl.gguf",
+        "gguf_path": "./checkpoints/mark_v3_1_1b_iq4_nl.gguf",
         "gguf_filename": "mark_v3_1_1b_iq4_nl.gguf",
-        "weight_state": "UN-TRAINED_ARCHITECTURAL_BASE",
+        "weight_state": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
         "pt_class": "MarkV3ForCausalLM",
         "pt_cfg_fn": lambda: MarkV3Config.create_v3_1_1b(),
         "is_vl": False,
@@ -110,9 +110,9 @@ MODELS = [
     {
         "id": "mark-general-v3-1.5b",
         "name": "Mark-General-V3-1.5B",
-        "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_general_v3_1_5b_iq4_nl.gguf",
+        "gguf_path": "./checkpoints/mark_general_v3_1_5b_iq4_nl.gguf",
         "gguf_filename": "mark_general_v3_1_5b_iq4_nl.gguf",
-        "weight_state": "UN-TRAINED_ARCHITECTURAL_BASE",
+        "weight_state": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
         "pt_class": "MarkV3ForCausalLM",
         "pt_cfg_fn": lambda: MarkV3Config.create_general_v3_1_5b(),
         "is_vl": False,
@@ -120,9 +120,9 @@ MODELS = [
     {
         "id": "mark-engineer-v3-1.5b",
         "name": "Mark-Engineer-V3-1.5B",
-        "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v3_1_5b_iq4_nl.gguf",
+        "gguf_path": "./checkpoints/mark_engineer_v3_1_5b_iq4_nl.gguf",
         "gguf_filename": "mark_engineer_v3_1_5b_iq4_nl.gguf",
-        "weight_state": "UN-TRAINED_ARCHITECTURAL_BASE",
+        "weight_state": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
         "pt_class": "MarkV3ForCausalLM",
         "pt_cfg_fn": lambda: MarkV3Config.create_engineer_v3_1_5b(),
         "is_vl": False,
@@ -130,9 +130,9 @@ MODELS = [
     {
         "id": "mark-general-v3-8b",
         "name": "Mark-General-V3-8B",
-        "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_general_v3_8b_iq4_nl.gguf",
+        "gguf_path": "./checkpoints/mark_general_v3_8b_iq4_nl.gguf",
         "gguf_filename": "mark_general_v3_8b_iq4_nl.gguf",
-        "weight_state": "UN-TRAINED_ARCHITECTURAL_BASE",
+        "weight_state": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
         "pt_class": "MarkV3ForCausalLM",
         "pt_cfg_fn": lambda: MarkV3Config.create_general_v3_8b(),
         "is_vl": False,
@@ -140,9 +140,9 @@ MODELS = [
     {
         "id": "mark-experimental-v3-8b",
         "name": "Mark-Experimental-V3-8B",
-        "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_experimental_v3_8b_iq4_nl.gguf",
+        "gguf_path": "./checkpoints/mark_experimental_v3_8b_iq4_nl.gguf",
         "gguf_filename": "mark_experimental_v3_8b_iq4_nl.gguf",
-        "weight_state": "UN-TRAINED_ARCHITECTURAL_BASE",
+        "weight_state": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
         "pt_class": "MarkV3ForCausalLM",
         "pt_cfg_fn": lambda: MarkV3Config.create_experimental_v3_8b(),
         "is_vl": False,
@@ -197,7 +197,7 @@ def test_pytorch_architecture(spec: dict, target_vocab_size: int):
     return {
         "pytorch_class": pt_class_name,
         "input_tokens": [1, 3, 25, 4, 2],
-        "input_decoded": ["<|bos|>", "<think>", "token_25", "</think>", "<|eos|>"],
+        "input_decoded": ["<|bos|>", "<think>", "(", "</think>", "<|eos|>"],
         "output_shape": shape,
         "finite_logits": is_finite,
         "greedy_token_id": next_tok,
@@ -384,7 +384,7 @@ def generate_manifests():
             "architecture": arch,
             "training_status": (
                 "Trained Checkpoint (Validated)"
-                if spec["weight_state"] == "TRAINED_CHECKPOINT_VALIDATED"
+                if spec["weight_state"] == "EXPERIMENTAL_NARROW_CHECKPOINT"
                 else "Untrained Architectural Base (IQ4_NL)"
             ),
             "total_tensors": len(reader.tensors),

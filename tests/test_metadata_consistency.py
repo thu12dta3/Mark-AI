@@ -142,9 +142,9 @@ def test_modelfile_token_integrity(model_id):
     # Stop parameter must be <|eos|>
     assert 'PARAMETER stop "<|eos|>"' in mf, f"Missing PARAMETER stop \"<|eos|>\" in {model_id}/Modelfile"
 
-    # For Mark-VL-2.2B, check ADAPTER
+    # For Mark-VL-2.2B, ensure redistributed mmproj is not referenced
     if model_id == "mark-vl-2.2b":
-        assert "ADAPTER ./mmproj_mark_vl_2_2b.gguf" in mf, "Missing ADAPTER in mark-vl-2.2b Modelfile"
+        assert "mmproj_mark_vl_2_2b.gguf" not in mf, "Redistributed mmproj found in mark-vl-2.2b Modelfile"
 
 
 def test_root_readme_consistency():

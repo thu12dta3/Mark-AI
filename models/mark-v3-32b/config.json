@@ -38,7 +38,7 @@
   "specialization": "Ultra-Flagship Generalist, Autonomous Agentic Tool-Calling, 1M Long-Context Analysis",
   "total_parameters": 31989012480,
   "active_parameters_per_token": 3677387904,
-  "weight_state": "TRAINED_CHECKPOINT",
+  "weight_state": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
   "target_platforms": [
     "Ollama",
     "LM Studio",

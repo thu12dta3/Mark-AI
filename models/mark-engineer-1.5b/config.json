@@ -41,6 +41,6 @@
     "pt_url": "https://github.com/thu12dta3/Mark-AI/releases/download/v1.0.0-engineer-1.5b/mark_engineer_1_5b_iq4_nl.pt",
     "sha256": "fa7d3061f33a20beaae5c2b85aceaf720c75b811efd8bceae0c57c57037e838e"
   },
-  "weight_state": "TRAINED_CHECKPOINT_VALIDATED",
+  "weight_state": "EXPERIMENTAL_NARROW_CHECKPOINT",
   "sha256": "fa7d3061f33a20beaae5c2b85aceaf720c75b811efd8bceae0c57c57037e838e"
 }
