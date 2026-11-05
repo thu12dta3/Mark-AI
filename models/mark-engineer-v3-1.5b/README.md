@@ -4,7 +4,6 @@ library_name: gguf
 pipeline_tag: text-generation
 language:
   - en
-  - pt
 datasets:
   - miceworks/Mark-Ultra-Curriculum
 tags:
@@ -16,23 +15,23 @@ tags:
   - iq4_nl
   - mark-ai
   - systems-engineering
-  - conversational
 ---
 
 # Mark-Engineer-V3-1.5B
 
 ## Overview
 
-Mark-Engineer-V3-1.5B is a systems engineering variant with 1,520,496,960 total physical parameters and 405.73M active parameters per token. It uses 32 routed experts, 2 shared experts, and domain soft-pinning configured for code generation, compilers, and kernel internals.
+Mark-Engineer-V3-1.5B is an experimental narrow checkpoint with 1,520,496,960 total physical parameters and 405.73M active parameters per token across 18 layers. It uses 32 routed experts and 2 shared experts.
 
-Quantized in IQ4_NL, the container occupies 816.95 MiB (856.63 MB / 856,632,832 bytes), leaving ample VRAM on 8 GB GPUs for large source code files.
+Quantized in IQ4_NL, the container occupies 816.95 MiB (856.63 MB / 856,632,832 bytes). Note: This is an experimental checkpoint trained briefly with a 4,311-token base vocabulary; outside its narrow systems domain, greedy inference produces incoherent fragments.
 
 ## Specifications
 
 | Field | Value |
 | :--- | :--- |
 | Architecture | `deepseek2` |
-| Training Status | `TRAINED_CHECKPOINT` |
+| Training Status | `EXPERIMENTAL_NARROW_CHECKPOINT` |
+| Weight State Label | `Experimental Narrow Checkpoint` |
 | Binary Size | `816.95 MiB (856.63 MB / 856,632,832 bytes)` |
 | Total Parameters | `1,520,496,960` (1520496960 physical) |
 | Active Parameters | `405,729,600` (405729600 active) |
@@ -68,20 +67,6 @@ q_t  = [q_C ; q_R]
 k_t  = [k_C ; k_R]
 ```
 
-In the V3 architecture, **Hadamard-MLA (H-MLA)** suppresses latent activation outliers by absorbing the normalized orthogonal Walsh-Hadamard transform:
-
-$$H_d = \frac{1}{\sqrt{d}} H_2^{\otimes \log_2 d}$$
-
-(where $H_d^T = H_d$ and $H_d^2 = I$, e.g., $H_{256}$) directly into key-value projection weights ($W_{wkv\_a}$ and $W_{wkv\_b}$) during compilation. This offline fusion eliminates activation outliers without adding runtime execution overhead.
-
-#### H-MLA Numerical Ablation (IQ4_NL Quantization)
-
-| Metric | Standard MLA | Hadamard-MLA (H-MLA) | Delta / Impact |
-| :--- | :---: | :---: | :---: |
-| Latent Activation Kurtosis ($\kappa$) | 46.8 (Heavy Outliers) | 3.02 (Sub-Gaussian) | Outlier-Free Latents |
-| IQ4_NL Reconstruction MSE | $2.14 \times 10^{-3}$ | $7.83 \times 10^{-4}$ | -63.4% Quantization Error |
-| Runtime Latency Overhead | 0.00 ms | 0.00 ms | Zero Runtime Cost (Offline Fused) |
-
 ### KV Cache Memory Usage
 
 Physical memory consumption of the KV cache per token:
@@ -102,11 +87,15 @@ Physical memory consumption of the KV cache per token:
 
 #### Aux-Loss-Free Routing Equation
 
-Router biases update per step to prevent expert collapse without penalizing primary task loss:
+Router biases update per step to prevent expert collapse without penalizing primary task loss using the exact sign-based rule:
 
-$$b_i \leftarrow b_i + \gamma (\bar{f} - f_i)$$
+$$b_i \leftarrow b_i + \gamma \cdot \operatorname{sign}(\bar{f} - f_i)$$
 
-where $\gamma = 0.001$, $f_i$ is empirical expert frequency within the batch, and $\bar{f}$ is target uniform frequency. Load balancing telemetry across production runs demonstrates an expert utilization coefficient of variation (CV) $< 4.2\%$ and a token drop rate of $0.0\%$.
+where $\gamma = 0.001$, $f_i$ is empirical expert frequency within the batch, and $\bar{f}$ is target uniform frequency.
+
+Router bias vectors (`blk.{l}.exp_probs_b.bias`) are stored in FP32 precision. Measured disk telemetry from the IQ4_NL container:
+- Bias Parameters: 576 FP32 parameters across 18 MoE layers (32 routed experts each)
+- Measured Values: min = 0.8760, mean = 2.2283, max = 2.9219
 
 #### Domain Clan Partitioning
 
@@ -116,57 +105,45 @@ The 32 routed experts are partitioned into 4 functional clans (8 experts per cla
 - **Clan 2 (Experts 16-23)**: Cybersecurity, vulnerability assessment, protocol enforcement, and defense.
 - **Clan 3 (Experts 24-31)**: Structured Data, Tool Calling, and Symbolic Logic.
 
-PB-MoE provides structural logit partitioning and soft-pinning constraints (`top_k` allocation reserving $k-1$ slots for the primary domain clan and $1$ slot for cross-clan cooperation) paired with domain-tagged curriculum batches during training on `Mark-Ultra-Curriculum`, `Mark-Open-SLM-Curriculum`, and `Mark-Cyber-Curriculum`.
+### Experimental PyTorch Research Extensions (Not Active in llama.cpp GGUF Runtime)
 
-### Latent Recursive Depth (LRD)
+The following architectural mechanisms are research extensions implemented in the PyTorch reference codebase (`src/model/mark_v3_arch.py`) and are not active in the compiled C++/CUDA feed-forward DAG of the `llama.cpp` GGUF runtime:
 
-The model features Latent Recursive Depth structured across a three-stage topology:
-1. **Syntactic Stem**: Layers $0..s-1$ project raw token embeddings into stable latent manifold spaces.
-2. **Recursive Reasoning Core**: Layers $s..e-1$ looped across $L_{\text{core}} = 2$ recurrent iterations.
-3. **Symbolic Exit Decoder**: Layers $e..N-1$ project convergent representations into the final vocabulary logits.
+1. **Latent Recursive Depth (LRD)**:
+   In PyTorch, intermediate core layers (layers $s..e-1$) execute across $L_{\text{core}} = 2$ recurrent iterations using residual anchoring:
+   $$h^{(r+1)}_l = \text{Block}_l(h^{(r)}_l + 0.5 \cdot h_{\text{stem}})$$
+   In `llama.cpp`, GGUF execution is strictly feed-forward (single sequential pass through layers $0..N-1$).
 
-The recurrent state update employs residual anchoring:
-
-$$h^{(r+1)}_l = \text{Block}_l(h^{(r)}_l + \alpha \cdot h_{\text{stem}})$$
-
-State representations evolve across recurrent passes with zero-copy KV cache slot reuse, eliminating additional memory allocation during iterative reasoning.
+2. **PB-MoE Soft-Pinning Constraints**:
+   During PyTorch curriculum training, clan logit constraints reserve routing slots for domain specialists. In `llama.cpp`, routing executes via standard Top-K selection over the learned router bias affinities:
+   $$s_{i,t} = \sigma(u_t^T e_i) + b_i$$
 
 ## Training Pipeline and Reproducibility
 
 - Training Code: Official pipelines and architecture implementations are maintained in the [Mark-AI scripts directory](https://github.com/thu12dta3/Mark-AI/tree/main/scripts).
 - Curricula and Datasets: Trained on open datasets hosted on the Hugging Face Hub, including [miceworks/Mark-Ultra-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Ultra-Curriculum), [miceworks/Mark-Open-SLM-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Open-SLM-Curriculum), and [miceworks/Mark-Cyber-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Cyber-Curriculum).
-- Optimization Settings: AdamW optimizer ($\beta_1 = 0.9, \beta_2 = 0.95$, weight decay $0.1$, gradient clipping $1.0$), paired with cosine / WSD decay learning rate schedules.
-- Training Scope: Trained checkpoint (TRAINED_CHECKPOINT). SVD Upcycled from a 5.5T-token prior representation and further trained for 5,000 optimization steps on miceworks/Mark-Ultra-Curriculum on Kaggle Cloud 2x Tesla T4 GPUs.
+- Optimization Settings: AdamW optimizer ($\beta_1 = 0.9, \beta_2 = 0.95$, weight decay $0.1$, gradient clipping $1.0$).
+- Training Scope: Experimental narrow checkpoint (EXPERIMENTAL_NARROW_CHECKPOINT). Trained briefly on systems engineering stubs from miceworks/Mark-Ultra-Curriculum. Unverified claims regarding upstream training priors and synthetic benchmark evaluations have been formally retracted.
 
 ## Evaluation and Benchmark Results
 
-Official Coding and Systems Engineering Benchmarks:
-- EvalPlus HumanEval+ pass@1 (Base): 51.80%
-- EvalPlus HumanEval+ pass@1 (Base + Extra): 46.30%
-- EvalPlus MBPP+ pass@1 (Base): 58.50%
-- EvalPlus MBPP+ pass@1 (Base + Extra): 50.50%
-- MultiPL-E Rust (humaneval-rs): 43.60%
-- MultiPL-E C++ (humaneval-cpp): 47.80%
-- MultiPL-E Systems Average: 45.70%
-- BFCL AST Exact Match: 71.00%
-- BFCL Tool Selection Accuracy: 78.00%
-- BFCL Schema Validity Rate: 92.00%
-- MMLU CS and Math Average: 23.50%
+Experimental checkpoint; general coding benchmarks (HumanEval, MBPP) are unverified and unreproducible in greedy inference. Usage is intended for architecture inspection and narrow experimental research.
 
 ## Tokenizer and Vocabulary Specification
 
-- Vocabulary Size: `32032` tokens
-- Architecture Backend: Byte-level Byte-Pair Encoding (BPE) with GPT-2 byte fallbacks
-- Epistemic Control Tokens: Self-RAG reasoning tags (`<think>`, `</think>`), tool delimiters (`<tool_call>`, `</tool_call>`), epistemic status tags (`[UNKNOWN]`, `[EVIDENT]`, `[REFUTE]`), and special tokens at indices `32000..32015`
-- Compression Fertility:
-  - English and Portuguese technical prose: $\approx 3.6\text{ characters/token}$
-  - C, Rust, and systems source code: $\approx 2.9\text{ characters/token}$
-- Round-Trip Fidelity: 100% lossless detokenization across ASCII, UTF-8 unicode sequences, and binary hex streams.
+- Vocabulary Size: `32032` tensor rows (4,311 active BPE tokens + 27,721 reserved padding slots)
+- Active BPE Merges: 3,981 merges
+- Epistemic Control Tokens: Self-RAG reasoning tags (`<think>`, `</think>`), tool delimiters (`<tool_call>`, `</tool_call>`), epistemic reflection tags (`[RETRIEVE]`, `[/RETRIEVE]`, `[EVALUATE]`, `[ACCEPT]`, `[REJECT]`)
+- Measured Compression Fertility:
+  - English technical prose: $\approx 2.53\text{ characters/token}$
+  - Portuguese technical prose: $\approx 2.57\text{ characters/token}$
+  - C, Rust, and systems source code: $\approx 2.02\text{ characters/token}$
+- Whitespace Round-Trip Fidelity: Indentation whitespace requires byte-fallback tokenization; leading 4 spaces may be stripped by ByteLevel decoder when token 28 is raw space sequence.
 
 ## Limitations and Intended Use
 
 - Parameter Scale Constraints: While sparse MoE routing enables execution within consumer VRAM budgets, absolute capacity is bounded by physical parameter counts.
-- Recommended Deployment: For mission-critical production environments, deploy alongside external verification mechanisms such as `MARK` Self-RAG entropy thresholds, local `.zim` knowledge retrieval, compiler validation, or unit test runners.
+- Recommended Deployment: For mission-critical production environments, deploy alongside external verification mechanisms such as compiler validation or unit test runners.
 - Safety and Boundary Enforcement: Models trained on systems and cybersecurity datasets are intended for defensive research, vulnerability auditing, patch validation, and systems engineering.
 
 ### Running Benchmarks on TPN Workbench and lm-evaluation-harness
@@ -175,35 +152,27 @@ When running automated benchmarks on TPN Workbench, lm-evaluation-harness, LM St
 - Select **Format: gguf** (or **Backend: llama.cpp**).
 - Do not evaluate via raw Python `transformers` with `safetensors` or `trust_remote_code=True`, because the native `deepseek2` H-MLA and fine-grained 3D MoE graph executes directly inside the optimized C++/CUDA kernels of `llama.cpp`. Native GGUF execution guarantees bit-exact logits, zero Python dependency overhead, and full hardware acceleration.
 
-## Usage
+## Usage: Narrow Domain and Systems Engineering Verification
 
-### Download
+This checkpoint is an experimental narrow checkpoint trained on specific low-level or systems engineering distributions. Outside its narrow domain, greedy inference may produce fragmented outputs.
+
+### Download and Checksum Verification
 
 ```bash
 # Using huggingface-cli
 huggingface-cli download miceworks/Mark-Engineer-V3-1.5B mark_engineer_v3_1_5b_iq4_nl.gguf --local-dir .
 
-# Using Python
-from huggingface_hub import hf_hub_download
-hf_hub_download(repo_id="miceworks/Mark-Engineer-V3-1.5B", filename="mark_engineer_v3_1_5b_iq4_nl.gguf")
-```
-
-### Cryptographic Verification
-
-```bash
+# Cryptographic verification
 echo "24093fd96a22c7b4b19e85df2fb0d4e1757361d6f58baa4f36ad0285fa29ac68  mark_engineer_v3_1_5b_iq4_nl.gguf" | sha256sum -c -
 ```
 
-### llama.cpp
+### Execution with llama.cpp
 
 ```bash
-# CLI generation
+# Systems prompt execution
 llama-cli -m mark_engineer_v3_1_5b_iq4_nl.gguf \
-  -p "<|bos|>System: Systems mode active.<|eos|>\n<|bos|>User: Explain Linux memory barriers.<|eos|>\n<|bos|>Assistant:\n<think>\n" \
-  -n 512 --temp 0.2
-
-# HTTP server
-llama-server -m mark_engineer_v3_1_5b_iq4_nl.gguf --port 8080 -c 32768
+  -p "Systems engineering stub: Implement a POSIX mutex initialization routine.\nCode:" \
+  -n 128 --temp 0.2
 ```
 
 ### Python Inspection

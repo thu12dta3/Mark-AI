@@ -64,7 +64,6 @@
   "pad_token": "<|pad|>",
   "pad_token_id": 0,
   "model_max_length": 8192,
-  "chat_template": "{% for message in messages %}{% if message['role'] == 'system' %}<|bos|>System: {{ message['content'] }}<|eos|>\n{% elif message['role'] == 'user' %}<|bos|>User: {{ message['content'] }}<|eos|>\n{% elif message['role'] == 'assistant' %}<|bos|>Assistant: {% if message['content'] %}{{ message['content'] }}<|eos|>\n{% endif %}{% endif %}{% endfor %}{% if add_generation_prompt %}<|bos|>Assistant:\n<think>\n{% endif %}",
   "additional_special_tokens": [
     "<think>",
     "</think>",

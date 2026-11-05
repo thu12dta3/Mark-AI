@@ -4,7 +4,6 @@ library_name: gguf
 pipeline_tag: text-generation
 language:
   - en
-  - pt
 datasets:
   - miceworks/Mark-Open-SLM-Curriculum
   - AxiomicLabs/ArithMark-3.0
@@ -17,7 +16,6 @@ tags:
   - iq4_nl
   - mark-ai
   - systems-engineering
-  - conversational
 ---
 
 # Mark-SLM-3M
@@ -34,6 +32,7 @@ The model contains exactly 2,946,008 total physical parameters and 2,503,640 act
 | :--- | :--- |
 | Architecture | `deepseek2` |
 | Training Status | `TRAINED_CHECKPOINT` |
+| Weight State Label | `Trained Checkpoint (From Scratch)` |
 | Binary Size | `3.12 MiB (3.27 MB / 3,271,680 bytes)` |
 | Total Parameters | `2,946,008` (2946008 physical) |
 | Active Parameters | `2,503,640` (2503640 active) |
@@ -69,20 +68,6 @@ q_t  = [q_C ; q_R]
 k_t  = [k_C ; k_R]
 ```
 
-In the V3 architecture, **Hadamard-MLA (H-MLA)** suppresses latent activation outliers by absorbing the normalized orthogonal Walsh-Hadamard transform:
-
-$$H_d = \frac{1}{\sqrt{d}} H_2^{\otimes \log_2 d}$$
-
-(where $H_d^T = H_d$ and $H_d^2 = I$, e.g., $H_{64}$) directly into key-value projection weights ($W_{wkv\_a}$ and $W_{wkv\_b}$) during compilation. This offline fusion eliminates activation outliers without adding runtime execution overhead.
-
-#### H-MLA Numerical Ablation (IQ4_NL Quantization)
-
-| Metric | Standard MLA | Hadamard-MLA (H-MLA) | Delta / Impact |
-| :--- | :---: | :---: | :---: |
-| Latent Activation Kurtosis ($\kappa$) | 46.8 (Heavy Outliers) | 3.02 (Sub-Gaussian) | Outlier-Free Latents |
-| IQ4_NL Reconstruction MSE | $2.14 \times 10^{-3}$ | $7.83 \times 10^{-4}$ | -63.4% Quantization Error |
-| Runtime Latency Overhead | 0.00 ms | 0.00 ms | Zero Runtime Cost (Offline Fused) |
-
 ### KV Cache Memory Usage
 
 Physical memory consumption of the KV cache per token:
@@ -103,11 +88,15 @@ Physical memory consumption of the KV cache per token:
 
 #### Aux-Loss-Free Routing Equation
 
-Router biases update per step to prevent expert collapse without penalizing primary task loss:
+Router biases update per step to prevent expert collapse without penalizing primary task loss using the exact sign-based rule:
 
-$$b_i \leftarrow b_i + \gamma (\bar{f} - f_i)$$
+$$b_i \leftarrow b_i + \gamma \cdot \operatorname{sign}(\bar{f} - f_i)$$
 
-where $\gamma = 0.001$, $f_i$ is empirical expert frequency within the batch, and $\bar{f}$ is target uniform frequency. Load balancing telemetry across production runs demonstrates an expert utilization coefficient of variation (CV) $< 4.2\%$ and a token drop rate of $0.0\%$.
+where $\gamma = 0.001$, $f_i$ is empirical expert frequency within the batch, and $\bar{f}$ is target uniform frequency.
+
+Router bias vectors (`blk.{l}.exp_probs_b.bias`) are stored in FP32 precision. Measured disk telemetry from the IQ4_NL container:
+- Bias Parameters: 24 FP32 parameters across 6 MoE layers (4 routed experts each)
+- Measured Values: initialized at uniform 0.0000
 
 #### Domain Clan Partitioning
 
@@ -117,53 +106,52 @@ The 4 routed experts are partitioned into 4 functional clans (1 expert per clan)
 - **Clan 2 (Expert 2)**: Security boundaries, protocol compliance, and invariant validation.
 - **Clan 3 (Expert 3)**: Structured Data, Tool Calling, and Symbolic Logic.
 
-PB-MoE provides structural logit partitioning and soft-pinning constraints (`top_k` allocation reserving $k-1$ slots for the primary domain clan and $1$ slot for cross-clan cooperation) paired with domain-tagged curriculum batches during training on `Mark-Ultra-Curriculum`, `Mark-Open-SLM-Curriculum`, and `Mark-Cyber-Curriculum`.
+### Experimental PyTorch Research Extensions (Not Active in llama.cpp GGUF Runtime)
 
-### Latent Recursive Depth (LRD)
+The following architectural mechanisms are research extensions implemented in the PyTorch reference codebase (`src/model/mark_v3_arch.py`) and are not active in the compiled C++/CUDA feed-forward DAG of the `llama.cpp` GGUF runtime:
 
-The model features Latent Recursive Depth structured across a three-stage topology:
-1. **Syntactic Stem**: Layers $0..s-1$ project raw token embeddings into stable latent manifold spaces.
-2. **Recursive Reasoning Core**: Layers $s..e-1$ looped across $L_{\text{core}} = 2$ recurrent iterations.
-3. **Symbolic Exit Decoder**: Layers $e..N-1$ project convergent representations into the final vocabulary logits.
+1. **Latent Recursive Depth (LRD)**:
+   In PyTorch, intermediate core layers (layers $s..e-1$) execute across $L_{\text{core}} = 2$ recurrent iterations using residual anchoring:
+   $$h^{(r+1)}_l = \text{Block}_l(h^{(r)}_l + 0.5 \cdot h_{\text{stem}})$$
+   In `llama.cpp`, GGUF execution is strictly feed-forward (single sequential pass through layers $0..N-1$).
 
-The recurrent state update employs residual anchoring:
-
-$$h^{(r+1)}_l = \text{Block}_l(h^{(r)}_l + \alpha \cdot h_{\text{stem}})$$
-
-State representations evolve across recurrent passes with zero-copy KV cache slot reuse, eliminating additional memory allocation during iterative reasoning.
+2. **PB-MoE Soft-Pinning Constraints**:
+   During PyTorch curriculum training, clan logit constraints reserve routing slots for domain specialists. In `llama.cpp`, routing executes via standard Top-K selection over the learned router bias affinities:
+   $$s_{i,t} = \sigma(u_t^T e_i) + b_i$$
 
 ## Training Pipeline and Reproducibility
 
 - Training Code: Official pipelines and architecture implementations are maintained in the [Mark-AI scripts directory](https://github.com/thu12dta3/Mark-AI/tree/main/scripts).
 - Curricula and Datasets: Trained on open datasets hosted on the Hugging Face Hub, including [miceworks/Mark-Ultra-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Ultra-Curriculum), [miceworks/Mark-Open-SLM-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Open-SLM-Curriculum), and [miceworks/Mark-Cyber-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Cyber-Curriculum).
-- Optimization Settings: AdamW optimizer ($\beta_1 = 0.9, \beta_2 = 0.95$, weight decay $0.1$, gradient clipping $1.0$), paired with cosine / WSD decay learning rate schedules.
+- Optimization Settings: AdamW optimizer ($\beta_1 = 0.9, \beta_2 = 0.95$, weight decay $0.1$, gradient clipping $1.0$).
 - Training Scope: Trained 100% from scratch (Gaussian normal std=0.02 initialization, zero external checkpoints) for 3,000 optimization steps on miceworks/Mark-Open-SLM-Curriculum, Cosmopedia-v2 STEM, and AxiomicLabs/ArithMark-3.0 in strict compliance with Open SLM Leaderboard Rules 01 and 02.
 
 ## Evaluation and Benchmark Results
 
 Official Open SLM Leaderboard Scores (Sub-3M Category, Rule 01 and Rule 02 Compliant):
-- PIQA: 52.00% (Norm: 4.00)
-- ARC-Easy: 26.60% (Norm: 2.13)
-- HellaSwag: 25.60% (Norm: 0.80)
-- ArithMark-3.0 Official: 29.70% (Norm: 6.27)
-- ARC-Challenge: 23.75% (Norm: 0.00)
-- ARC-Average (Norm): 1.07
+- PIQA: 52.00% (Norm: 4.00%)
+- ARC-Easy: 26.60% (Norm: 2.13%)
+- HellaSwag: 25.60% (Norm: 0.80%)
+- ArithMark-3.0 Official: 29.70% (Norm: 6.27%)
+- ARC-Challenge: 23.75% (Norm: 0.00%)
+- ARC-Average (Norm): 1.07%
 - Best Intelligence Index: 3.85
 
 ## Tokenizer and Vocabulary Specification
 
-- Vocabulary Size: `4096` tokens
-- Architecture Backend: Byte-level Byte-Pair Encoding (BPE) with GPT-2 byte fallbacks
-- Epistemic Control Tokens: Self-RAG reasoning tags (`<think>`, `</think>`), tool delimiters (`<tool_call>`, `</tool_call>`), epistemic status tags (`[UNKNOWN]`, `[EVIDENT]`, `[REFUTE]`), and special tokens at indices `32000..32015`
-- Compression Fertility:
-  - English and Portuguese technical prose: $\approx 3.6\text{ characters/token}$
-  - C, Rust, and systems source code: $\approx 2.9\text{ characters/token}$
-- Round-Trip Fidelity: 100% lossless detokenization across ASCII, UTF-8 unicode sequences, and binary hex streams.
+- Vocabulary Size: `4096` active BPE tokens (3,835 merges, 0 padding tokens)
+- Architecture Backend: Byte-level Byte-Pair Encoding (BPE)
+- Control Tokens: System tags (`<think>`, `</think>`), sequence delimiters (`<|bos|>`, `<|eos|>`)
+- Measured Compression Fertility:
+  - English technical prose: $\approx 3.90\text{ characters/token}$
+  - Portuguese technical prose: $\approx 1.94\text{ characters/token}$
+  - C, Rust, and systems source code: $\approx 1.81\text{ characters/token}$
+- Whitespace Round-Trip Fidelity: 100% lossless preservation across token sequences.
 
 ## Limitations and Intended Use
 
 - Parameter Scale Constraints: While sparse MoE routing enables execution within consumer VRAM budgets, absolute capacity is bounded by physical parameter counts.
-- Recommended Deployment: For mission-critical production environments, deploy alongside external verification mechanisms such as `MARK` Self-RAG entropy thresholds, local `.zim` knowledge retrieval, compiler validation, or unit test runners.
+- Recommended Deployment: For mission-critical production environments, deploy alongside external verification mechanisms such as compiler validation or unit test runners.
 - Safety and Boundary Enforcement: Models trained on systems and cybersecurity datasets are intended for defensive research, vulnerability auditing, patch validation, and systems engineering.
 
 ### Running Benchmarks on TPN Workbench and lm-evaluation-harness
@@ -194,10 +182,10 @@ echo "c66a0b3b76aba96c64d53d0e8821bd9e6e8bb29dc925890fa3a8efa05b1d1d30  mark_slm
 ### llama.cpp
 
 ```bash
-# CLI generation
+# CLI text completion
 llama-cli -m mark_slm_3m_iq4_nl.gguf \
-  -p "<|bos|>System: Systems mode active.<|eos|>\n<|bos|>User: Explain Linux memory barriers.<|eos|>\n<|bos|>Assistant:\n<think>\n" \
-  -n 512 --temp 0.2
+  -p "Question: What is 12 * 12?\nAnswer:" \
+  -n 128 --temp 0.2
 
 # HTTP server
 llama-server -m mark_slm_3m_iq4_nl.gguf --port 8080 -c 4096

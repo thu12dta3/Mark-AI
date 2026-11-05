@@ -1,16 +1,27 @@
+#!/usr/bin/env python3
 import argparse
+import datetime
 import json
 import math
 import os
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 from datasets import load_dataset
 from huggingface_hub import HfFileSystem
 from tqdm import tqdm
+
+try:
+    import llama_cpp
+    LLAMA_CPP_AVAILABLE = True
+except ImportError:
+    llama_cpp = None
+    LLAMA_CPP_AVAILABLE = False
+
 from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedTokenizerFast
 
 def chance_normalize(raw_score: float, chance: float) -> float:
@@ -22,9 +33,11 @@ def compute_intelligence_index(
     arc_challenge_acc: float,
     piqa_acc: float,
     arithmark_acc: float,
-) -> Dict[str, float]:
+) -> Dict[str, Union[float, Dict[str, float]]]:
     arc_combined = (arc_easy_acc + arc_challenge_acc) / 2.0
     s_hellaswag = chance_normalize(hellaswag_acc, 0.25)
+    s_arc_easy = chance_normalize(arc_easy_acc, 0.25)
+    s_arc_challenge = chance_normalize(arc_challenge_acc, 0.25)
     s_arc = chance_normalize(arc_combined, 0.25)
     s_piqa = chance_normalize(piqa_acc, 0.50)
     s_arith = chance_normalize(arithmark_acc, 0.25)
@@ -33,67 +46,134 @@ def compute_intelligence_index(
     intelligence_index = (weighted_sum / 3.65) * 100.0
 
     return {
-        "intelligence_index": intelligence_index,
-        "hellaswag_raw": hellaswag_acc * 100.0,
-        "arc_easy_raw": arc_easy_acc * 100.0,
-        "arc_challenge_raw": arc_challenge_acc * 100.0,
-        "arc_combined_raw": arc_combined * 100.0,
-        "piqa_raw": piqa_acc * 100.0,
-        "arithmark_raw": arithmark_acc * 100.0,
-        "s_hellaswag_norm": s_hellaswag,
-        "s_arc_norm": s_arc,
-        "s_piqa_norm": s_piqa,
-        "s_arith_norm": s_arith,
+        "intelligence_index": round(intelligence_index, 2),
+        "weights": {
+            "hellaswag": 1.0,
+            "arc_avg": 1.0,
+            "piqa": 1.0,
+            "arithmark3": 0.65,
+            "denominator": 3.65,
+        },
+        "scores_raw": {
+            "hellaswag_acc_norm": round(hellaswag_acc * 100.0, 2),
+            "arc_easy_acc_norm": round(arc_easy_acc * 100.0, 2),
+            "arc_challenge_acc_norm": round(arc_challenge_acc * 100.0, 2),
+            "piqa_acc_norm": round(piqa_acc * 100.0, 2),
+            "arithmark3_acc": round(arithmark_acc * 100.0, 2),
+        },
+        "scores_normalized": {
+            "hellaswag_norm": round(s_hellaswag * 100.0, 2),
+            "arc_easy_norm": round(s_arc_easy * 100.0, 2),
+            "arc_challenge_norm": round(s_arc_challenge * 100.0, 2),
+            "piqa_norm": round(s_piqa * 100.0, 2),
+            "arithmark3_norm": round(s_arith * 100.0, 2),
+            "arc_avg_norm": round(s_arc * 100.0, 2),
+        },
     }
 
-def score_continuations(
-    model,
-    tokenizer,
-    context: str,
-    endings: List[str],
-    device: str = "cuda" if torch.cuda.is_available() else "cpu",
-) -> int:
-    ctx_ids = tokenizer(context, add_special_tokens=False).input_ids
-    if not ctx_ids:
-        ctx_ids = [tokenizer.bos_token_id or 1]
+class EvaluatorBackend:
+    def score_continuations(self, context: str, endings: List[str]) -> int:
+        raise NotImplementedError
 
-    log_likelihoods = []
-    for ending in endings:
-        end_ids = tokenizer(ending, add_special_tokens=False).input_ids
-        if not end_ids:
-            log_likelihoods.append(-1e9)
-            continue
+class PyTorchBackend(EvaluatorBackend):
+    def __init__(self, model_path: str, device: str = "cuda" if torch.cuda.is_available() else "cpu"):
+        self.device = device
+        self.model = AutoModelForCausalLM.from_pretrained(model_path, trust_remote_code=True).to(device)
+        self.model.eval()
+        try:
+            self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+        except Exception:
+            self.tokenizer = PreTrainedTokenizerFast.from_pretrained(model_path)
 
-        full_ids = ctx_ids + end_ids
-        input_tensor = torch.tensor([full_ids], dtype=torch.long, device=device)
+    def score_continuations(self, context: str, endings: List[str]) -> int:
+        ctx_ids = self.tokenizer(context, add_special_tokens=False).input_ids
+        if not ctx_ids:
+            ctx_ids = [self.tokenizer.bos_token_id or 1]
 
-        with torch.no_grad():
-            outputs = model(input_tensor)
-            logits = outputs.logits[0]
+        log_likelihoods = []
+        for ending in endings:
+            end_ids = self.tokenizer(ending, add_special_tokens=False).input_ids
+            if not end_ids:
+                log_likelihoods.append(-1e9)
+                continue
 
-        ctx_len = len(ctx_ids)
-        end_len = len(end_ids)
-        pred_logits = logits[ctx_len - 1 : ctx_len + end_len - 1]
-        target_tokens = torch.tensor(end_ids, dtype=torch.long, device=device)
+            full_ids = ctx_ids + end_ids
+            input_tensor = torch.tensor([full_ids], dtype=torch.long, device=self.device)
 
-        log_probs = F.log_softmax(pred_logits, dim=-1)
-        token_log_probs = log_probs.gather(dim=-1, index=target_tokens.unsqueeze(-1)).squeeze(-1)
-        log_likelihoods.append(token_log_probs.sum().item())
+            with torch.no_grad():
+                outputs = self.model(input_tensor)
+                logits = outputs.logits[0]
 
-    return int(torch.tensor(log_likelihoods).argmax().item())
+            ctx_len = len(ctx_ids)
+            end_len = len(end_ids)
+            pred_logits = logits[ctx_len - 1 : ctx_len + end_len - 1]
+            target_tokens = torch.tensor(end_ids, dtype=torch.long, device=self.device)
+
+            log_probs = F.log_softmax(pred_logits, dim=-1)
+            token_log_probs = log_probs.gather(dim=-1, index=target_tokens.unsqueeze(-1)).squeeze(-1)
+            log_likelihoods.append(token_log_probs.sum().item())
+
+        return int(torch.tensor(log_likelihoods).argmax().item())
+
+class LlamaCppBackend(EvaluatorBackend):
+    def __init__(self, gguf_path: str, n_ctx: int = 1024, n_gpu_layers: int = -1):
+        if not LLAMA_CPP_AVAILABLE:
+            raise ImportError("llama-cpp-python is required for GGUF evaluation. Install with pip install llama-cpp-python.")
+        self.llm = llama_cpp.Llama(
+            model_path=gguf_path,
+            n_ctx=n_ctx,
+            n_gpu_layers=n_gpu_layers,
+            logits_all=True,
+            verbose=False,
+        )
+
+    def score_continuations(self, context: str, endings: List[str]) -> int:
+        ctx_tokens = self.llm.tokenize(context.encode("utf-8"), add_bos=True)
+        if not ctx_tokens:
+            ctx_tokens = [1]
+
+        log_likelihoods = []
+        for ending in endings:
+            end_tokens = self.llm.tokenize(ending.encode("utf-8"), add_bos=False)
+            if not end_tokens:
+                log_likelihoods.append(-1e9)
+                continue
+
+            all_tokens = ctx_tokens + end_tokens
+            if len(all_tokens) > self.llm.n_ctx():
+                # Truncate context from the left if necessary
+                excess = len(all_tokens) - self.llm.n_ctx()
+                trimmed_ctx = ctx_tokens[excess:]
+                all_tokens = trimmed_ctx + end_tokens
+                ctx_len = len(trimmed_ctx)
+            else:
+                ctx_len = len(ctx_tokens)
+
+            self.llm.reset()
+            self.llm.eval(all_tokens)
+            scores = np.array(self.llm.scores[:len(all_tokens)])
+
+            log_prob = 0.0
+            for i, tok in enumerate(end_tokens):
+                pos = ctx_len - 1 + i
+                logits = scores[pos]
+                shift_logits = logits - np.max(logits)
+                lprobs = shift_logits - np.log(np.sum(np.exp(shift_logits)))
+                log_prob += float(lprobs[tok])
+            log_likelihoods.append(log_prob)
+
+        return int(np.argmax(log_likelihoods))
 
 def evaluate_arithmark_subset(
-    model,
-    tokenizer,
-    max_samples: int = 100,
-    device: str = "cuda" if torch.cuda.is_available() else "cpu",
+    backend: EvaluatorBackend,
+    max_samples: Optional[int] = None,
 ) -> float:
-    print(f"Loading ArithMark 3.0 benchmark dataset from Hugging Face Hub...")
+    print("Loading ArithMark 3.0 benchmark dataset from Hugging Face Hub...")
     fs = HfFileSystem()
     examples = []
     with fs.open("datasets/AxiomicLabs/Arithmark-3.0/arithmark-3.jsonl", "r") as f:
         for idx, line in enumerate(f):
-            if idx >= max_samples:
+            if max_samples is not None and max_samples > 0 and idx >= max_samples:
                 break
             line_str = line.strip()
             if not line_str:
@@ -106,7 +186,7 @@ def evaluate_arithmark_subset(
         ctx = ex["ctx"]
         endings = ex["endings"]
         label = int(ex["label"])
-        pred = score_continuations(model, tokenizer, ctx, endings, device=device)
+        pred = backend.score_continuations(ctx, endings)
         if pred == label:
             correct += 1
 
@@ -115,24 +195,23 @@ def evaluate_arithmark_subset(
     return acc
 
 def evaluate_hellaswag_subset(
-    model,
-    tokenizer,
-    max_samples: int = 100,
-    device: str = "cuda" if torch.cuda.is_available() else "cpu",
+    backend: EvaluatorBackend,
+    max_samples: Optional[int] = None,
 ) -> float:
-    print(f"Loading HellaSwag validation dataset from Hugging Face...")
+    print("Loading HellaSwag validation dataset from Hugging Face...")
     ds = iter(load_dataset("hellaswag", split="validation", streaming=True))
     correct = 0
     total = 0
 
-    pbar = tqdm(total=max_samples, desc="Evaluating HellaSwag (val)")
+    limit_desc = max_samples if (max_samples and max_samples > 0) else "full"
+    pbar = tqdm(total=max_samples if (max_samples and max_samples > 0) else None, desc=f"Evaluating HellaSwag ({limit_desc})")
     for ex in ds:
-        if total >= max_samples:
+        if max_samples is not None and max_samples > 0 and total >= max_samples:
             break
         ctx = ex["ctx"]
         endings = ex["endings"]
         label = int(ex["label"])
-        pred = score_continuations(model, tokenizer, ctx, endings, device=device)
+        pred = backend.score_continuations(ctx, endings)
         if pred == label:
             correct += 1
         total += 1
@@ -144,20 +223,19 @@ def evaluate_hellaswag_subset(
     return acc
 
 def evaluate_arc_subset(
-    model,
-    tokenizer,
+    backend: EvaluatorBackend,
     config_name: str = "ARC-Easy",
-    max_samples: int = 100,
-    device: str = "cuda" if torch.cuda.is_available() else "cpu",
+    max_samples: Optional[int] = None,
 ) -> float:
     print(f"Loading AI2_ARC {config_name} test dataset from Hugging Face...")
     ds = iter(load_dataset("ai2_arc", config_name, split="test", streaming=True))
     correct = 0
     total = 0
 
-    pbar = tqdm(total=max_samples, desc=f"Evaluating {config_name} (test)")
+    limit_desc = max_samples if (max_samples and max_samples > 0) else "full"
+    pbar = tqdm(total=max_samples if (max_samples and max_samples > 0) else None, desc=f"Evaluating {config_name} ({limit_desc})")
     for ex in ds:
-        if total >= max_samples:
+        if max_samples is not None and max_samples > 0 and total >= max_samples:
             break
         q = ex["question"]
         choices = ex["choices"]
@@ -168,7 +246,7 @@ def evaluate_arc_subset(
             continue
         label_idx = labels.index(ans_key)
         endings = [f" {t}" for t in texts]
-        pred = score_continuations(model, tokenizer, q, endings, device=device)
+        pred = backend.score_continuations(q, endings)
         if pred == label_idx:
             correct += 1
         total += 1
@@ -180,24 +258,23 @@ def evaluate_arc_subset(
     return acc
 
 def evaluate_piqa_subset(
-    model,
-    tokenizer,
-    max_samples: int = 100,
-    device: str = "cuda" if torch.cuda.is_available() else "cpu",
+    backend: EvaluatorBackend,
+    max_samples: Optional[int] = None,
 ) -> float:
-    print(f"Loading PIQA validation dataset from Hugging Face...")
+    print("Loading PIQA validation dataset from Hugging Face...")
     ds = iter(load_dataset("piqa", split="validation", streaming=True, trust_remote_code=True))
     correct = 0
     total = 0
 
-    pbar = tqdm(total=max_samples, desc="Evaluating PIQA (val)")
+    limit_desc = max_samples if (max_samples and max_samples > 0) else "full"
+    pbar = tqdm(total=max_samples if (max_samples and max_samples > 0) else None, desc=f"Evaluating PIQA ({limit_desc})")
     for ex in ds:
-        if total >= max_samples:
+        if max_samples is not None and max_samples > 0 and total >= max_samples:
             break
         goal = ex["goal"]
         endings = [f" {ex['sol1']}", f" {ex['sol2']}"]
         label = int(ex["label"])
-        pred = score_continuations(model, tokenizer, goal, endings, device=device)
+        pred = backend.score_continuations(goal, endings)
         if pred == label:
             correct += 1
         total += 1
@@ -209,59 +286,41 @@ def evaluate_piqa_subset(
     return acc
 
 def main():
-    parser = argparse.ArgumentParser(description="Evaluate Open SLM Leaderboard metrics")
-    parser.add_argument("--model-path", type=str, default="models/mark-slm-v3-150m")
-    parser.add_argument("--samples", type=int, default=50)
-    parser.add_argument("--evaluate-all", action="store_true", default=True, help="Evaluate all 5 benchmarks")
-    parser.add_argument("--hellaswag-acc", type=float, default=None)
-    parser.add_argument("--arc-easy-acc", type=float, default=None)
-    parser.add_argument("--arc-challenge-acc", type=float, default=None)
-    parser.add_argument("--piqa-acc", type=float, default=None)
-    parser.add_argument("--arithmark-acc", type=float, default=None)
+    parser = argparse.ArgumentParser(description="Evaluate Open SLM Leaderboard metrics (PyTorch or GGUF via llama-cpp-python)")
+    parser.add_argument("--model-path", type=str, default="models/mark-slm-v3-150m", help="Path to HF model directory or .gguf file")
+    parser.add_argument("--gguf-path", type=str, default=None, help="Explicit path to GGUF file to evaluate via llama-cpp-python")
+    parser.add_argument("--samples", type=int, default=0, help="Number of samples to evaluate (0 or negative for full split)")
+    parser.add_argument("--output-json", type=str, default=None, help="Path to save canonical results JSON (defaults to <model-path>/open_slm_leaderboard_results.json)")
     args = parser.parse_args()
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"Loading model: {args.model_path} on {device}...")
-    model = AutoModelForCausalLM.from_pretrained(args.model_path, trust_remote_code=True).to(device)
-    model.eval()
+    max_samples = args.samples if args.samples > 0 else None
 
-    try:
-        tokenizer = AutoTokenizer.from_pretrained(args.model_path, trust_remote_code=True)
-    except Exception:
-        tokenizer = PreTrainedTokenizerFast.from_pretrained(args.model_path)
+    # Determine backend
+    gguf_candidate = args.gguf_path
+    if not gguf_candidate and args.model_path.endswith(".gguf"):
+        gguf_candidate = args.model_path
+    elif not gguf_candidate and os.path.isdir(args.model_path):
+        # Look for gguf in directory if user requests or default
+        ggufs = list(Path(args.model_path).glob("*.gguf"))
+        if ggufs and not (Path(args.model_path) / "config.json").exists():
+            gguf_candidate = str(ggufs[0])
 
-    # 1. ArithMark 3.0
-    arith_acc = args.arithmark_acc
-    if arith_acc is None:
-        arith_acc = evaluate_arithmark_subset(model, tokenizer, max_samples=args.samples, device=device)
+    if gguf_candidate:
+        print(f"Initializing LlamaCppBackend with {gguf_candidate}...")
+        backend = LlamaCppBackend(gguf_candidate)
+        model_name = Path(gguf_candidate).stem
+    else:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        print(f"Initializing PyTorchBackend with {args.model_path} on {device}...")
+        backend = PyTorchBackend(args.model_path, device=device)
+        model_name = Path(args.model_path).name
 
-    # 2. HellaSwag
-    hellaswag_acc = args.hellaswag_acc
-    if hellaswag_acc is None and args.evaluate_all:
-        hellaswag_acc = evaluate_hellaswag_subset(model, tokenizer, max_samples=args.samples, device=device)
-    elif hellaswag_acc is None:
-        hellaswag_acc = 0.0
-
-    # 3. ARC-Easy
-    arc_easy_acc = args.arc_easy_acc
-    if arc_easy_acc is None and args.evaluate_all:
-        arc_easy_acc = evaluate_arc_subset(model, tokenizer, config_name="ARC-Easy", max_samples=args.samples, device=device)
-    elif arc_easy_acc is None:
-        arc_easy_acc = 0.0
-
-    # 4. ARC-Challenge
-    arc_challenge_acc = args.arc_challenge_acc
-    if arc_challenge_acc is None and args.evaluate_all:
-        arc_challenge_acc = evaluate_arc_subset(model, tokenizer, config_name="ARC-Challenge", max_samples=args.samples, device=device)
-    elif arc_challenge_acc is None:
-        arc_challenge_acc = 0.0
-
-    # 5. PIQA
-    piqa_acc = args.piqa_acc
-    if piqa_acc is None and args.evaluate_all:
-        piqa_acc = evaluate_piqa_subset(model, tokenizer, max_samples=args.samples, device=device)
-    elif piqa_acc is None:
-        piqa_acc = 0.0
+    # Run evaluations
+    arith_acc = evaluate_arithmark_subset(backend, max_samples=max_samples)
+    hellaswag_acc = evaluate_hellaswag_subset(backend, max_samples=max_samples)
+    arc_easy_acc = evaluate_arc_subset(backend, config_name="ARC-Easy", max_samples=max_samples)
+    arc_challenge_acc = evaluate_arc_subset(backend, config_name="ARC-Challenge", max_samples=max_samples)
+    piqa_acc = evaluate_piqa_subset(backend, max_samples=max_samples)
 
     summary = compute_intelligence_index(
         hellaswag_acc=hellaswag_acc,
@@ -271,23 +330,30 @@ def main():
         arithmark_acc=arith_acc,
     )
 
+    canonical_result = {
+        "benchmark": "Open SLM Leaderboard",
+        "organization": "AxiomicLabs & Miceworks",
+        "model_id": f"miceworks/{model_name}",
+        "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        **summary,
+    }
+
     print("\n" + "=" * 65)
     print("OPEN SLM LEADERBOARD INTELLIGENCE INDEX BENCHMARK REPORT")
     print("=" * 65)
-    print(f"Model ID:               {args.model_path}")
+    print(f"Model ID:               {canonical_result['model_id']}")
     print(f"Intelligence Index:     {summary['intelligence_index']:.2f}")
-    print(f"ArithMark 3.0:          {summary['arithmark_raw']:.2f}% (Normalized: {summary['s_arith_norm']:.4f}, Chance: 25.0%)")
-    print(f"ARC-Easy:               {summary['arc_easy_raw']:.2f}%")
-    print(f"ARC-Challenge:          {summary['arc_challenge_raw']:.2f}%")
-    print(f"ARC-Combined:           {summary['arc_combined_raw']:.2f}% (Normalized: {summary['s_arc_norm']:.4f}, Chance: 25.0%)")
-    print(f"PIQA:                   {summary['piqa_raw']:.2f}% (Normalized: {summary['s_piqa_norm']:.4f}, Chance: 50.0%)")
-    print(f"HellaSwag:              {summary['hellaswag_raw']:.2f}% (Normalized: {summary['s_hellaswag_norm']:.4f}, Chance: 25.0%)")
+    print(f"ArithMark 3.0:          {summary['scores_raw']['arithmark3_acc']:.2f}% (Normalized: {summary['scores_normalized']['arithmark3_norm']:.2f}%)")
+    print(f"ARC-Easy:               {summary['scores_raw']['arc_easy_acc_norm']:.2f}%")
+    print(f"ARC-Challenge:          {summary['scores_raw']['arc_challenge_acc_norm']:.2f}%")
+    print(f"ARC-Combined:           {(summary['scores_raw']['arc_easy_acc_norm'] + summary['scores_raw']['arc_challenge_acc_norm']) / 2.0:.2f}% (Normalized: {summary['scores_normalized']['arc_avg_norm']:.2f}%)")
+    print(f"PIQA:                   {summary['scores_raw']['piqa_acc_norm']:.2f}% (Normalized: {summary['scores_normalized']['piqa_norm']:.2f}%)")
+    print(f"HellaSwag:              {summary['scores_raw']['hellaswag_acc_norm']:.2f}% (Normalized: {summary['scores_normalized']['hellaswag_norm']:.2f}%)")
     print("=" * 65)
 
-    # Output json results to models/mark-slm-v3-150m/open_slm_leaderboard_results.json
-    out_path = Path(args.model_path) / "open_slm_leaderboard_results.json"
+    out_path = Path(args.output_json) if args.output_json else (Path(args.model_path) / "open_slm_leaderboard_results.json" if os.path.isdir(args.model_path) else Path("open_slm_leaderboard_results.json"))
     with open(out_path, "w") as f:
-        json.dump(summary, f, indent=2)
+        json.dump(canonical_result, f, indent=2)
     print(f"Saved benchmark summary to {out_path}")
 
 if __name__ == "__main__":

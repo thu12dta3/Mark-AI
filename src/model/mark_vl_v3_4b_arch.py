@@ -426,10 +426,12 @@ class MarkVLV3ForConditionalGeneration(nn.Module):
         attention_mask: Optional[torch.Tensor] = None,
         labels: Optional[torch.Tensor] = None,
         clan_id: Optional[int] = None,
-        core_loops: int = 1,
+        core_loops: Optional[int] = None,
         inputs_embeds: Optional[torch.Tensor] = None,
         images: Optional[torch.Tensor] = None,
     ) -> Union[torch.Tensor, Dict[str, torch.Tensor]]:
+        if core_loops is None:
+            core_loops = getattr(self.config, "core_loops", 1)
         if pixel_values is None and images is not None:
             pixel_values = images
 

@@ -487,7 +487,9 @@ class MarkV3Model(nn.Module):
         for layer in self.layers:
             layer.attn.fuse_hadamard_weights_()
 
-    def forward(self, input_ids: Optional[torch.Tensor]=None, attention_mask: Optional[torch.Tensor]=None, clan_id: Optional[int]=None, core_loops: int=1, inputs_embeds: Optional[torch.Tensor]=None) -> torch.Tensor:
+    def forward(self, input_ids: Optional[torch.Tensor]=None, attention_mask: Optional[torch.Tensor]=None, clan_id: Optional[int]=None, core_loops: Optional[int]=None, inputs_embeds: Optional[torch.Tensor]=None) -> torch.Tensor:
+        if core_loops is None:
+            core_loops = getattr(self.config, "core_loops", 1)
         if inputs_embeds is None:
             if input_ids is None:
                 raise ValueError("Must provide either input_ids or inputs_embeds")
@@ -546,7 +548,9 @@ class MarkV3ForCausalLM(nn.Module):
     def fuse_hadamard_weights_(self):
         self.model.fuse_hadamard_weights_()
 
-    def forward(self, input_ids: Optional[torch.Tensor]=None, attention_mask: Optional[torch.Tensor]=None, labels: Optional[torch.Tensor]=None, clan_id: Optional[int]=None, core_loops: int=1, inputs_embeds: Optional[torch.Tensor]=None, **kwargs) -> Union[torch.Tensor, Dict[str, torch.Tensor]]:
+    def forward(self, input_ids: Optional[torch.Tensor]=None, attention_mask: Optional[torch.Tensor]=None, labels: Optional[torch.Tensor]=None, clan_id: Optional[int]=None, core_loops: Optional[int]=None, inputs_embeds: Optional[torch.Tensor]=None, **kwargs) -> Union[torch.Tensor, Dict[str, torch.Tensor]]:
+        if core_loops is None:
+            core_loops = getattr(self.config, "core_loops", 1)
         hidden_states = self.model(input_ids, attention_mask=attention_mask, clan_id=clan_id, core_loops=core_loops, inputs_embeds=inputs_embeds)
         logits = self.lm_head(hidden_states)
         if labels is not None:

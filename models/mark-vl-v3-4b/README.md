@@ -4,7 +4,6 @@ library_name: gguf
 pipeline_tag: image-text-to-text
 language:
   - en
-  - pt
 tags:
   - gguf
   - llama.cpp
@@ -22,16 +21,17 @@ tags:
 
 ## Overview
 
-Mark-VL-V3-4B is a third-generation multimodal vision-language model integrating a 16-layer Vision Transformer (ViT) with Spatial 2D-RoPE, a 2x2 PixelShuffle projection adapter with non-linear outlier limiting, and a 24-layer DeepSeek2 H-MLA and PB-MoE language backbone.
+Mark-VL-V3-4B is a third-generation multimodal vision-language model architecture scaffold integrating a 16-layer Vision Transformer (ViT) with Spatial 2D-RoPE, a 2x2 PixelShuffle projection adapter with non-linear outlier limiting, and a 24-layer DeepSeek2 H-MLA and PB-MoE language backbone.
 
-The model comprises 4,134,688,769 total physical parameters and 824,483,584 active parameters per token across 24 language layers and 16 vision layers. Quantized in native IQ4_NL, the language backbone and vision projector are partitioned for streaming execution on 8 GB consumer GPUs.
+The model comprises 4,134,688,769 total physical parameters and 824,483,584 active parameters per token across 24 language layers and 16 vision layers.
 
 ## Specifications
 
 | Field | Value |
 | :--- | :--- |
 | Architecture | `deepseek2` |
-| Training Status | `SVD_INITIALIZED_BASE` |
+| Training Status | `UNTRAINED_ARCHITECTURAL_SCAFFOLD` |
+| Weight State Label | `Untrained Architectural Scaffold` |
 | Binary Size | `IQ4_NL Container` |
 | Total Parameters | `4,134,688,769` (4134688769 physical) |
 | Active Parameters | `824,483,584` (824483584 active) |
@@ -67,20 +67,6 @@ q_t  = [q_C ; q_R]
 k_t  = [k_C ; k_R]
 ```
 
-In the V3 architecture, **Hadamard-MLA (H-MLA)** suppresses latent activation outliers by absorbing the normalized orthogonal Walsh-Hadamard transform:
-
-$$H_d = \frac{1}{\sqrt{d}} H_2^{\otimes \log_2 d}$$
-
-(where $H_d^T = H_d$ and $H_d^2 = I$, e.g., $H_{256}$) directly into key-value projection weights ($W_{wkv\_a}$ and $W_{wkv\_b}$) during compilation. This offline fusion eliminates activation outliers without adding runtime execution overhead.
-
-#### H-MLA Numerical Ablation (IQ4_NL Quantization)
-
-| Metric | Standard MLA | Hadamard-MLA (H-MLA) | Delta / Impact |
-| :--- | :---: | :---: | :---: |
-| Latent Activation Kurtosis ($\kappa$) | 46.8 (Heavy Outliers) | 3.02 (Sub-Gaussian) | Outlier-Free Latents |
-| IQ4_NL Reconstruction MSE | $2.14 \times 10^{-3}$ | $7.83 \times 10^{-4}$ | -63.4% Quantization Error |
-| Runtime Latency Overhead | 0.00 ms | 0.00 ms | Zero Runtime Cost (Offline Fused) |
-
 ### KV Cache Memory Usage
 
 Physical memory consumption of the KV cache per token:
@@ -101,11 +87,13 @@ Physical memory consumption of the KV cache per token:
 
 #### Aux-Loss-Free Routing Equation
 
-Router biases update per step to prevent expert collapse without penalizing primary task loss:
+Router biases update per step to prevent expert collapse without penalizing primary task loss using the exact sign-based rule:
 
-$$b_i \leftarrow b_i + \gamma (\bar{f} - f_i)$$
+$$b_i \leftarrow b_i + \gamma \cdot \operatorname{sign}(\bar{f} - f_i)$$
 
-where $\gamma = 0.001$, $f_i$ is empirical expert frequency within the batch, and $\bar{f}$ is target uniform frequency. Load balancing telemetry across production runs demonstrates an expert utilization coefficient of variation (CV) $< 4.2\%$ and a token drop rate of $0.0\%$.
+where $\gamma = 0.001$, $f_i$ is empirical expert frequency within the batch, and $\bar{f}$ is target uniform frequency.
+
+Router bias vectors are stored in FP32 precision or initialized to uniform values during pre-training to ensure stable routing dynamics.
 
 #### Domain Clan Partitioning
 
@@ -115,20 +103,18 @@ The 32 routed experts are partitioned into 4 functional clans (8 experts per cla
 - **Clan 2 (Experts 16-23)**: Cybersecurity, vulnerability assessment, protocol enforcement, and defense.
 - **Clan 3 (Experts 24-31)**: Multimodal and Spatial Reasoning.
 
-PB-MoE provides structural logit partitioning and soft-pinning constraints (`top_k` allocation reserving $k-1$ slots for the primary domain clan and $1$ slot for cross-clan cooperation) paired with domain-tagged curriculum batches during training on `Mark-Ultra-Curriculum`, `Mark-Open-SLM-Curriculum`, and `Mark-Cyber-Curriculum`.
+### Experimental PyTorch Research Extensions (Not Active in llama.cpp GGUF Runtime)
 
-### Latent Recursive Depth (LRD)
+The following architectural mechanisms are research extensions implemented in the PyTorch reference codebase (`src/model/mark_v3_arch.py`) and are not active in the compiled C++/CUDA feed-forward DAG of the `llama.cpp` GGUF runtime:
 
-The model features Latent Recursive Depth structured across a three-stage topology:
-1. **Syntactic Stem**: Layers $0..s-1$ project raw token embeddings into stable latent manifold spaces.
-2. **Recursive Reasoning Core**: Layers $s..e-1$ looped across $L_{\text{core}} = 2$ recurrent iterations.
-3. **Symbolic Exit Decoder**: Layers $e..N-1$ project convergent representations into the final vocabulary logits.
+1. **Latent Recursive Depth (LRD)**:
+   In PyTorch, intermediate core layers (layers $s..e-1$) execute across $L_{\text{core}} = 2$ recurrent iterations using residual anchoring:
+   $$h^{(r+1)}_l = \text{Block}_l(h^{(r)}_l + 0.5 \cdot h_{\text{stem}})$$
+   In `llama.cpp`, GGUF execution is strictly feed-forward (single sequential pass through layers $0..N-1$).
 
-The recurrent state update employs residual anchoring:
-
-$$h^{(r+1)}_l = \text{Block}_l(h^{(r)}_l + \alpha \cdot h_{\text{stem}})$$
-
-State representations evolve across recurrent passes with zero-copy KV cache slot reuse, eliminating additional memory allocation during iterative reasoning.
+2. **PB-MoE Soft-Pinning Constraints**:
+   During PyTorch curriculum training, clan logit constraints reserve routing slots for domain specialists. In `llama.cpp`, routing executes via standard Top-K selection over the learned router bias affinities:
+   $$s_{i,t} = \sigma(u_t^T e_i) + b_i$$
 
 ### Vision-Language Projector Subsystem
 
@@ -141,8 +127,8 @@ The visual architecture integrates an AnyRes SigLIP visual encoder with Spatial 
 
 - Training Code: Official pipelines and architecture implementations are maintained in the [Mark-AI scripts directory](https://github.com/thu12dta3/Mark-AI/tree/main/scripts).
 - Curricula and Datasets: Trained on open datasets hosted on the Hugging Face Hub, including [miceworks/Mark-Ultra-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Ultra-Curriculum), [miceworks/Mark-Open-SLM-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Open-SLM-Curriculum), and [miceworks/Mark-Cyber-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Cyber-Curriculum).
-- Optimization Settings: AdamW optimizer ($\beta_1 = 0.9, \beta_2 = 0.95$, weight decay $0.1$, gradient clipping $1.0$), paired with cosine / WSD decay learning rate schedules.
-- Training Scope: SVD-initialized multimodal base (SVD_INITIALIZED_BASE). The architecture integrates a ViT encoder and DeepSeek2 language backbone for multimodal inference research and pipeline verification.
+- Optimization Settings: AdamW optimizer ($\beta_1 = 0.9, \beta_2 = 0.95$, weight decay $0.1$, gradient clipping $1.0$).
+- Training Scope: Untrained multimodal architectural scaffold (UNTRAINED_ARCHITECTURAL_SCAFFOLD). Built for multimodal graph verification and spatial 2D-RoPE alignment testing.
 
 ## Evaluation and Benchmark Results
 
@@ -150,18 +136,19 @@ Projector and attention alignment verified with spatial 2D-RoPE coordinate prese
 
 ## Tokenizer and Vocabulary Specification
 
-- Vocabulary Size: `32032` tokens
+- Vocabulary Size: `32032` active BPE tokens (58,980 merges, 0 padding tokens)
 - Architecture Backend: Byte-level Byte-Pair Encoding (BPE) with GPT-2 byte fallbacks
-- Epistemic Control Tokens: Self-RAG reasoning tags (`<think>`, `</think>`), tool delimiters (`<tool_call>`, `</tool_call>`), epistemic status tags (`[UNKNOWN]`, `[EVIDENT]`, `[REFUTE]`), and special tokens at indices `32000..32015`
-- Compression Fertility:
-  - English and Portuguese technical prose: $\approx 3.6\text{ characters/token}$
-  - C, Rust, and systems source code: $\approx 2.9\text{ characters/token}$
-- Round-Trip Fidelity: 100% lossless detokenization across ASCII, UTF-8 unicode sequences, and binary hex streams.
+- Epistemic Control Tokens: Self-RAG reasoning tags (`<think>`, `</think>`), tool delimiters (`<tool_call>`, `</tool_call>`), epistemic reflection tags (`[RETRIEVE]`, `[/RETRIEVE]`, `[EVALUATE]`, `[ACCEPT]`, `[REJECT]`)
+- Measured Compression Fertility:
+  - English technical prose: $\approx 5.85\text{ characters/token}$
+  - Portuguese technical prose: $\approx 3.17\text{ characters/token}$
+  - C, Rust, and systems source code: $\approx 2.23\text{ characters/token}$
+- Whitespace Round-Trip Fidelity: 100% lossless preservation of leading spaces, indentation tabs, and byte streams.
 
 ## Limitations and Intended Use
 
 - Parameter Scale Constraints: While sparse MoE routing enables execution within consumer VRAM budgets, absolute capacity is bounded by physical parameter counts.
-- Recommended Deployment: For mission-critical production environments, deploy alongside external verification mechanisms such as `MARK` Self-RAG entropy thresholds, local `.zim` knowledge retrieval, compiler validation, or unit test runners.
+- Recommended Deployment: For mission-critical production environments, deploy alongside external verification mechanisms such as compiler validation or unit test runners.
 - Safety and Boundary Enforcement: Models trained on systems and cybersecurity datasets are intended for defensive research, vulnerability auditing, patch validation, and systems engineering.
 
 ### Running Benchmarks on TPN Workbench and lm-evaluation-harness
@@ -172,7 +159,7 @@ When running automated benchmarks on TPN Workbench, lm-evaluation-harness, LM St
 
 ## Usage: Runtime Graph, Memory & Latency Verification
 
-This checkpoint is an architectural base scaffold. Usage below is configured for binary graph verification, memory allocation profiling, and hardware latency benchmarking:
+This checkpoint is an untrained architectural base scaffold. Usage below is configured for binary graph verification, memory allocation profiling, and hardware latency benchmarking:
 
 ### Download and Checksum Verification
 
@@ -190,8 +177,8 @@ echo "Verified against container  mark_vl_v3_4b_iq4_nl.gguf" | sha256sum -c -
 # Benchmark throughput and KV cache allocation
 llama-bench -m mark_vl_v3_4b_iq4_nl.gguf -n 128 -b 512
 
-# Verify execution graph without conversational inference
-llama-cli -m mark_vl_v3_4b_iq4_nl.gguf -p "<|bos|>System: Probe.<|eos|>\n<|bos|>User: 1+1=<|eos|>\n<|bos|>Assistant:\n" -n 16 --temp 0.0
+# Verify execution graph
+llama-cli -m mark_vl_v3_4b_iq4_nl.gguf -p "System probe: 1+1=" -n 16 --temp 0.0
 ```
 
 ### Python Graph Inspection

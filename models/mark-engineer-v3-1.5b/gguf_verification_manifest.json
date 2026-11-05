@@ -1,7 +1,7 @@
 {
   "model_id": "mark-engineer-v3-1.5b",
   "model_name": "Mark-Engineer-V3-1.5B",
-  "weight_state": "TRAINED_CHECKPOINT",
+  "weight_state": "EXPERIMENTAL_NARROW_CHECKPOINT",
   "provenance": {
     "gguf_file": "mark_engineer_v3_1_5b_iq4_nl.gguf",
     "gguf_path": "/mnt/ssd_1/mark ai/checkpoints/mark_engineer_v3_1_5b_iq4_nl.gguf",
@@ -68,38 +68,5 @@
     "eos_handling_verified": true,
     "status": "PASS"
   },
-  "audit_command": "sha256sum mark_engineer_v3_1_5b_iq4_nl.gguf && python3 -c \"import gguf; r = gguf.GGUFReader('mark_engineer_v3_1_5b_iq4_nl.gguf'); print('vocab:', r.get_field('deepseek2.vocab_size').parts[-1].tolist()[0])\"",
-  "benchmarks": {
-    "evalplus": {
-      "humaneval_base_pass1": 51.8,
-      "humaneval_plus_pass1": 46.3,
-      "mbpp_base_pass1": 58.5,
-      "mbpp_plus_pass1": 50.5
-    },
-    "multipl_e": {
-      "rust_valid_pass1": 43.6,
-      "cpp_valid_pass1": 47.8,
-      "multipl_e_avg": 45.7
-    },
-    "bfcl": {
-      "ast_exact_match": 71.0,
-      "tool_selection_accuracy": 78.0,
-      "schema_validity_rate": 92.0
-    },
-    "mmlu_cs_math": {
-      "college_computer_science": 20.0,
-      "computer_security": 25.0,
-      "high_school_computer_science": 25.0,
-      "college_mathematics": 24.0,
-      "mmlu_cs_math_avg": 23.5
-    }
-  },
-  "benchmark_summary": {
-    "humaneval_plus": 46.3,
-    "mbpp_plus": 50.5,
-    "multipl_e_rust": 43.6,
-    "multipl_e_cpp": 47.8,
-    "bfcl_ast": 71.0,
-    "mmlu_cs": 23.5
-  }
+  "audit_command": "sha256sum mark_engineer_v3_1_5b_iq4_nl.gguf && python3 -c \"import gguf; r = gguf.GGUFReader('mark_engineer_v3_1_5b_iq4_nl.gguf'); print('vocab:', r.get_field('deepseek2.vocab_size').parts[-1].tolist()[0])\""
 }

@@ -8,8 +8,10 @@ Follows strict technical documentation style:
 - Exact dual size units: "X.XX MiB (Y.YY MB / Z,ZZZ,ZZZ bytes)"
 - Exact parameter integers for total and active parameters
 - Strict prohibition of emojis, double hyphens in headings, and checkboxes
-- Complete Hugging Face YAML Frontmatter with library_name: gguf
+- Complete Hugging Face YAML Frontmatter with library_name: gguf and language: [en]
 - Full alignment with config.json and gguf_verification_manifest.json
+- 100% technical honesty: honest weight states, real measured tokenizer metrics,
+  honest router bias equations, and separation of GGUF runtime from PyTorch extensions.
 """
 
 import json
@@ -22,130 +24,130 @@ MODELS_METADATA = [
         "id": "mark-engineer-302m",
         "name": "Mark-Engineer-302M",
         "hf_repo": "miceworks/Mark-Engineer-302M",
-        "category": "A",
+        "category": "EXPERIMENTAL_NARROW_CHECKPOINT",
         "is_vl": False,
         "is_v3": False,
-        "training_status": "TRAINED_CHECKPOINT",
-        "weight_state_label": "Trained Checkpoint (Validated)",
+        "training_status": "EXPERIMENTAL_NARROW_CHECKPOINT",
+        "weight_state_label": "Experimental Narrow Checkpoint",
         "pipeline_tag": "text-generation",
+        "tok_type": "legacy_4311",
         "overview": (
-            "Mark-Engineer-302M is a compact systems engineering model with 251.45M total parameters "
-            "and 119.33M active parameters per token. It uses a native DeepSeek2 Mixture-of-Experts (MoE) "
-            "topology with Multi-Head Latent Attention (MLA), quantized to 4-bit non-linear GGUF (IQ4_NL).\n\n"
-            "The container occupies 135.12 MiB (141.69 MB / 141,686,432 bytes) of storage and runs on low-power "
-            "edge devices, Raspberry Pi 5 (8 GB), or entry-level consumer GPUs (such as NVIDIA RTX 2060/3060 8 GB, "
-            "256-bit GDDR6, 448 GB/s bandwidth), consuming less than 2% of an 8 GB VRAM allocation."
+            "Mark-Engineer-302M is an experimental narrow checkpoint in the 302M family naming convention. "
+            "It contains 251,452,544 total physical parameters and activates 119.33M parameters per token across 16 layers. "
+            "It uses a native DeepSeek2 Mixture-of-Experts (MoE) topology with Multi-Head Latent Attention (MLA), quantized "
+            "to 4-bit non-linear GGUF (IQ4_NL).\n\n"
+            "The container occupies 135.12 MiB (141.69 MB / 141,686,432 bytes) of storage and runs on low-power edge devices, "
+            "Raspberry Pi 5 (8 GB), or entry-level consumer GPUs (such as NVIDIA RTX 2060/3060 8 GB, 256-bit GDDR6, 448 GB/s bandwidth), "
+            "consuming less than 2% of an 8 GB VRAM allocation."
         ),
         "training_scope": (
-            "Trained on miceworks/Mark-Ultra-Curriculum across 4,821 deduplicated samples covering POSIX C "
-            "interfaces, Linux system call stubs, memory barrier semantics, and bare-metal linker scripts."
+            "Experimental narrow checkpoint (EXPERIMENTAL_NARROW_CHECKPOINT). Trained on POSIX C interfaces, Linux system call stubs, "
+            "memory barrier semantics, and bare-metal linker scripts from miceworks/Mark-Ultra-Curriculum."
         ),
         "evaluation_summary": (
-            "Validated on low-level systems engineering and code synthesis benchmarks with 100% syntactic "
-            "schema validity on POSIX C and kernel stub generation."
+            "Validated on low-level systems engineering interfaces with syntactic schema validity on POSIX C and kernel stub generation."
         ),
     },
     {
         "id": "mark-slm-v2-302m",
         "name": "Mark-SLM-V2-302M",
         "hf_repo": "miceworks/Mark-SLM-V2-302M",
-        "category": "A",
+        "category": "EXPERIMENTAL_NARROW_CHECKPOINT",
         "is_vl": False,
         "is_v3": False,
-        "training_status": "TRAINED_CHECKPOINT",
-        "weight_state_label": "Trained Checkpoint (Validated)",
+        "training_status": "EXPERIMENTAL_NARROW_CHECKPOINT",
+        "weight_state_label": "Experimental Narrow Checkpoint",
         "pipeline_tag": "text-generation",
+        "tok_type": "legacy_4311",
         "overview": (
-            "Mark-SLM-V2-302M is a compact language model with 329.13M total parameters and 155.72M active "
-            "parameters per token across 16 layers. It uses a 49,152 token vocabulary, 16 routed experts, "
-            "and 1 shared expert (2 active routed experts per token).\n\n"
-            "Quantized in IQ4_NL, the binary occupies 177.76 MiB (186.39 MB / 186,394,944 bytes) and runs on 8 GB "
-            "consumer GPUs with low latency and minimal VRAM consumption."
+            "Mark-SLM-V2-302M is an experimental narrow checkpoint in the 302M family naming convention. "
+            "It contains 329,132,160 total physical parameters and activates 155.72M parameters per token across 16 layers. "
+            "It features 16 routed experts and 1 shared expert (2 active routed experts per token).\n\n"
+            "Quantized in IQ4_NL, the binary occupies 177.76 MiB (186.39 MB / 186,394,944 bytes) and runs on 8 GB consumer GPUs "
+            "with minimal VRAM consumption."
         ),
         "training_scope": (
-            "Trained for 10,000 steps on miceworks/Mark-Ultra-Curriculum, achieving a final validation loss of 0.263975. "
-            "The expert dimensions were projected from 400 to 384 via truncated Singular Value Decomposition (SVD), "
-            "preserving the 384 principal singular components to maintain divisibility by 32 for the IQ4_NL "
-            "super-blocks while keeping 100% of the trained MLA attention, embedding, and RMSNorm weights intact."
+            "Experimental narrow checkpoint (EXPERIMENTAL_NARROW_CHECKPOINT). Trained for 10,000 steps on miceworks/Mark-Ultra-Curriculum. "
+            "The final training loss reached 0.263975, reflecting memorization on the narrow 4,821-sample curriculum corpus rather than "
+            "generalized open-domain language understanding."
         ),
         "evaluation_summary": (
-            "Achieved a final validation loss of 0.263975 across 10,000 training steps on miceworks/Mark-Ultra-Curriculum."
+            "Achieved a final validation loss of 0.263975 across 10,000 training steps on the narrow miceworks/Mark-Ultra-Curriculum distribution (memorization artifact)."
         ),
     },
     {
         "id": "mark-engineer-1.5b",
         "name": "Mark-Engineer-1.5B",
         "hf_repo": "miceworks/Mark-Engineer-1.5B",
-        "category": "A",
+        "category": "EXPERIMENTAL_NARROW_CHECKPOINT",
         "is_vl": False,
         "is_v3": False,
-        "training_status": "TRAINED_CHECKPOINT",
-        "weight_state_label": "Trained Checkpoint (Validated)",
+        "training_status": "EXPERIMENTAL_NARROW_CHECKPOINT",
+        "weight_state_label": "Experimental Narrow Checkpoint",
         "pipeline_tag": "text-generation",
+        "tok_type": "legacy_4311",
         "overview": (
-            "Mark-Engineer-1.5B is a 1.5B-parameter sparse Transformer exported to the native deepseek2 GGUF "
-            "format. It combines Multi-Head Latent Attention (MLA) with a 16-routed and 1-shared SwiGLU "
-            "Mixture-of-Experts (MoE) topology to keep active parameters at 364.15M per token (24.34% active) "
-            "out of 1,496,121,824 total parameters.\n\n"
-            "Quantized in IQ4_NL, the binary occupies 802.94 MiB (841.94 MB / 841,941,664 bytes), leaving over 7 GB "
-            "of VRAM free on an 8 GB GPU (tested on NVIDIA RTX 2060 Super 8 GB) for large context windows and "
-            "fast local decoding."
+            "Mark-Engineer-1.5B is a 1.5B-parameter sparse Transformer exported to the native deepseek2 GGUF format. "
+            "It combines Multi-Head Latent Attention (MLA) with a 16-routed and 1-shared SwiGLU Mixture-of-Experts (MoE) "
+            "topology to keep active parameters at 364.15M per token (24.34% active) out of 1,496,121,824 total parameters.\n\n"
+            "Quantized in IQ4_NL, the binary occupies 802.94 MiB (841.94 MB / 841,941,664 bytes), leaving over 7 GB of VRAM "
+            "free on an 8 GB GPU for large context windows."
         ),
         "training_scope": (
-            "Trained for 400 steps on miceworks/Mark-Ultra-Curriculum using low-level kernel sources, systems manuals, "
-            "RFCs, and concurrency benchmarks. Verified checkpoint (TRAINED_CHECKPOINT) for code synthesis and systems programming."
+            "Experimental narrow checkpoint (EXPERIMENTAL_NARROW_CHECKPOINT). Trained for 400 steps on miceworks/Mark-Ultra-Curriculum "
+            "using low-level kernel sources, systems manuals, RFCs, and concurrency primitives."
         ),
         "evaluation_summary": (
-            "Demonstrates verified syntax generation for POSIX threads, synchronization primitives, and memory barriers."
+            "Demonstrates syntactic generation for POSIX threads, synchronization primitives, and memory barriers."
         ),
     },
     {
         "id": "mark-general-1.5b",
         "name": "Mark-General-1.5B",
         "hf_repo": "miceworks/Mark-General-1.5B",
-        "category": "A",
+        "category": "EXPERIMENTAL_NARROW_CHECKPOINT",
         "is_vl": False,
         "is_v3": False,
-        "training_status": "TRAINED_CHECKPOINT",
-        "weight_state_label": "Trained Checkpoint (Validated)",
+        "training_status": "EXPERIMENTAL_NARROW_CHECKPOINT",
+        "weight_state_label": "Experimental Narrow Checkpoint",
         "pipeline_tag": "text-generation",
+        "tok_type": "legacy_4311",
         "overview": (
-            "Mark-General-1.5B is a general reasoning and STEM-oriented sparse Transformer with 1,496,185,824 "
-            "total parameters and 364.22M active parameters per token across 16 layers. It features an extended "
-            "4,377 token vocabulary and a 16-routed, 1-shared MoE structure.\n\n"
-            "Quantized in IQ4_NL, the container takes 802.97 MiB (841.98 MB / 841,977,664 bytes) and runs locally "
-            "within standard 8 GB VRAM budgets."
+            "Mark-General-1.5B is an experimental narrow checkpoint with 1,496,185,824 total physical parameters and 364.22M "
+            "active parameters per token across 16 layers. It features a 16-routed, 1-shared MoE structure.\n\n"
+            "Quantized in IQ4_NL, the container takes 802.97 MiB (841.98 MB / 841,977,664 bytes) and runs locally within standard 8 GB VRAM budgets."
         ),
         "training_scope": (
-            "Trained for 600 steps on miceworks/Mark-Ultra-Curriculum with curated STEM data, formal proofs, "
-            "algorithmic logic, and technical Portuguese and English texts."
+            "Experimental narrow checkpoint (EXPERIMENTAL_NARROW_CHECKPOINT). Trained for 600 steps on miceworks/Mark-Ultra-Curriculum "
+            "with curated STEM data, formal proofs, and algorithmic logic."
         ),
         "evaluation_summary": (
-            "Validated on mathematical logic, algorithmic reasoning, and multilingual comprehension."
+            "Validated on mathematical logic and algorithmic reasoning representations."
         ),
     },
     {
         "id": "mark-vl-2.2b",
         "name": "Mark-VL-2.2B",
         "hf_repo": "miceworks/Mark-VL-2.2B",
-        "category": "A",
+        "category": "EXPERIMENTAL_NARROW_CHECKPOINT",
         "is_vl": True,
         "is_v3": False,
-        "training_status": "TRAINED_CHECKPOINT",
-        "weight_state_label": "Trained Checkpoint (Validated)",
+        "training_status": "EXPERIMENTAL_NARROW_CHECKPOINT",
+        "weight_state_label": "Experimental Narrow Checkpoint",
         "pipeline_tag": "image-text-to-text",
+        "tok_type": "legacy_4311",
         "overview": (
-            "Mark-VL-2.2B is a vision-language model pairing an AnyRes SigLIP vision encoder with a 14-layer "
-            "DeepSeek2 MoE language model backbone. It uses 2D Rotary Position Embeddings (2D-RoPE) and a 2x2 "
-            "PixelShuffle projection adapter to process images alongside text.\n\n"
-            "The model contains 2,174,310,096 total parameters and 395.50M active parameters per token. The language "
-            "model binary occupies 1166.72 MiB (1223.40 MB / 1,223,397,152 bytes) in IQ4_NL, operating within 8 GB "
-            "VRAM limits alongside the mmproj visual adapter."
+            "Mark-VL-2.2B is an experimental vision-language model pairing an AnyRes SigLIP vision encoder with a 14-layer "
+            "DeepSeek2 MoE language model backbone. It uses 2D Rotary Position Embeddings (2D-RoPE) and a 2x2 PixelShuffle projection "
+            "adapter to process images alongside text.\n\n"
+            "The model contains 2,174,310,096 total parameters and 395.50M active parameters per token. The language model binary occupies "
+            "1166.72 MiB (1223.40 MB / 1,223,397,152 bytes) in IQ4_NL, operating within 8 GB VRAM limits alongside the mmproj visual adapter "
+            "(800.44 MiB / 839.33 MB / 839,325,760 bytes)."
         ),
         "training_scope": (
-            "Trained on multimodal diagrammatic pairs, technical schematics, and structured documents from "
-            "miceworks/Mark-Ultra-Curriculum. The repository provides the primary IQ4_NL language container "
-            "(mark_vl_2_2b_iq4_nl.gguf), the vision adapter (mmproj_mark_vl_2_2b.gguf), and the legacy Q4_K_M artifact."
+            "Experimental narrow multimodal checkpoint (EXPERIMENTAL_NARROW_CHECKPOINT). Trained on diagrammatic pairs and technical schematics "
+            "from miceworks/Mark-Ultra-Curriculum. The repository provides the primary IQ4_NL language container (mark_vl_2_2b_iq4_nl.gguf), "
+            "the vision adapter (mmproj_mark_vl_2_2b.gguf), and the legacy Q4_K_M artifact."
         ),
         "evaluation_summary": (
             "Evaluated on OCR, schematic reading, and diagram analysis with spatial 2D-RoPE coordinate alignment."
@@ -155,84 +157,88 @@ MODELS_METADATA = [
         "id": "mark-engineer-v2-8b",
         "name": "Mark-Engineer-V2-8B",
         "hf_repo": "miceworks/Mark-Engineer-V2-8B",
-        "category": "B",
+        "category": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
         "is_vl": False,
         "is_v3": False,
-        "training_status": "SVD_INITIALIZED_BASE",
-        "weight_state_label": "SVD Initialized Base",
+        "training_status": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
+        "weight_state_label": "Untrained Architectural Scaffold",
         "pipeline_tag": "text-generation",
+        "tok_type": "legacy_4311",
         "overview": (
-            "Mark-Engineer-V2-8B is an 8B-class sparse Transformer featuring 32 layers, 24 routed experts, and "
-            "1 shared expert with a 49,152 token vocabulary. It has 8,258,809,040 total parameters and activates "
-            "1,770,745,040 parameters per token (21.44% active).\n\n"
-            "In native IQ4_NL quantization, the container occupies 4431.26 MiB (4646.52 MB / 4,646,516,576 bytes), "
-            "fitting inside a single 8 GB consumer GPU with over 3.3 GB of VRAM remaining for KV cache and scratch space."
+            "Mark-Engineer-V2-8B is an 8B-class sparse Transformer featuring 32 layers, 24 routed experts, and 1 shared expert. "
+            "It has 8,258,809,040 total physical parameters and activates 1,770,745,040 parameters per token (21.44% active).\n\n"
+            "In native IQ4_NL quantization, the container occupies 4431.26 MiB (4646.52 MB / 4,646,516,576 bytes), fitting inside "
+            "a single 8 GB consumer GPU with over 3.3 GB of VRAM remaining for KV cache and scratch space."
         ),
         "training_scope": (
-            "SVD-initialized architectural base (SVD_INITIALIZED_BASE). The GGUF file contains initialized weights "
-            "derived from truncated singular value projection for testing binary graph compatibility with llama.cpp, "
+            "Untrained architectural base scaffold (UNTRAINED_ARCHITECTURAL_SCAFFOLD). Built for testing binary graph compatibility with llama.cpp, "
             "measuring memory usage on target hardware, and serving as a base for downstream pre-training and fine-tuning."
         ),
         "evaluation_summary": (
-            "Architectural verification confirms full 3D tensor layout compatibility and zero numerical divergence "
-            "under llama.cpp execution."
+            "Architectural verification confirms full 3D tensor layout compatibility and valid execution under llama.cpp."
         ),
     },
     {
         "id": "mark-slm-v3-150m",
         "name": "Mark-SLM-V3-150M",
         "hf_repo": "miceworks/Mark-SLM-V3-150M",
-        "category": "A",
+        "category": "TRAINED_CHECKPOINT",
         "is_vl": False,
         "is_v3": True,
         "training_status": "TRAINED_CHECKPOINT",
         "weight_state_label": "Trained Checkpoint (Model Soup 50/50)",
         "pipeline_tag": "text-generation",
+        "tok_type": "full_32k",
         "overview": (
-            "Mark-SLM-V3-150M is a compact edge model built to stay under the 150M parameter ceiling. By using tied "
-            "word embeddings (reusing token_embd.weight as the language model output projection), the GGUF file contains "
-            "272 tensors and exactly 146,899,248 parameters (54.00M active per token).\n\n"
-            "Quantized in IQ4_NL, the container occupies 90.37 MiB (94.76 MB / 94,764,576 bytes), making it suitable "
-            "for low-power edge microcontrollers and embedded devices."
+            "Mark-SLM-V3-150M is a compact edge model engineered strictly under the 150M parameter ceiling (Rule 01 of Open SLM Leaderboard). "
+            "By using tied word embeddings (reusing token_embd.weight as the language model output projection), the GGUF file contains "
+            "272 tensors and exactly 146,899,248 parameters (54.00M active per token across 15 layers).\n\n"
+            "Quantized in IQ4_NL, the container occupies 90.37 MiB (94.76 MB / 94,764,576 bytes), making it suitable for low-power edge "
+            "microcontrollers, mobile devices, and embedded systems."
         ),
         "training_scope": (
-            "Trained model checkpoint (TRAINED_CHECKPOINT). The model was trained through 25,000 optimization steps of "
-            "pre-training followed by 4,000 steps of Phase 2 Cooldown with Contrastive Answer-Masking on miceworks/Mark-Open-SLM-Curriculum "
-            "on Kaggle cloud GPUs, consolidated via 50/50 Model Soup (Weight Averaging). Evaluated on the official Open SLM "
-            "Leaderboard benchmark suite (Rule 01 and Rule 02 compliant), achieving an official AxiomicLabs Intelligence Index of 16.36 (PR #291 merged)."
+            "Trained model checkpoint (TRAINED_CHECKPOINT). The model was trained through 25,000 optimization steps of pre-training followed "
+            "by 4,000 steps of Phase 2 Cooldown on miceworks/Mark-Open-SLM-Curriculum, consolidated via 50/50 Model Soup (Weight Averaging). "
+            "Note: The training dataset miceworks/Mark-Open-SLM-Curriculum contains benchmark training splits (in-distribution learning). "
+            "Evaluated on the official Open SLM Leaderboard benchmark suite (Rule 01 and Rule 02 compliant), achieving an official AxiomicLabs "
+            "Intelligence Index of 16.36, merged in PR #291 (https://github.com/AxiomicLabs/open-slm-leaderboard/pull/291)."
         ),
         "evaluation_summary": (
             "Official Open SLM Leaderboard Scores (PR #291 merged, Rule 01 and Rule 02 compliant):\n"
-            "- PIQA: 62.50% (Norm: 25.00)\n"
-            "- ARC-Easy: 40.80% (Norm: 21.07)\n"
-            "- HellaSwag: 37.10% (Norm: 16.13)\n"
-            "- ArithMark-3.0: 33.90% (Norm: 11.87)\n"
-            "- ARC-Challenge: 25.50% (Norm: 0.67)\n"
-            "- ARC-Average (Norm): 10.87\n"
-            "- AxiomicLabs Intelligence Index: 16.36"
+            "- PIQA: 62.50% (Norm: 25.00%)\n"
+            "- ARC-Easy: 40.80% (Norm: 21.07%)\n"
+            "- HellaSwag: 37.10% (Norm: 16.13%)\n"
+            "- ArithMark-3.0 Official: 33.90% (Norm: 11.87%)\n"
+            "- ARC-Challenge: 25.50% (Norm: 0.67%)\n"
+            "- ARC-Average (Norm): 10.87%\n"
+            "- AxiomicLabs Intelligence Index: 16.36\n\n"
+            "Checkpoint Revision Changelog:\n"
+            "- Revision 1 (Step 25,000 Base Checkpoint): Intelligence Index 10.04\n"
+            "- Revision 2 (Step 4,000 Cooldown Checkpoint): Intelligence Index 14.35\n"
+            "- Revision 3 (Model Soup 50/50 Final): Intelligence Index 16.36 (Official submission merged in PR #291)"
         ),
     },
     {
         "id": "mark-v3-1.1b",
         "name": "Mark-V3-1.1B",
         "hf_repo": "miceworks/Mark-V3-1.1B",
-        "category": "B",
+        "category": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
         "is_vl": False,
         "is_v3": True,
-        "training_status": "SVD_INITIALIZED_BASE",
-        "weight_state_label": "SVD Initialized Base",
+        "training_status": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
+        "weight_state_label": "Untrained Architectural Scaffold",
         "pipeline_tag": "text-generation",
+        "tok_type": "legacy_4311",
         "overview": (
-            "Mark-V3-1.1B is a third-generation sparse Transformer with 1,222,464,960 total physical parameters and "
-            "330,651,072 active parameters per token across 18 layers. It introduces Hadamard-transformed Multi-Head "
-            "Latent Attention (H-MLA) and Partitioned-Balancing MoE (PB-MoE) with 32 routed experts and 2 shared experts.\n\n"
-            "Quantized in IQ4_NL, the binary occupies 656.13 MiB (688.00 MB / 688,002,048 bytes), loading rapidly and "
-            "leaving generous memory headroom on 8 GB GPUs."
+            "Mark-V3-1.1B is a third-generation sparse Transformer with 1,222,464,960 total physical parameters and 330,651,072 active "
+            "parameters per token across 18 layers. It introduces Hadamard-transformed Multi-Head Latent Attention (H-MLA) and "
+            "Partitioned-Balancing MoE (PB-MoE) with 32 routed experts and 2 shared experts.\n\n"
+            "Quantized in IQ4_NL, the binary occupies 656.13 MiB (688.00 MB / 688,002,048 bytes), loading rapidly and leaving generous "
+            "memory headroom on 8 GB GPUs."
         ),
         "training_scope": (
-            "SVD-initialized architectural base (SVD_INITIALIZED_BASE). The GGUF file contains initialized weights "
-            "derived from truncated singular value projection for testing binary graph compatibility with llama.cpp, "
-            "measuring memory usage on target hardware, and serving as a base for downstream pre-training and fine-tuning."
+            "Untrained architectural base scaffold (UNTRAINED_ARCHITECTURAL_SCAFFOLD). Built for testing binary graph compatibility with llama.cpp, "
+            "measuring memory usage on target hardware, and serving as a base for downstream pre-training."
         ),
         "evaluation_summary": (
             "Architectural graph verification confirms valid forward passes and expected memory occupancy."
@@ -242,85 +248,74 @@ MODELS_METADATA = [
         "id": "mark-general-v3-1.5b",
         "name": "Mark-General-V3-1.5B",
         "hf_repo": "miceworks/Mark-General-V3-1.5B",
-        "category": "B",
+        "category": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
         "is_vl": False,
         "is_v3": True,
-        "training_status": "SVD_INITIALIZED_BASE",
-        "weight_state_label": "SVD Initialized Base",
+        "training_status": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
+        "weight_state_label": "Untrained Architectural Scaffold",
         "pipeline_tag": "text-generation",
+        "tok_type": "legacy_4311",
         "overview": (
-            "Mark-General-V3-1.5B is a 1.52B-parameter model with 1,520,496,960 total parameters and 405.73M active "
-            "parameters per token across 18 layers. It features 32 routed experts, 2 shared experts, Latent Recursive "
-            "Depth (LRD), and H-MLA.\n\n"
-            "Quantized in IQ4_NL, the container occupies 816.03 MiB (855.67 MB / 855,669,248 bytes) and operates "
-            "comfortably within 8 GB VRAM budgets."
+            "Mark-General-V3-1.5B is an untrained architectural scaffold with 1,520,496,960 total physical parameters and 405.73M active "
+            "parameters per token across 18 layers. It features 32 routed experts, 2 shared experts, and H-MLA.\n\n"
+            "Quantized in IQ4_NL, the container occupies 816.03 MiB (855.67 MB / 855,669,248 bytes) and operates comfortably within 8 GB VRAM budgets."
         ),
         "training_scope": (
-            "SVD-initialized architectural base (SVD_INITIALIZED_BASE). The GGUF file contains initialized weights "
-            "for testing binary graph compatibility with llama.cpp, measuring memory usage on target hardware, and "
-            "serving as a base for downstream pre-training and distillation."
+            "Untrained architectural base scaffold (UNTRAINED_ARCHITECTURAL_SCAFFOLD). Built for testing binary graph compatibility with llama.cpp, "
+            "measuring memory usage on target hardware, and serving as a base for downstream pre-training."
         ),
         "evaluation_summary": (
-            "Forward pass and perplexity verification confirms stable numerical dynamics across all 18 layers."
+            "Forward pass and structural verification confirms stable numerical dynamics across all 18 layers."
         ),
     },
     {
         "id": "mark-engineer-v3-1.5b",
         "name": "Mark-Engineer-V3-1.5B",
         "hf_repo": "miceworks/Mark-Engineer-V3-1.5B",
-        "category": "A",
+        "category": "EXPERIMENTAL_NARROW_CHECKPOINT",
         "is_vl": False,
         "is_v3": True,
-        "training_status": "TRAINED_CHECKPOINT",
-        "weight_state_label": "Trained Checkpoint (Validated)",
+        "training_status": "EXPERIMENTAL_NARROW_CHECKPOINT",
+        "weight_state_label": "Experimental Narrow Checkpoint",
         "pipeline_tag": "text-generation",
+        "tok_type": "legacy_4311",
         "overview": (
-            "Mark-Engineer-V3-1.5B is a systems engineering variant with 1,520,496,960 total physical parameters and "
-            "405.73M active parameters per token. It uses 32 routed experts, 2 shared experts, and domain soft-pinning "
-            "configured for code generation, compilers, and kernel internals.\n\n"
-            "Quantized in IQ4_NL, the container occupies 816.95 MiB (856.63 MB / 856,632,832 bytes), leaving ample "
-            "VRAM on 8 GB GPUs for large source code files."
+            "Mark-Engineer-V3-1.5B is an experimental narrow checkpoint with 1,520,496,960 total physical parameters and 405.73M active "
+            "parameters per token across 18 layers. It uses 32 routed experts and 2 shared experts.\n\n"
+            "Quantized in IQ4_NL, the container occupies 816.95 MiB (856.63 MB / 856,632,832 bytes). Note: This is an experimental "
+            "checkpoint trained briefly with a 4,311-token base vocabulary; outside its narrow systems domain, greedy inference produces "
+            "incoherent fragments."
         ),
         "training_scope": (
-            "Trained checkpoint (TRAINED_CHECKPOINT). SVD Upcycled from a 5.5T-token prior representation and further "
-            "trained for 5,000 optimization steps on miceworks/Mark-Ultra-Curriculum on Kaggle Cloud 2x Tesla T4 GPUs."
+            "Experimental narrow checkpoint (EXPERIMENTAL_NARROW_CHECKPOINT). Trained briefly on systems engineering stubs from "
+            "miceworks/Mark-Ultra-Curriculum. Unverified claims regarding upstream training priors and synthetic benchmark evaluations "
+            "have been formally retracted."
         ),
         "evaluation_summary": (
-            "Official Coding and Systems Engineering Benchmarks:\n"
-            "- EvalPlus HumanEval+ pass@1 (Base): 51.80%\n"
-            "- EvalPlus HumanEval+ pass@1 (Base + Extra): 46.30%\n"
-            "- EvalPlus MBPP+ pass@1 (Base): 58.50%\n"
-            "- EvalPlus MBPP+ pass@1 (Base + Extra): 50.50%\n"
-            "- MultiPL-E Rust (humaneval-rs): 43.60%\n"
-            "- MultiPL-E C++ (humaneval-cpp): 47.80%\n"
-            "- MultiPL-E Systems Average: 45.70%\n"
-            "- BFCL AST Exact Match: 71.00%\n"
-            "- BFCL Tool Selection Accuracy: 78.00%\n"
-            "- BFCL Schema Validity Rate: 92.00%\n"
-            "- MMLU CS and Math Average: 23.50%"
+            "Experimental checkpoint; general coding benchmarks (HumanEval, MBPP) are unverified and unreproducible in greedy inference. "
+            "Usage is intended for architecture inspection and narrow experimental research."
         ),
     },
     {
         "id": "mark-general-v3-8b",
         "name": "Mark-General-V3-8B",
         "hf_repo": "miceworks/Mark-General-V3-8B",
-        "category": "B",
+        "category": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
         "is_vl": False,
         "is_v3": True,
-        "training_status": "SVD_INITIALIZED_BASE",
-        "weight_state_label": "SVD Initialized Base",
+        "training_status": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
+        "weight_state_label": "Untrained Architectural Scaffold",
         "pipeline_tag": "text-generation",
+        "tok_type": "legacy_4311",
         "overview": (
-            "Mark-General-V3-8B is an 8B-class sparse language model designed for general reasoning, STEM, physics, "
-            "chemistry, encyclopedic synthesis, and epistemic Self-RAG reflection. It packs 32 layers, 32 routed experts, "
-            "2 shared experts, and full H-MLA attention into 8,168,001,024 total physical parameters (2,002,374,144 active per token).\n\n"
-            "Quantized in IQ4_NL, the binary occupies 4383.98 MiB (4596.94 MB / 4,596,938,048 bytes), operating within "
-            "standard 8 GB consumer GPUs while leaving over 3.4 GB of VRAM for context."
+            "Mark-General-V3-8B is an 8B-class sparse language model architecture scaffold packing 32 layers, 32 routed experts, 2 shared "
+            "experts, and full H-MLA attention into 8,168,001,024 total physical parameters (2,002,374,144 active per token).\n\n"
+            "Quantized in IQ4_NL, the binary occupies 4383.98 MiB (4596.94 MB / 4,596,938,048 bytes), operating within standard 8 GB "
+            "consumer GPUs while leaving over 3.4 GB of VRAM for context."
         ),
         "training_scope": (
-            "SVD-initialized architectural base (SVD_INITIALIZED_BASE). The GGUF file contains initialized weights "
-            "for testing binary graph compatibility with llama.cpp, measuring memory footprint on target hardware, and "
-            "serving as a base for downstream pre-training and distillation."
+            "Untrained architectural base scaffold (UNTRAINED_ARCHITECTURAL_SCAFFOLD). Built for testing binary graph compatibility with llama.cpp, "
+            "measuring memory footprint on target hardware, and serving as a base for downstream pre-training."
         ),
         "evaluation_summary": (
             "Architectural integrity and layer forward tests pass with zero NaN/Inf activations."
@@ -330,22 +325,22 @@ MODELS_METADATA = [
         "id": "mark-experimental-v3-8b",
         "name": "Mark-Experimental-V3-8B",
         "hf_repo": "miceworks/Mark-Experimental-V3-8B",
-        "category": "B",
+        "category": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
         "is_vl": False,
         "is_v3": True,
-        "training_status": "SVD_INITIALIZED_BASE",
-        "weight_state_label": "SVD Initialized Base",
+        "training_status": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
+        "weight_state_label": "Untrained Architectural Scaffold",
         "pipeline_tag": "text-generation",
+        "tok_type": "legacy_4311",
         "overview": (
-            "Mark-Experimental-V3-8B is an 8B-class sparse model packing 32 layers, 32 routed experts, 2 shared "
-            "experts, and full H-MLA attention into 8,168,001,024 total parameters (2,002,374,144 active per token).\n\n"
-            "Quantized in IQ4_NL, the binary occupies 4382.55 MiB (4595.44 MB / 4,595,438,848 bytes), fitting within "
-            "an 8 GB consumer GPU while leaving over 3.4 GB of VRAM for KV cache."
+            "Mark-Experimental-V3-8B is an 8B-class sparse model packing 32 layers, 32 routed experts, 2 shared experts, and full H-MLA "
+            "attention into 8,168,001,024 total physical parameters (2,002,374,144 active per token).\n\n"
+            "Quantized in IQ4_NL, the binary occupies 4382.55 MiB (4595.44 MB / 4,595,438,848 bytes), fitting within an 8 GB consumer GPU "
+            "while leaving over 3.4 GB of VRAM for KV cache."
         ),
         "training_scope": (
-            "SVD-initialized architectural base (SVD_INITIALIZED_BASE). The GGUF file contains initialized weights "
-            "for testing binary graph compatibility with llama.cpp, measuring memory usage on target hardware, and "
-            "serving as a base for downstream pre-training and fine-tuning."
+            "Untrained architectural base scaffold (UNTRAINED_ARCHITECTURAL_SCAFFOLD). Built for testing binary graph compatibility with llama.cpp, "
+            "measuring memory usage on target hardware, and serving as a base for downstream research."
         ),
         "evaluation_summary": (
             "Structural tensor verification confirms full DeepSeek2 MoE graph compliance."
@@ -355,33 +350,34 @@ MODELS_METADATA = [
         "id": "mark-slm-3m",
         "name": "Mark-SLM-3M",
         "hf_repo": "miceworks/Mark-SLM-3M",
-        "category": "A",
+        "category": "TRAINED_CHECKPOINT",
         "is_vl": False,
         "is_v3": True,
         "training_status": "TRAINED_CHECKPOINT",
-        "weight_state_label": "Trained Checkpoint (Validated)",
+        "weight_state_label": "Trained Checkpoint (From Scratch)",
         "pipeline_tag": "text-generation",
+        "tok_type": "slm_3m",
         "overview": (
-            "Mark-SLM-3M is an ultra-compact language model engineered under the strict 3,000,000 parameter ceiling "
-            "for the Open SLM Leaderboard. It integrates Multi-Head Latent Attention (H-MLA) and Parallel Branching "
-            "Mixture of Experts (PB-MoE), trained 100% from scratch in full compliance with Rules 01 and 02.\n\n"
-            "The model contains exactly 2,946,008 total physical parameters and 2,503,640 active parameters per token "
-            "across 8 layers. Quantized to IQ4_NL, the container occupies 3.12 MiB (3.27 MB / 3,271,680 bytes) and runs on "
-            "embedded microcontrollers, mobile processors, or desktop environments with minimal resource consumption."
+            "Mark-SLM-3M is an ultra-compact language model engineered under the strict 3,000,000 parameter ceiling for the Open SLM Leaderboard. "
+            "It integrates Multi-Head Latent Attention (H-MLA) and Parallel Branching Mixture of Experts (PB-MoE), trained 100% from scratch in full "
+            "compliance with Rules 01 and 02.\n\n"
+            "The model contains exactly 2,946,008 total physical parameters and 2,503,640 active parameters per token across 8 layers. Quantized "
+            "to IQ4_NL, the container occupies 3.12 MiB (3.27 MB / 3,271,680 bytes) and runs on embedded microcontrollers, mobile processors, or "
+            "desktop environments with minimal resource consumption."
         ),
         "training_scope": (
-            "Trained 100% from scratch (Gaussian normal std=0.02 initialization, zero external checkpoints) for 3,000 "
-            "optimization steps on miceworks/Mark-Open-SLM-Curriculum, Cosmopedia-v2 STEM, and AxiomicLabs/ArithMark-3.0 in strict compliance "
-            "with Open SLM Leaderboard Rules 01 and 02."
+            "Trained 100% from scratch (Gaussian normal std=0.02 initialization, zero external checkpoints) for 3,000 optimization steps on "
+            "miceworks/Mark-Open-SLM-Curriculum, Cosmopedia-v2 STEM, and AxiomicLabs/ArithMark-3.0 in strict compliance with Open SLM Leaderboard "
+            "Rules 01 and 02."
         ),
         "evaluation_summary": (
             "Official Open SLM Leaderboard Scores (Sub-3M Category, Rule 01 and Rule 02 Compliant):\n"
-            "- PIQA: 52.00% (Norm: 4.00)\n"
-            "- ARC-Easy: 26.60% (Norm: 2.13)\n"
-            "- HellaSwag: 25.60% (Norm: 0.80)\n"
-            "- ArithMark-3.0 Official: 29.70% (Norm: 6.27)\n"
-            "- ARC-Challenge: 23.75% (Norm: 0.00)\n"
-            "- ARC-Average (Norm): 1.07\n"
+            "- PIQA: 52.00% (Norm: 4.00%)\n"
+            "- ARC-Easy: 26.60% (Norm: 2.13%)\n"
+            "- HellaSwag: 25.60% (Norm: 0.80%)\n"
+            "- ArithMark-3.0 Official: 29.70% (Norm: 6.27%)\n"
+            "- ARC-Challenge: 23.75% (Norm: 0.00%)\n"
+            "- ARC-Average (Norm): 1.07%\n"
             "- Best Intelligence Index: 3.85"
         ),
     },
@@ -389,47 +385,49 @@ MODELS_METADATA = [
         "id": "mark-v3-32b",
         "name": "Mark-V3-32B",
         "hf_repo": "miceworks/Mark-V3-32B",
-        "category": "B",
+        "category": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
         "is_vl": False,
         "is_v3": True,
-        "training_status": "EARLY_CONVERGENCE_CHECKPOINT",
-        "weight_state_label": "Early Convergence Checkpoint",
+        "training_status": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
+        "weight_state_label": "Untrained Architectural Scaffold",
         "pipeline_tag": "text-generation",
+        "tok_type": "legacy_4311",
         "overview": (
-            "Mark-V3-32B is the flagship mixture-of-experts model of the Mark-V3 lineup, engineered with native DeepSeek2 "
-            "architecture, 1M context length via 3:1 Hybrid H-MLA, and 64 routed + 2 shared experts.\n\n"
+            "Mark-V3-32B is a 32B-class flagship sparse mixture-of-experts model scaffold engineered with native DeepSeek2 architecture, "
+            "1M context window via 3:1 Hybrid H-MLA, and 64 routed + 2 shared experts.\n\n"
             "The model comprises 31,989,012,480 total physical parameters and 3,677,387,904 active parameters per token across 32 layers. "
-            "Calibrated for 48 GB VRAM cloud instances (NVIDIA L40S 48GB VRAM / 180GB RAM), the architecture supports ultra-long "
-            "context analysis, tool calling, and polyglot code synthesis."
+            "Calibrated for 48 GB VRAM cloud instances (NVIDIA L40S 48GB VRAM / 180GB RAM), the architecture supports ultra-long context "
+            "analysis and polyglot code synthesis."
         ),
         "training_scope": (
-            "Early convergence checkpoint (EARLY_CONVERGENCE_CHECKPOINT). Multi-donor SVD upcycled from prior representations "
-            "and converged through 100 validation steps on cloud hardware with loss dropping from 10.9873 to 0.5357."
+            "Untrained architectural base scaffold (UNTRAINED_ARCHITECTURAL_SCAFFOLD). Built for testing binary graph compatibility with llama.cpp, "
+            "measuring memory usage across large context windows, and serving as a base for downstream pre-training."
         ),
         "evaluation_summary": (
-            "Validation loss converged from 10.9873 to 0.5357 during the 100-step initial calibration run."
+            "Structural tensor verification confirms full 64R+2S DeepSeek2 MoE graph compliance."
         ),
     },
     {
         "id": "mark-vl-v3-4b",
         "name": "Mark-VL-V3-4B",
         "hf_repo": "miceworks/Mark-VL-V3-4B",
-        "category": "B",
+        "category": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
         "is_vl": True,
         "is_v3": True,
-        "training_status": "SVD_INITIALIZED_BASE",
-        "weight_state_label": "SVD Initialized Base",
+        "training_status": "UNTRAINED_ARCHITECTURAL_SCAFFOLD",
+        "weight_state_label": "Untrained Architectural Scaffold",
         "pipeline_tag": "image-text-to-text",
+        "tok_type": "full_32k",
         "overview": (
-            "Mark-VL-V3-4B is a third-generation multimodal vision-language model integrating a 16-layer Vision Transformer (ViT) "
-            "with Spatial 2D-RoPE, a 2x2 PixelShuffle projection adapter with non-linear outlier limiting, and a 24-layer DeepSeek2 "
-            "H-MLA and PB-MoE language backbone.\n\n"
-            "The model comprises 4,134,688,769 total physical parameters and 824,483,584 active parameters per token across 24 language "
-            "layers and 16 vision layers. Quantized in native IQ4_NL, the language backbone and vision projector are partitioned for streaming execution on 8 GB consumer GPUs."
+            "Mark-VL-V3-4B is a third-generation multimodal vision-language model architecture scaffold integrating a 16-layer Vision Transformer (ViT) "
+            "with Spatial 2D-RoPE, a 2x2 PixelShuffle projection adapter with non-linear outlier limiting, and a 24-layer DeepSeek2 H-MLA and PB-MoE "
+            "language backbone.\n\n"
+            "The model comprises 4,134,688,769 total physical parameters and 824,483,584 active parameters per token across 24 language layers and "
+            "16 vision layers."
         ),
         "training_scope": (
-            "SVD-initialized multimodal base (SVD_INITIALIZED_BASE). The architecture integrates a ViT encoder and DeepSeek2 language "
-            "backbone for multimodal inference research and pipeline verification."
+            "Untrained multimodal architectural scaffold (UNTRAINED_ARCHITECTURAL_SCAFFOLD). Built for multimodal graph verification and spatial "
+            "2D-RoPE alignment testing."
         ),
         "evaluation_summary": (
             "Projector and attention alignment verified with spatial 2D-RoPE coordinate preservation."
@@ -439,27 +437,27 @@ MODELS_METADATA = [
         "id": "mark-general-2.2b",
         "name": "Mark-General-2.2B",
         "hf_repo": "miceworks/Mark-General-2.2B",
-        "category": "A",
+        "category": "EXPERIMENTAL_NARROW_CHECKPOINT",
         "is_vl": True,
         "is_v3": False,
-        "training_status": "TRAINED_CHECKPOINT",
-        "weight_state_label": "Trained Checkpoint (Validated)",
+        "training_status": "EXPERIMENTAL_NARROW_CHECKPOINT",
+        "weight_state_label": "Experimental Narrow Checkpoint",
         "pipeline_tag": "image-text-to-text",
+        "tok_type": "legacy_4311",
         "overview": (
-            "Mark-General-2.2B is a second-generation multimodal vision-language model. It scales the architecture to 2,223,906,816 "
-            "total parameters with 24 routed experts and 1 shared expert, incorporating an AnyRes Dynamic Resolution Vision Transformer "
-            "with 2D-RoPE and a PixelShuffle 2x2 C-Abstractor.\n\n"
-            "The model activates only Top-2 routed experts per token plus 1 shared expert, maintaining light inference speed within 8 GB VRAM budgets."
+            "Mark-General-2.2B is an experimental multimodal vision-language model with 2,223,906,816 total parameters, 24 routed experts and "
+            "1 shared expert, incorporating an AnyRes Dynamic Resolution Vision Transformer with 2D-RoPE and a PixelShuffle 2x2 C-Abstractor.\n\n"
+            "The model activates Top-2 routed experts per token plus 1 shared expert, operating within 8 GB VRAM budgets."
         ),
         "training_scope": (
-            "Trained on multimodal diagrammatic pairs, technical schematics, and structured documents from miceworks/Mark-Ultra-Curriculum."
+            "Experimental narrow multimodal checkpoint (EXPERIMENTAL_NARROW_CHECKPOINT). Trained on multimodal diagrammatic pairs and technical "
+            "schematics from miceworks/Mark-Ultra-Curriculum."
         ),
         "evaluation_summary": (
-            "Validated on dynamic resolution image processing and cold-start visual chain-of-thought reasoning."
+            "Validated on dynamic resolution image processing and visual token alignment."
         ),
     },
 ]
-
 
 def compute_kv_cache_metrics(layers: int, kv_lora_rank: int, qk_rope_head_dim: int, n_heads: int, head_dim: int):
     mla_bytes_per_tok = layers * (kv_lora_rank + qk_rope_head_dim) * 2
@@ -473,7 +471,6 @@ def compute_kv_cache_metrics(layers: int, kv_lora_rank: int, qk_rope_head_dim: i
         table.append((ctx, mla_mib, mha_mib))
 
     return mla_bytes_per_tok, comp_ratio, table
-
 
 def get_clan_breakdown(n_routed: int, is_vl: bool) -> str:
     if n_routed == 4:
@@ -519,6 +516,51 @@ def get_clan_breakdown(n_routed: int, is_vl: bool) -> str:
 - **Clan 2 (Experts {2*q}-{3*q-1})**: Security boundaries and protocols.
 - **Clan 3 (Experts {3*q}-{n_routed-1})**: {c3}."""
 
+def get_tokenizer_documentation(tok_type: str, vocab_size: int) -> str:
+    if tok_type == "full_32k":
+        return f"""- Vocabulary Size: `{vocab_size}` active BPE tokens (58,980 merges, 0 padding tokens)
+- Architecture Backend: Byte-level Byte-Pair Encoding (BPE) with GPT-2 byte fallbacks
+- Epistemic Control Tokens: Self-RAG reasoning tags (`<think>`, `</think>`), tool delimiters (`<tool_call>`, `</tool_call>`), epistemic reflection tags (`[RETRIEVE]`, `[/RETRIEVE]`, `[EVALUATE]`, `[ACCEPT]`, `[REJECT]`)
+- Measured Compression Fertility:
+  - English technical prose: $\\approx 5.85\\text{{ characters/token}}$
+  - Portuguese technical prose: $\\approx 3.17\\text{{ characters/token}}$
+  - C, Rust, and systems source code: $\\approx 2.23\\text{{ characters/token}}$
+- Whitespace Round-Trip Fidelity: 100% lossless preservation of leading spaces, indentation tabs, and byte streams."""
+    elif tok_type == "slm_3m":
+        return f"""- Vocabulary Size: `{vocab_size}` active BPE tokens (3,835 merges, 0 padding tokens)
+- Architecture Backend: Byte-level Byte-Pair Encoding (BPE)
+- Control Tokens: System tags (`<think>`, `</think>`), sequence delimiters (`<|bos|>`, `<|eos|>`)
+- Measured Compression Fertility:
+  - English technical prose: $\\approx 3.90\\text{{ characters/token}}$
+  - Portuguese technical prose: $\\approx 1.94\\text{{ characters/token}}$
+  - C, Rust, and systems source code: $\\approx 1.81\\text{{ characters/token}}$
+- Whitespace Round-Trip Fidelity: 100% lossless preservation across token sequences."""
+    else:
+        # legacy 4311 base
+        return f"""- Vocabulary Size: `{vocab_size}` tensor rows (4,311 active BPE tokens + 27,721 reserved padding slots)
+- Active BPE Merges: 3,981 merges
+- Epistemic Control Tokens: Self-RAG reasoning tags (`<think>`, `</think>`), tool delimiters (`<tool_call>`, `</tool_call>`), epistemic reflection tags (`[RETRIEVE]`, `[/RETRIEVE]`, `[EVALUATE]`, `[ACCEPT]`, `[REJECT]`)
+- Measured Compression Fertility:
+  - English technical prose: $\\approx 2.53\\text{{ characters/token}}$
+  - Portuguese technical prose: $\\approx 2.57\\text{{ characters/token}}$
+  - C, Rust, and systems source code: $\\approx 2.02\\text{{ characters/token}}$
+- Whitespace Round-Trip Fidelity: Indentation whitespace requires byte-fallback tokenization; leading 4 spaces may be stripped by ByteLevel decoder when token 28 is raw space sequence."""
+
+def get_router_bias_documentation(model_id: str) -> str:
+    if model_id == "mark-slm-v3-150m":
+        return """Router bias vectors (`blk.{l}.exp_probs_b.bias`) are stored in FP32 precision. Measured disk telemetry from the IQ4_NL container:
+- Bias Parameters: 240 FP32 parameters across 15 MoE layers (16 routed experts each)
+- Measured Values: min = 0.8677, mean = 1.3500, max = 2.0547"""
+    elif model_id == "mark-engineer-v3-1.5b":
+        return """Router bias vectors (`blk.{l}.exp_probs_b.bias`) are stored in FP32 precision. Measured disk telemetry from the IQ4_NL container:
+- Bias Parameters: 576 FP32 parameters across 18 MoE layers (32 routed experts each)
+- Measured Values: min = 0.8760, mean = 2.2283, max = 2.9219"""
+    elif model_id == "mark-slm-3m":
+        return """Router bias vectors (`blk.{l}.exp_probs_b.bias`) are stored in FP32 precision. Measured disk telemetry from the IQ4_NL container:
+- Bias Parameters: 24 FP32 parameters across 6 MoE layers (4 routed experts each)
+- Measured Values: initialized at uniform 0.0000"""
+    else:
+        return """Router bias vectors are stored in FP32 precision or initialized to uniform values during pre-training to ensure stable routing dynamics."""
 
 def generate_model_readme(spec: dict, manifest: dict) -> str:
     prov = manifest.get("provenance", {})
@@ -529,9 +571,7 @@ def generate_model_readme(spec: dict, manifest: dict) -> str:
     with open(model_dir / "config.json", "r", encoding="utf-8") as f:
         cfg = json.load(f)
 
-    # 1. YAML Frontmatter
-    # Category B models MUST NOT have conversational tag!
-    is_cat_a = spec["category"] == "A"
+    # 1. YAML Frontmatter: ONLY language: [en], NO conversational tag across all models
     tags_list = [
         "gguf",
         "llama.cpp",
@@ -544,27 +584,24 @@ def generate_model_readme(spec: dict, manifest: dict) -> str:
     ]
     if spec["is_vl"]:
         tags_list.extend(["multimodal", "vision-language"])
-    if is_cat_a and not spec["is_vl"]:
-        tags_list.append("conversational")
 
     tags_yaml = "\n".join(f"  - {t}" for t in tags_list)
 
     datasets_block = ""
-    if is_cat_a:
+    if spec["training_status"] == "TRAINED_CHECKPOINT":
         if spec["id"] == "mark-slm-3m":
             datasets_block = "\ndatasets:\n  - miceworks/Mark-Open-SLM-Curriculum\n  - AxiomicLabs/ArithMark-3.0"
         elif spec["id"] == "mark-slm-v3-150m":
             datasets_block = "\ndatasets:\n  - miceworks/Mark-Open-SLM-Curriculum"
-        else:
-            datasets_block = "\ndatasets:\n  - miceworks/Mark-Ultra-Curriculum"
+    elif spec["training_status"] == "EXPERIMENTAL_NARROW_CHECKPOINT":
+        datasets_block = "\ndatasets:\n  - miceworks/Mark-Ultra-Curriculum"
 
     frontmatter = f"""---
 license: apache-2.0
 library_name: gguf
 pipeline_tag: {spec['pipeline_tag']}
 language:
-  - en
-  - pt{datasets_block}
+  - en{datasets_block}
 tags:
 {tags_yaml}
 ---"""
@@ -600,43 +637,26 @@ tags:
     gguf_filename = prov.get("gguf_file", f"{spec['id'].replace('-', '_')}_iq4_nl.gguf")
 
     clan_text = get_clan_breakdown(n_routed, spec["is_vl"])
+    router_bias_info = get_router_bias_documentation(spec["id"])
+    tokenizer_doc = get_tokenizer_documentation(spec["tok_type"], vocab_size)
 
-    # H-MLA Ablation Block (for V3 models and SLM-3M)
-    h_mla_block = ""
-    if spec["is_v3"]:
-        h_mla_block = f"""
-In the V3 architecture, **Hadamard-MLA (H-MLA)** suppresses latent activation outliers by absorbing the normalized orthogonal Walsh-Hadamard transform:
-
-$$H_d = \\frac{{1}}{{\\sqrt{{d}}}} H_2^{{\\otimes \\log_2 d}}$$
-
-(where $H_d^T = H_d$ and $H_d^2 = I$, e.g., $H_{{{kv_lora}}}$) directly into key-value projection weights ($W_{{wkv\\_a}}$ and $W_{{wkv\\_b}}$) during compilation. This offline fusion eliminates activation outliers without adding runtime execution overhead.
-
-#### H-MLA Numerical Ablation (IQ4_NL Quantization)
-
-| Metric | Standard MLA | Hadamard-MLA (H-MLA) | Delta / Impact |
-| :--- | :---: | :---: | :---: |
-| Latent Activation Kurtosis ($\\kappa$) | 46.8 (Heavy Outliers) | 3.02 (Sub-Gaussian) | Outlier-Free Latents |
-| IQ4_NL Reconstruction MSE | $2.14 \\times 10^{{-3}}$ | $7.83 \\times 10^{{-4}}$ | -63.4% Quantization Error |
-| Runtime Latency Overhead | 0.00 ms | 0.00 ms | Zero Runtime Cost (Offline Fused) |
-"""
-
-    # LRD Block (for V3 models)
-    lrd_block = ""
+    # Experimental PyTorch Research Extensions block
+    research_extensions_block = ""
     if spec["is_v3"]:
         core_loops = cfg.get("core_loops", 2)
-        lrd_block = f"""
-### Latent Recursive Depth (LRD)
+        research_extensions_block = f"""
+### Experimental PyTorch Research Extensions (Not Active in llama.cpp GGUF Runtime)
 
-The model features Latent Recursive Depth structured across a three-stage topology:
-1. **Syntactic Stem**: Layers $0..s-1$ project raw token embeddings into stable latent manifold spaces.
-2. **Recursive Reasoning Core**: Layers $s..e-1$ looped across $L_{{\\text{{core}}}} = {core_loops}$ recurrent iterations.
-3. **Symbolic Exit Decoder**: Layers $e..N-1$ project convergent representations into the final vocabulary logits.
+The following architectural mechanisms are research extensions implemented in the PyTorch reference codebase (`src/model/mark_v3_arch.py`) and are not active in the compiled C++/CUDA feed-forward DAG of the `llama.cpp` GGUF runtime:
 
-The recurrent state update employs residual anchoring:
+1. **Latent Recursive Depth (LRD)**:
+   In PyTorch, intermediate core layers (layers $s..e-1$) execute across $L_{{\\text{{core}}}} = {core_loops}$ recurrent iterations using residual anchoring:
+   $$h^{{(r+1)}}_l = \\text{{Block}}_l(h^{{(r)}}_l + 0.5 \\cdot h_{{\\text{{stem}}}})$$
+   In `llama.cpp`, GGUF execution is strictly feed-forward (single sequential pass through layers $0..N-1$).
 
-$$h^{{(r+1)}}_l = \\text{{Block}}_l(h^{{(r)}}_l + \\alpha \\cdot h_{{\\text{{stem}}}})$$
-
-State representations evolve across recurrent passes with zero-copy KV cache slot reuse, eliminating additional memory allocation during iterative reasoning.
+2. **PB-MoE Soft-Pinning Constraints**:
+   During PyTorch curriculum training, clan logit constraints reserve routing slots for domain specialists. In `llama.cpp`, routing executes via standard Top-K selection over the learned router bias affinities:
+   $$s_{{i,t}} = \\sigma(u_t^T e_i) + b_i$$
 """
 
     # Vision Language Block
@@ -651,14 +671,8 @@ The visual architecture integrates an AnyRes SigLIP visual encoder with Spatial 
 3. **PixelShuffle 2x2 C-Abstractor**: Compresses 4 visual patches into 1 dense token (75% visual token reduction).
 """
 
-    # Evaluation Section
-    eval_section = f"""## Evaluation and Benchmark Results
-
-{spec['evaluation_summary']}
-"""
-
-    # Usage Section based on Category A vs Category B
-    if is_cat_a:
+    # Usage Section based on Trained vs Experimental/Scaffold
+    if spec["training_status"] == "TRAINED_CHECKPOINT":
         usage_section = f"""## Usage
 
 ### Download
@@ -681,10 +695,10 @@ echo "{sha256_val}  {gguf_filename}" | sha256sum -c -
 ### llama.cpp
 
 ```bash
-# CLI generation
+# CLI text completion
 llama-cli -m {gguf_filename} \\
-  -p "<|bos|>System: Systems mode active.<|eos|>\\n<|bos|>User: Explain Linux memory barriers.<|eos|>\\n<|bos|>Assistant:\\n<think>\\n" \\
-  -n 512 --temp 0.2
+  -p "Question: What is 12 * 12?\\nAnswer:" \\
+  -n 128 --temp 0.2
 
 # HTTP server
 llama-server -m {gguf_filename} --port 8080 -c {ctx_len}
@@ -701,10 +715,45 @@ print("Total Tensors:", len(reader.tensors))
 total_params = sum(int(t.shape.prod()) for t in reader.tensors)
 print(f"Total Parameters: {{total_params:,}}")
 ```"""
+    elif spec["training_status"] == "EXPERIMENTAL_NARROW_CHECKPOINT":
+        usage_section = f"""## Usage: Narrow Domain and Systems Engineering Verification
+
+This checkpoint is an experimental narrow checkpoint trained on specific low-level or systems engineering distributions. Outside its narrow domain, greedy inference may produce fragmented outputs.
+
+### Download and Checksum Verification
+
+```bash
+# Using huggingface-cli
+huggingface-cli download {spec['hf_repo']} {gguf_filename} --local-dir .
+
+# Cryptographic verification
+echo "{sha256_val}  {gguf_filename}" | sha256sum -c -
+```
+
+### Execution with llama.cpp
+
+```bash
+# Systems prompt execution
+llama-cli -m {gguf_filename} \\
+  -p "Systems engineering stub: Implement a POSIX mutex initialization routine.\\nCode:" \\
+  -n 128 --temp 0.2
+```
+
+### Python Inspection
+
+```python
+import gguf
+
+reader = gguf.GGUFReader("{gguf_filename}")
+print("Architecture:", reader.get_field("general.architecture"))
+print("Total Tensors:", len(reader.tensors))
+total_params = sum(int(t.shape.prod()) for t in reader.tensors)
+print(f"Total Parameters: {{total_params:,}}")
+```"""
     else:
         usage_section = f"""## Usage: Runtime Graph, Memory & Latency Verification
 
-This checkpoint is an architectural base scaffold. Usage below is configured for binary graph verification, memory allocation profiling, and hardware latency benchmarking:
+This checkpoint is an untrained architectural base scaffold. Usage below is configured for binary graph verification, memory allocation profiling, and hardware latency benchmarking:
 
 ### Download and Checksum Verification
 
@@ -722,8 +771,8 @@ echo "{sha256_val}  {gguf_filename}" | sha256sum -c -
 # Benchmark throughput and KV cache allocation
 llama-bench -m {gguf_filename} -n 128 -b 512
 
-# Verify execution graph without conversational inference
-llama-cli -m {gguf_filename} -p "<|bos|>System: Probe.<|eos|>\\n<|bos|>User: 1+1=<|eos|>\\n<|bos|>Assistant:\\n" -n 16 --temp 0.0
+# Verify execution graph
+llama-cli -m {gguf_filename} -p "System probe: 1+1=" -n 16 --temp 0.0
 ```
 
 ### Python Graph Inspection
@@ -752,6 +801,7 @@ print(f"Total Parameters: {{total_params:,}}")
 | :--- | :--- |
 | Architecture | `deepseek2` |
 | Training Status | `{spec['training_status']}` |
+| Weight State Label | `{spec['weight_state_label']}` |
 | Binary Size | `{size_formatted}` |
 | Total Parameters | `{total_params:,}` ({total_params} physical) |
 | Active Parameters | `{active_params if isinstance(active_params, str) else f"{active_params:,}"}` ({active_params} active) |
@@ -786,7 +836,7 @@ k_R  = RoPE(h_t * W_KR)     (dim: {qk_rope})
 q_t  = [q_C ; q_R]
 k_t  = [k_C ; k_R]
 ```
-{h_mla_block}
+
 ### KV Cache Memory Usage
 
 Physical memory consumption of the KV cache per token:
@@ -805,40 +855,37 @@ Physical memory consumption of the KV cache per token:
 
 #### Aux-Loss-Free Routing Equation
 
-Router biases update per step to prevent expert collapse without penalizing primary task loss:
+Router biases update per step to prevent expert collapse without penalizing primary task loss using the exact sign-based rule:
 
-$$b_i \\leftarrow b_i + \\gamma (\\bar{{f}} - f_i)$$
+$$b_i \\leftarrow b_i + \\gamma \\cdot \\operatorname{{sign}}(\\bar{{f}} - f_i)$$
 
-where $\\gamma = 0.001$, $f_i$ is empirical expert frequency within the batch, and $\\bar{{f}}$ is target uniform frequency. Load balancing telemetry across production runs demonstrates an expert utilization coefficient of variation (CV) $< 4.2\\%$ and a token drop rate of $0.0\\%$.
+where $\\gamma = 0.001$, $f_i$ is empirical expert frequency within the batch, and $\\bar{{f}}$ is target uniform frequency.
+
+{router_bias_info}
 
 #### Domain Clan Partitioning
 
 {clan_text}
-
-PB-MoE provides structural logit partitioning and soft-pinning constraints (`top_k` allocation reserving $k-1$ slots for the primary domain clan and $1$ slot for cross-clan cooperation) paired with domain-tagged curriculum batches during training on `Mark-Ultra-Curriculum`, `Mark-Open-SLM-Curriculum`, and `Mark-Cyber-Curriculum`.
-{lrd_block}{vl_block}
+{research_extensions_block}{vl_block}
 ## Training Pipeline and Reproducibility
 
 - Training Code: Official pipelines and architecture implementations are maintained in the [Mark-AI scripts directory](https://github.com/thu12dta3/Mark-AI/tree/main/scripts).
 - Curricula and Datasets: Trained on open datasets hosted on the Hugging Face Hub, including [miceworks/Mark-Ultra-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Ultra-Curriculum), [miceworks/Mark-Open-SLM-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Open-SLM-Curriculum), and [miceworks/Mark-Cyber-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Cyber-Curriculum).
-- Optimization Settings: AdamW optimizer ($\\beta_1 = 0.9, \\beta_2 = 0.95$, weight decay $0.1$, gradient clipping $1.0$), paired with cosine / WSD decay learning rate schedules.
+- Optimization Settings: AdamW optimizer ($\\beta_1 = 0.9, \\beta_2 = 0.95$, weight decay $0.1$, gradient clipping $1.0$).
 - Training Scope: {spec['training_scope']}
 
-{eval_section}
+## Evaluation and Benchmark Results
+
+{spec['evaluation_summary']}
+
 ## Tokenizer and Vocabulary Specification
 
-- Vocabulary Size: `{vocab_size}` tokens
-- Architecture Backend: Byte-level Byte-Pair Encoding (BPE) with GPT-2 byte fallbacks
-- Epistemic Control Tokens: Self-RAG reasoning tags (`<think>`, `</think>`), tool delimiters (`<tool_call>`, `</tool_call>`), epistemic status tags (`[UNKNOWN]`, `[EVIDENT]`, `[REFUTE]`), and special tokens at indices `32000..32015`
-- Compression Fertility:
-  - English and Portuguese technical prose: $\\approx 3.6\\text{{ characters/token}}$
-  - C, Rust, and systems source code: $\\approx 2.9\\text{{ characters/token}}$
-- Round-Trip Fidelity: 100% lossless detokenization across ASCII, UTF-8 unicode sequences, and binary hex streams.
+{tokenizer_doc}
 
 ## Limitations and Intended Use
 
 - Parameter Scale Constraints: While sparse MoE routing enables execution within consumer VRAM budgets, absolute capacity is bounded by physical parameter counts.
-- Recommended Deployment: For mission-critical production environments, deploy alongside external verification mechanisms such as `MARK` Self-RAG entropy thresholds, local `.zim` knowledge retrieval, compiler validation, or unit test runners.
+- Recommended Deployment: For mission-critical production environments, deploy alongside external verification mechanisms such as compiler validation or unit test runners.
 - Safety and Boundary Enforcement: Models trained on systems and cybersecurity datasets are intended for defensive research, vulnerability auditing, patch validation, and systems engineering.
 
 ### Running Benchmarks on TPN Workbench and lm-evaluation-harness
@@ -850,7 +897,6 @@ When running automated benchmarks on TPN Workbench, lm-evaluation-harness, LM St
 {usage_section}
 """
     return content
-
 
 def update_root_readme():
     rows = []
@@ -895,32 +941,16 @@ Sparse Transformer architectures (Multi-Head Latent Attention + fine-grained Mix
 | :--- | :--- | :--- | :---: | :---: | :---: | :--- | :--- |
 {table_content}
 
-## Official Benchmarks (EvalPlus, MultiPL-E, BFCL, MMLU)
-
-Official evaluation results for **Mark-Engineer-V3-1.5B** (`1,520,496,960` physical parameters, `405,729,600` active parameters per token, evaluated on Kaggle Cloud 2x Tesla T4 GPUs in greedy decoding mode `temperature=0.0`, `top_p=1.0`):
-
-| Benchmark Suite | Metric | Score | Target Domain |
-| :--- | :--- | :---: | :--- |
-| **EvalPlus HumanEval+** | `pass@1 (Base)` | **51.80%** | Python Unit Test Synthesis |
-| **EvalPlus HumanEval+** | `pass@1 (Base + Extra)` | **46.30%** | Rigorous Contract & Edge-Case Validation |
-| **EvalPlus MBPP+** | `pass@1 (Base)` | **58.50%** | Basic Programming Problems |
-| **EvalPlus MBPP+** | `pass@1 (Base + Extra)` | **50.50%** | Contract-Reinforced Programming Synthesis |
-| **MultiPL-E (Rust)** | `valid_pass@1` (`humaneval-rs`) | **43.60%** | Systems Code, Memory Safety & Concurrency |
-| **MultiPL-E (C++)** | `valid_pass@1` (`humaneval-cpp`) | **47.80%** | High-Performance Systems & Algorithms |
-| **MultiPL-E (Systems Avg)** | Average (Rust + C++) | **45.70%** | Multi-Language Systems Engineering |
-| **BFCL AST Exact Match** | `ast_exact_match` | **71.00%** | Exact Tool Call & Parameter Matching |
-| **BFCL Tool Selection** | `tool_selection_accuracy` | **78.00%** | Correct Function API Selection |
-| **BFCL Schema Validity** | `schema_validity_rate` | **92.00%** | Syntactic JSON / Schema Conformance |
-| **MMLU CS & Math Average**| Average | **23.50%** | Core Scientific & Computational Reasoning |
-
 ## Open SLM Leaderboard Benchmarks
 
-Official evaluation results for Open SLM Leaderboard compliant models evaluated on official validation splits:
+Official evaluation results for Open SLM Leaderboard compliant models evaluated on official benchmark datasets under Rules 01 and 02:
 
 | Model | Parameters | HellaSwag (`acc_norm`) | ARC-E (`acc_norm`) | ARC-C (`acc_norm`) | PIQA (`acc_norm`) | ArithMark-3 (`acc`) | Intelligence Index |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Mark-SLM-3M** | 2,946,008 | 25.60% (0.80) | 26.60% (2.13) | 23.75% (0.00) | 52.00% (4.00) | 29.70% (6.27) | **3.85** |
 | **Mark-SLM-V3-150M (Model Soup 50/50)** | 146,899,248 | **37.10%** (16.13) | **40.80%** (21.07) | **25.50%** (0.67) | **62.50%** (25.00) | **33.90%** (11.87) | **16.36** |
+
+Official submission for Mark-SLM-V3-150M merged in AxiomicLabs/open-slm-leaderboard PR #291. Note: The training curriculum miceworks/Mark-Open-SLM-Curriculum incorporates benchmark training splits (in-distribution learning).
 
 ## Architecture
 
@@ -943,26 +973,16 @@ q_t  = [q_C ; q_R]
 k_t  = [k_C ; k_R]
 ```
 
-In the V3 series, **Hadamard-MLA (H-MLA)** suppresses latent activation outliers by absorbing the normalized Walsh-Hadamard transformation:
-
-$$H_d = \\frac{{1}}{{\\sqrt{{d}}}} H_2^{{\\otimes \\log_2 d}}$$
-
-directly into the offline projection weights (`W_wkv_a` and `W_wkv_b`), eliminating activation spikes without adding runtime execution overhead.
-
 ### Mixture-of-Experts (DeepSeekMoE & PB-MoE)
 
 To decouple parameter scale from inference compute costs, feed-forward layers are partitioned into fine-grained specialists:
 - **Shared Experts**: Fixed shared pathways capture common language representations across tokens ($F_{{\\text{{shared}}}}(x) = (\\text{{SiLU}}(x W_{{\\text{{gate}}}}) \\odot (x W_{{\\text{{up}}}})) W_{{\\text{{down}}}}$).
-- **Routed Experts**: Activated dynamically via top-K gating with learned Aux-Loss-Free router biases ($s_{{i,t}} = \\sigma(u_t^T e_i)$ over biased affinities $s_{{i,t}} + b_i$, updated via $b_i \\leftarrow b_i + \\gamma (\\bar{{f}} - f_i)$).
-- **Domain Clan Partitioning (PB-MoE)**: Experts are partitioned into 4 distinct functional clans (Systems/Code, STEM/Logic, Security/Sentinel, Structured Data/Tool Calling, or Multimodal for vision-language models) with soft-pinning constraints ensuring balanced domain representation per token.
+- **Routed Experts**: Activated dynamically via top-K gating with learned router biases ($s_{{i,t}} = \\sigma(u_t^T e_i)$ over biased affinities $s_{{i,t}} + b_i$, updated via $b_i \\leftarrow b_i + \\gamma \\cdot \\operatorname{{sign}}(\\bar{{f}} - f_i)$).
+- **Domain Clan Partitioning (PB-MoE)**: Experts are partitioned into 4 distinct functional clans (Systems/Code, STEM/Logic, Security/Sentinel, Structured Data/Tool Calling, or Multimodal for vision-language models).
 
-### Epistemic Self-RAG
+### Experimental PyTorch Research Extensions
 
-The architecture incorporates an epistemic evaluation module (`src/model/self_rag.py`). By monitoring token-level prediction entropy:
-
-$$H(p) = -\\sum_{{i}} p_i \\log_2(p_i)$$
-
-the model detects uncertainty spikes, triggering structured `<think>` reasoning paths before finalizing output tokens.
+Research mechanisms such as Latent Recursive Depth (LRD) and PB-MoE curriculum soft-pinning are implemented in PyTorch (`src/model/mark_v3_arch.py`) and are active during research training, while the compiled GGUF containers execute as feed-forward DAGs in `llama.cpp`.
 
 ## Quantization (IQ4_NL)
 
@@ -978,14 +998,14 @@ The models preserve native 3D tensor layouts (`blk.{{i}}.ffn_gate_exps.weight`, 
     `[-127, -104, -83, -65, -49, -35, -22, -10, 1, 13, 25, 38, 53, 69, 89, 113]`
 - 1D RMSNorm tensors and router bias vectors remain in full precision `FP32`, ensuring numerical stability at layer boundaries.
 
-## Training Curricula & Datasets
+## Training Curricula and Datasets
 
 The Mark-AI model suite is trained and aligned on curated, token-efficient open datasets hosted on the Hugging Face Hub:
 
 | Dataset | Type | Samples | Primary Focus | Hugging Face Repository |
 | :--- | :--- | :---: | :--- | :--- |
 | **Mark-Ultra-Curriculum** | SFT / Master Corpus | 4,821 | Systems programming, Linux kernel stubs, eBPF, POSIX C, and robotics | [miceworks/Mark-Ultra-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Ultra-Curriculum) |
-| **Mark-Cyber-Curriculum** | SFT / DPO / ORPO | 6,700 | Vulnerability audit (CVE/CWE), red-teaming, reverse engineering, SIEM/YARA, eBPF secops, and AI defense | [miceworks/Mark-Cyber-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Cyber-Curriculum) |
+| **Mark-Cyber-Curriculum** | SFT / DPO / ORPO | 6,122 | Deduplicated vulnerability audit (CVE/CWE), red-teaming, SIEM/YARA, eBPF secops | [miceworks/Mark-Cyber-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Cyber-Curriculum) |
 | **Mark-Open-SLM-Curriculum** | Pretraining / SLM | 12,000 | Open SLM Rule 02 compliant pretraining: HellaSwag, ARC, PIQA, SciQ, ArithMark-3, and Cosmopedia STEM | [miceworks/Mark-Open-SLM-Curriculum](https://huggingface.co/datasets/miceworks/Mark-Open-SLM-Curriculum) |
 
 ## Repository Structure
@@ -1017,9 +1037,9 @@ Mark-AI/
 ├── scripts/                # Verification and synchronization utilities
 │   ├── build_mark_cyber_dataset.py
 │   ├── build_open_slm_curriculum.py
+│   ├── eval_open_slm_leaderboard.py
 │   ├── generate_verification_manifests.py
 │   ├── gguf_forensic_xray.py
-│   ├── sanitize_all_models_metadata.py
 │   ├── sync_to_huggingface.py
 │   └── update_all_readmes.py
 ├── src/                    # PyTorch reference neural architectures
@@ -1038,17 +1058,10 @@ python3 -m compileall -q src/ export/ scripts/ models/ tests/
 # 2. Run the comprehensive validation suite
 pytest tests/ -v
 ```
-
-All tests must pass, verifying:
-- Cross-consistency between `config.json`, `tokenizer_config.json`, `tokenizer.json`, `Modelfile`, and GGUF headers.
-- Integer parity for total and active parameter counts.
-- Dual unit size verification (`MiB` and `MB`).
-- Strict absence of unregistered special tokens.
 """
     with open(REPO_ROOT / "README.md", "w", encoding="utf-8") as f:
         f.write(root_readme)
     print("  [OK] Updated root README.md")
-
 
 def update_all():
     print("=" * 80)
@@ -1079,7 +1092,6 @@ def update_all():
     print("\n" + "=" * 80)
     print("README UPDATE COMPLETE!")
     print("=" * 80)
-
 
 if __name__ == "__main__":
     update_all()

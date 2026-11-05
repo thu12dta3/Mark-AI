@@ -32,6 +32,7 @@ OFFICIAL_14_REPOS = [
 FILES_TO_SYNC = [
     "README.md",
     "config.json",
+    "tokenizer_config.json",
     "gguf_verification_manifest.json",
 ]
 

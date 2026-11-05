@@ -335,9 +335,11 @@ class MarkV3Model(nn.Module):
         input_ids: Optional[torch.Tensor] = None,
         attention_mask: Optional[torch.Tensor] = None,
         clan_id: Optional[int] = None,
-        core_loops: int = 1,
+        core_loops: Optional[int] = None,
         inputs_embeds: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
+        if core_loops is None:
+            core_loops = getattr(self.config, "core_loops", 1)
         if inputs_embeds is None:
             if input_ids is None:
                 raise ValueError("Must provide either input_ids or inputs_embeds")
@@ -424,12 +426,14 @@ class MarkV3ForCausalLM(PreTrainedModel):
         attention_mask: Optional[torch.Tensor] = None,
         labels: Optional[torch.Tensor] = None,
         clan_id: Optional[int] = None,
-        core_loops: int = 1,
+        core_loops: Optional[int] = None,
         inputs_embeds: Optional[torch.Tensor] = None,
         return_dict: Optional[bool] = None,
         **kwargs,
     ) -> Union[Tuple, CausalLMOutputWithPast, Dict[str, torch.Tensor]]:
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        if core_loops is None:
+            core_loops = getattr(self.config, "core_loops", 1)
         hidden_states = self.model(
             input_ids=input_ids,
             attention_mask=attention_mask,

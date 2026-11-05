@@ -1,5 +1,5 @@
 ---
-license: agpl-3.0
+license: apache-2.0
 task_categories:
 - text-generation
 language:
@@ -26,11 +26,21 @@ configs:
 
 ## Overview
 
-Mark-Cyber-Curriculum is an open, deduplicated cybersecurity dataset engineered for Supervised Fine-Tuning (SFT) and Direct Preference Optimization (DPO / ORPO). It contains 6,524 unique, verified instructional samples spanning vulnerability analysis, offensive workflows, binary reverse engineering, digital forensics, Linux kernel security, and artificial intelligence red-teaming.
+Mark-Cyber-Curriculum is an open, deduplicated cybersecurity dataset engineered for Supervised Fine-Tuning (SFT) and Direct Preference Optimization (DPO / ORPO). It contains 6,122 verified instructional samples spanning vulnerability analysis, offensive workflows, binary reverse engineering, digital forensics, Linux kernel security, and artificial intelligence red-teaming, produced after removing 402 near-duplicates identified by normalized 200-character prefix matching.
 
 Every sample is paired with a compressed chain-of-thought trace (`compressed_think`) strictly bounded between 40 and 180 tokens, directly establishing root-cause attribution, attack vectors, and defensive remediations. This structure reduces generation overhead by 70% to 90% compared to verbose, conversational reasoning traces while preserving full technical precision.
 
-## Dataset Structure & Schema
+## Provenance and Upstream Dataset Credits
+
+Mark-Cyber-Curriculum curates, filters, deduplicates, and annotates data from the following upstream open-source cybersecurity datasets:
+
+1. **CyberNative/Code_Vulnerability_Security_DPO**: Code vulnerability and remediation pairs across multiple languages.
+2. **Trendyol/Trendyol-Cybersecurity-Instruction-Tuning-Dataset**: Cybersecurity instructions and operational responses across pentesting, network defense, and systems security.
+3. **neuralchemy/Prompt-injection-dataset**: Adversarial prompt injection payloads and safety red-teaming prompts.
+
+All upstream data has been normalized, filtered to eliminate refusal boilerplate and unverified instructions, annotated with exact CWE and MITRE ATT&CK or ATLAS identifiers, and paired with compressed reasoning traces and calibrated dispreferred baselines.
+
+## Dataset Structure and Schema
 
 The dataset is partitioned into Apache Parquet (`data/train-00000-of-00001.parquet`) and JSON Lines (`data/train.jsonl`) formats for immediate compatibility with Hugging Face Dataset Viewer and streaming dataloaders.
 
@@ -55,13 +65,13 @@ The dataset provides balanced coverage across six core domains of modern informa
 
 | Domain Category | Sample Count |
 | :--- | :---: |
-| `vulnerability_research_cve` | 1,600 |
+| `vulnerability_research_cve` | 1,529 |
 | `red_team_pentest` | 1,100 |
 | `blue_team_siem_dfir` | 1,100 |
 | `kernel_ebpf_secops` | 1,000 |
 | `binary_exploitation_re` | 900 |
-| `ai_red_teaming_sentinel` | 824 |
-| **Total Verified Unique Samples** | **6,524** |
+| `ai_red_teaming_sentinel` | 493 |
+| **Total Verified Unique Samples** | **6,122** |
 
 ### Domain Descriptions
 
@@ -72,16 +82,14 @@ The dataset provides balanced coverage across six core domains of modern informa
 5. `kernel_ebpf_secops`: Linux kernel internals, eBPF/XDP packet processing, seccomp BPF syscall filtering, AppArmor/SELinux profiles, container namespace hardening, and applied systems cryptography.
 6. `ai_red_teaming_sentinel`: Adversarial prompt injection, LLM jailbreak analysis, context exfiltration defense, and guardrail architectures mapped to MITRE ATLAS and OWASP Top 10 for LLMs.
 
-## Token-Efficient Distillation & DPO Usage
+## Token-Efficient Distillation and DPO Usage
 
 Modern reasoning models often generate lengthy, redundant chain-of-thought traces that introduce severe latency and inference costs. Mark-Cyber-Curriculum is structured to train models that reason densely and concisely:
 
 - SFT Training: Train models on the `chosen` field to enforce concise `<think>...</think>` traces followed by immediate technical solutions.
 - DPO / ORPO Training: Use `chosen` as the preferred response and `rejected` as the dispreferred completion. The `rejected` field contains either the unpatched vulnerable code or an excessively verbose, uncalibrated reasoning trace, establishing both security alignment and length-penalized token efficiency.
-- Average chosen token count: 490 tokens.
-- Mean token compression ratio: 1.33x.
 
-## Loading & Training Example
+## Loading and Training Example
 
 ```python
 from datasets import load_dataset
